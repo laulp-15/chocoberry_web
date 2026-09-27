@@ -2,7 +2,7 @@
 import React from "react";
 import { OutlinedInput, Select, MenuItem } from "@mui/material";
 import DatePicker, { addDaysISO } from "../../../shared/components/DatePicker";
-import { MUNICIPIOS } from "../data/shipping";
+import { MUNICIPIOS } from "../data/Shipping";
 import { PICKUP_SCHEDULE } from "../data/pickupInfo";
 import "./ShippingForm.css";
 

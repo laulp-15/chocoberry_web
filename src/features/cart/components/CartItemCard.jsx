@@ -2,7 +2,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { IconButton, OutlinedInput, Button } from "@mui/material";
-import { getPriceByQuantity } from "../../catalog/data/pricing";
+import { getPriceByQuantity } from "../../catalog/data/Pricing";
 import { formatPrice } from "../../../shared/utils/formatPrice";
 import "./CartItemCard.css";
 

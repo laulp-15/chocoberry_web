@@ -1,8 +1,8 @@
 // src/features/cart/components/PaymentSection.jsx
 import React from "react";
 import { Select, MenuItem } from "@mui/material";
-import FileDropzone from "../../../shared/components/FileDropzone";
-import { PAYMENT_METHODS } from "../data/paymentMethods";
+import FileDropzone from "../../../shared/components/FileDropZone";
+import { PAYMENT_METHODS } from "../data/PaymentMethods";
 import { NEQUI_ACCOUNT } from "../data/paymentInfo";
 import "./PaymentSection.css";
 
