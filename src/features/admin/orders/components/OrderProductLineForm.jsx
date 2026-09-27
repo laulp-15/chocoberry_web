@@ -4,7 +4,7 @@ import FormSelect from "../../../../shared/components/FormSelect";
 import FormSearchableSelect from "../../../../shared/components/FormSearchableSelect";
 import FormTextField from "../../../../shared/components/FormTextField";
 import { PRODUCTS } from "../../../catalog/data/Products";
-import { PRICE_BY_QUANTITY, getPriceByQuantity } from "../../../catalog/data/pricing";
+import { PRICE_BY_QUANTITY, getPriceByQuantity } from "../../../catalog/data/Pricing";
 import { COLOR_OPTIONS } from "../../../catalog/data/colors";
 import { formatPrice } from "../../../../shared/utils/formatPrice";
 import "./OrderProductLineForm.css";

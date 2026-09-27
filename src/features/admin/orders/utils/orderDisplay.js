@@ -1,8 +1,8 @@
 // src/features/admin/orders/utils/orderDisplay.js
 // Helpers de presentación compartidos entre OrderDetailContent (Pedidos)
 // y SaleReceipt (Ventas) — misma data, distintas vistas.
-import { MUNICIPIOS } from "../../../cart/data/shipping";
-import { PAYMENT_METHODS } from "../../../cart/data/paymentMethods";
+import { MUNICIPIOS } from "../../../cart/data/Shipping";
+import { PAYMENT_METHODS } from "../../../cart/data/PaymentMethods";
 
 export function formatDisplayDate(iso) {
   if (!iso) return "—";

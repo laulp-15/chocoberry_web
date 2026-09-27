@@ -5,13 +5,13 @@ import FormTextField from "../../../../shared/components/FormTextField";
 import FormSelect from "../../../../shared/components/FormSelect";
 import FormSearchableSelect from "../../../../shared/components/FormSearchableSelect";
 import DatePicker, { todayISO } from "../../../../shared/components/DatePicker";
-import FileDropzone from "../../../../shared/components/FileDropzone";
+import FileDropzone from "../../../../shared/components/FileDropZone";
 import OrderProductLineForm from "./OrderProductLineForm";
 import OrderProductLineItem from "./OrderProductLineItem";
 import { MOCK_CLIENTS } from "../data/mockClients";
 import { ORDER_STATUSES } from "../data/orderStatus";
-import { MUNICIPIOS, getShippingCost } from "../../../cart/data/shipping";
-import { PAYMENT_METHODS } from "../../../cart/data/paymentMethods";
+import { MUNICIPIOS, getShippingCost } from "../../../cart/data/Shipping";
+import { PAYMENT_METHODS } from "../../../cart/data/PaymentMethods";
 import { formatPrice } from "../../../../shared/utils/formatPrice";
 import "./OrderFormModal.css";
 

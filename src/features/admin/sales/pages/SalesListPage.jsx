@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import DataTable from "../../../../shared/components/DataTable";
 import FormSelect from "../../../../shared/components/FormSelect";
 import { INITIAL_ORDERS } from "../../orders/data/MockOrders";
-import { PAYMENT_METHODS } from "../../../cart/data/paymentMethods";
+import { PAYMENT_METHODS } from "../../../cart/data/PaymentMethods";
 import { formatPrice } from "../../../../shared/utils/formatPrice";
 
 // Ventas = pedidos ya confirmados (en preparación o despachados).

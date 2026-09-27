@@ -1,6 +1,6 @@
 // src/shared/components/FileDropzone.jsx
 import React, { useRef, useState } from "react";
-import "./FileDropzone.css";
+import "./FileDropZone.css";
 
 /**
  * Zona de arrastrar-y-soltar (o clic) para subir una imagen. Reutilizada en

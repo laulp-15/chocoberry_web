@@ -1,7 +1,7 @@
 // src/features/cart/components/CartSummary.jsx
 import React from "react";
 import { Button } from "@mui/material";
-import { getPriceByQuantity } from "../../catalog/data/pricing";
+import { getPriceByQuantity } from "../../catalog/data/Pricing";
 import { formatPrice } from "../../../shared/utils/formatPrice";
 import "./CartSummary.css";
 
