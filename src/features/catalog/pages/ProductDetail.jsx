@@ -9,8 +9,8 @@ import ColorSelector from "../components/ColorSelector";
 import FeatureHighlights from "../components/FeatureHighlights";
 import RelatedProducts from "../components/RelatedProducts";
 import { getProductById, PRODUCTS } from "../data/Products";
-import { PRICE_BY_QUANTITY, getPriceByQuantity } from "../data/pricing";
-import { COLOR_OPTIONS } from "../data/colors";
+import { PRICE_BY_QUANTITY, getPriceByQuantity } from "../data/Pricing";
+import { COLOR_OPTIONS } from "../data/Colors";
 import { formatPrice } from "../../../shared/utils/formatPrice";
 import "./ProductDetail.css";
 

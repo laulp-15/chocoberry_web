@@ -1,7 +1,7 @@
 // src/features/catalog/components/CategoryChips.jsx
 import React from "react";
 import { Chip } from "@mui/material";
-import "./CategoryChips.css";
+import "./categoryChips.css";
 
 /**
  * Fila de chips de categoría, centrada.

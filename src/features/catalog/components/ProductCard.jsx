@@ -2,7 +2,7 @@
 import React from "react";
 import { Button } from "@mui/material";
 import { formatPrice } from "../../../shared/utils/formatPrice";
-import { MIN_PRICE } from "../data/pricing";
+import { MIN_PRICE } from "../data/Pricing";
 import "./ProductCard.css";
 
 /**

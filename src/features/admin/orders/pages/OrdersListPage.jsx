@@ -9,7 +9,7 @@ import OrderDetailModal from "../components/OrderDetailModal";
 import CancelReasonModal from "../components/CancelReasonModal";
 import OrderNotification from "../components/OrderNotification";
 import { ORDER_STATUSES } from "../data/orderStatus";
-import { INITIAL_ORDERS } from "../data/mockOrders";
+import { INITIAL_ORDERS } from "../data/MockOrders";
 import { formatPrice } from "../../../../shared/utils/formatPrice";
 import { todayISO } from "../../../../shared/components/DatePicker";
 
