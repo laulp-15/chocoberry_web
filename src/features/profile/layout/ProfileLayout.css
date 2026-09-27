@@ -1,0 +1,93 @@
+/* ProfileLayout.css - Estilos del sidebar de perfil */
+
+.profile-sidebar {
+  width: 280px;
+  border-radius: 16px;
+  box-shadow: 0 8px 30px rgba(230, 57, 70, 0.08);
+  padding: 24px;
+  height: fit-content;
+  border: 1px solid var(--borde);
+}
+
+.profile-sidebar-title {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  color: var(--primario);
+  border-bottom: 2px solid var(--secundario-2);
+  padding-bottom: 12px;
+}
+
+.profile-nav-link {
+  display: block;
+  padding: 10px 14px;
+  border-radius: 8px;
+  transition: all 0.2s;
+  color: var(--texto-muted);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.profile-nav-link:hover {
+  background-color: var(--secundario-2);
+  color: var(--texto);
+}
+
+.profile-nav-link.active {
+  background-color: var(--secundario-1);
+  color: var(--primario);
+}
+
+.profile-nav-divider {
+  margin-top: 15px;
+  border-top: 1px solid var(--secundario-2);
+  padding-top: 15px;
+}
+
+.profile-logout-btn {
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  color: var(--primario);
+  font-weight: 700;
+  display: block;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.profile-logout-btn:hover {
+  background-color: var(--secundario-2);
+}
+
+/* Modo oscuro */
+[data-theme="dark"] .profile-sidebar {
+  background-color: var(--bg-card);
+  border-color: var(--borde);
+}
+
+[data-theme="dark"] .profile-sidebar-title {
+  color: var(--primario);
+  border-bottom-color: var(--secundario-2);
+}
+
+[data-theme="dark"] .profile-nav-link {
+  color: var(--texto-muted);
+}
+
+[data-theme="dark"] .profile-nav-link:hover {
+  background-color: var(--secundario-3);
+  color: var(--texto);
+}
+
+[data-theme="dark"] .profile-nav-link.active {
+  background-color: var(--secundario-2);
+  color: var(--primario);
+}
+
+[data-theme="dark"] .profile-nav-divider {
+  border-top-color: var(--secundario-2);
+}

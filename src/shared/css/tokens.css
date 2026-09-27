@@ -1,0 +1,166 @@
+/* src/shared/css/tokens.css
+   Importar una sola vez de forma global (ej: en src/index.js o src/App.jsx):
+   import "./shared/styles/tokens.css";
+*/
+
+/* --- MODO CLARO (Por defecto) --- */
+:root {
+  /* --- Paleta ChocoBerry --- */
+  --primario: #E63946;
+  --primario-oscuro: #C92F3C;
+  --primario-claro: #EF818A;
+
+  --secundario-1: #FAD2E1;
+  --secundario-2: #FCE8EF;
+  --secundario-3: #FEF7F9;
+  --blanco: #FFFFFF;
+
+  /* --- Neutros tomados de la guía de estilo --- */
+  --texto: #2A231D;
+  --texto-muted: #675A51;
+  --texto-suave: #A4968B;
+  --borde: #E9D9DE;
+  
+  /* --- Fondos generales --- */
+  --bg-main: #FDFBFB;
+  --bg-card: #FFFFFF;
+
+  /* --- Paleta extendida (Guía de estilo ChocoBerry) --- */
+  --carmesi-100: #E63946;
+  --carmesi-80: #C92F3C;
+  --carmesi-60: #EF818A;
+
+  --rosa-100: #FAD2E1;
+  --rosa-80: #FCE8EF;
+  --rosa-60: #FEF7F9;
+
+  --chocolate-100: #471C26;
+  --chocolate-80: #7A3245;
+  --chocolate-60: #B98A97;
+
+  --neutral-900: #2B2320;
+  --neutral-700: #6B5A54;
+  --neutral-500: #A6968F;
+  --neutral-400: #D6C9C4;
+  --neutral-300: #ECE1DD;
+  --neutral-100: #F8F2F0;
+  --ui-divider: #EDE2DE;
+
+  --success-100: #249434;
+  --success-80: #4BA758;
+  --success-20: #CEE7D2;
+
+  --warning-100: #F49505;
+  --warning-80: #F5A632;
+  --warning-20: #FCE7C8;
+
+  --error-100: #DD322D;
+  --error-80: #E35652;
+  --error-20: #F7D1D0;
+
+  --info-100: #1D77ED;
+  --info-80: #458FF0;
+  --info-20: #CDE1FB;
+
+  /* --- Tipografía --- */
+  --font-display: "Poppins", "Segoe UI", sans-serif;
+  --font-body: "Poppins", "Segoe UI", sans-serif;
+}
+
+/* --- MODO OSCURO (Con tu paleta exacta) --- */
+[data-theme="dark"] {
+  /* --- Paleta ChocoBerry (Mantiene el Carmesí Principal) --- */
+  --primario: #E63946;
+  --primario-oscuro: #C92F3C;
+  --primario-claro: #EF818A;
+
+  --secundario-1: #6B4655; /* Rosa Oscuro de tu paleta */
+  --secundario-2: #4A303B; /* Rosa Profundo de tu paleta */
+  --secundario-3: #2A1F26;
+  --blanco: #1C1721;
+
+  /* --- Neutros adaptados al Modo Oscuro --- */
+  --texto: #FDFBFB;
+  --texto-muted: #8F7580; /* Gris Rosado de tu paleta */
+  --texto-suave: #6B5A54;
+  --borde: #4A303B;       /* Rosa Profundo para bordes sutiles */
+
+  /* --- Fondos generales adaptados a la captura oscura --- */
+  --bg-main: #121016;     /* Fondo general de tu captura */
+  --bg-card: #1C1721;     /* Fondo de tarjetas y tablas */
+}
+
+/* Aplicación general al body para cubrir todas las vistas automáticamente */
+html {
+  overflow-y: scroll;
+}
+
+body {
+  background-color: var(--bg-main);
+  color: var(--texto);
+  font-family: "Poppins", sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  margin: 0;
+}
+
+/* --- Hover de opciones en menús de MUI (Select, Autocomplete, etc.) --- */
+.MuiMenuItem-root:hover,
+.MuiMenuItem-root.Mui-focusVisible {
+  background-color: var(--secundario-1) !important;
+  color: var(--texto) !important;
+}
+.MuiMenuItem-root.Mui-selected {
+  background-color: var(--secundario-2) !important;
+}
+.MuiMenuItem-root.Mui-selected:hover {
+  background-color: var(--secundario-1) !important;
+}
+
+/* --- Texto de selects MUI en modo oscuro --- */
+[data-theme="dark"] .MuiSelect-select,
+[data-theme="dark"] .MuiMenuItem-root {
+  color: var(--texto) !important;
+}
+
+/* --- Fondo del menú desplegable MUI en modo oscuro --- */
+[data-theme="dark"] .MuiMenu-paper {
+  background-color: var(--bg-card) !important;
+  color: var(--texto) !important;
+}
+
+/* --- Soportar modo oscuro global para Modales, Diálogos y Popups --- */
+[data-theme="dark"] .MuiDialog-paper,
+[data-theme="dark"] .modal-container,
+[data-theme="dark"] div[role="dialog"] {
+  background-color: var(--bg-card) !important;
+  color: var(--texto) !important;
+  border: 1px solid var(--borde) !important;
+}
+
+[data-theme="dark"] .MuiDialog-paper *,
+[data-theme="dark"] div[role="dialog"] * {
+  color: var(--texto);
+}
+
+[data-theme="dark"] .MuiDialog-paper h2, 
+[data-theme="dark"] .MuiDialog-paper h3,
+[data-theme="dark"] div[role="dialog"] h2 {
+  color: var(--texto) !important;
+}
+
+/* --- Forzar fondo oscuro absoluto en contenedores y vistas (Categorías, etc.) --- */
+[data-theme="dark"] .admin-content,
+[data-theme="dark"] .admin-main,
+[data-theme="dark"] main,
+[data-theme="dark"] [class*="page"],
+[data-theme="dark"] [class*="container"] {
+  background-color: var(--bg-main) !important;
+  color: var(--texto) !important;
+}
+
+[data-theme="dark"] .card,
+[data-theme="dark"] .panel {
+  background-color: var(--bg-card) !important;
+  color: var(--texto) !important;
+  border-color: var(--borde) !important;
+}

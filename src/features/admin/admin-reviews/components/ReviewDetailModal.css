@@ -1,0 +1,89 @@
+/* ReviewDetailModal.css */
+
+.review-detail-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background-color: var(--secundario-3);
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--borde);
+  margin-bottom: 1.2rem;
+}
+
+.review-detail-name {
+  margin: 0;
+  color: var(--texto);
+  font-size: 1.1rem;
+}
+
+.review-detail-product {
+  font-size: 0.85rem;
+  color: var(--texto-muted);
+  margin-top: 0.2rem;
+}
+
+.review-detail-label {
+  color: var(--texto-muted);
+  font-weight: bold;
+  font-size: 0.8rem;
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
+.review-detail-stars {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.review-detail-star {
+  font-size: 1.25rem;
+}
+
+.review-detail-star.filled {
+  color: #FFB800;
+}
+
+.review-detail-star.empty {
+  color: var(--borde);
+}
+
+.review-detail-rating {
+  margin-left: 0.5rem;
+  font-weight: bold;
+  color: var(--texto);
+  font-size: 0.95rem;
+}
+
+.review-detail-value {
+  color: var(--texto);
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.review-detail-comment {
+  color: var(--texto);
+  font-size: 0.95rem;
+  background-color: var(--bg-main);
+  padding: 0.8rem;
+  border-radius: 8px;
+  border: 1px solid var(--borde);
+  margin: 0;
+}
+
+.review-detail-close {
+  background-color: var(--primario);
+  color: #ffffff;
+  border: none;
+  padding: 0.6rem 1.5rem;
+  border-radius: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
+.review-detail-close:hover {
+  background-color: var(--primario-oscuro);
+}

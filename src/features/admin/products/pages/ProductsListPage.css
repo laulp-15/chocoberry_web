@@ -1,0 +1,78 @@
+/* ProductsListPage.css */
+
+.products-page {
+  padding: 0;
+  background-color: var(--bg-main);
+  color: var(--texto);
+  min-height: 100vh;
+  font-family: "Poppins", sans-serif;
+}
+
+/* Toggle de estado */
+.status-toggle {
+  width: 46px;
+  height: 24px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  transition: background-color 0.2s ease;
+}
+
+.status-toggle.active {
+  background-color: #2E7D32;
+}
+
+.status-toggle.inactive {
+  background-color: var(--borde);
+}
+
+.status-toggle-knob {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  position: absolute;
+  transition: left 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.status-toggle-knob.active {
+  left: 24px;
+}
+
+.status-toggle-knob.inactive {
+  left: 2px;
+}
+
+/* Acciones de tabla */
+.table-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.table-action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--texto-muted);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s ease;
+}
+
+.table-action-btn:hover {
+  color: var(--primario);
+}
+
+.table-action-btn.danger:hover {
+  color: var(--error-100);
+}
+
+

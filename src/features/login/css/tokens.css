@@ -1,0 +1,98 @@
+/* src/shared/css/tokens.css
+   Importar una sola vez de forma global (ej: en src/index.js o src/App.jsx):
+   import "./shared/styles/tokens.css";
+*/
+
+:root {
+  /* --- Paleta ChocoBerry (Modo Claro por defecto) --- */
+  --primario: #E63946;
+  --primario-oscuro: #C92F3C;
+  --primario-claro: #EF818A;
+
+  --secundario-1: #FAD2E1;
+  --secundario-2: #FCE8EF;
+  --secundario-3: #FEF7F9;
+  --blanco: #FFFFFF;
+
+  /* --- Neutros y Fondos (Modo Claro) --- */
+  --bg-main: #FEF7F9;
+  --bg-card: #FFFFFF;
+  --texto: #2A231D;
+  --texto-muted: #675A51;
+  --texto-suave: #A4968B;
+  --borde: #E9D9DE;
+
+  /* --- Paleta extendida (Guía de estilo ChocoBerry — Color) --- */
+  --carmesi-100: #E63946;
+  --carmesi-80: #C92F3C;
+  --carmesi-60: #EF818A;
+
+  --rosa-100: #FAD2E1;
+  --rosa-80: #FCE8EF;
+  --rosa-60: #FEF7F9;
+
+  --chocolate-100: #471C26;
+  --chocolate-80: #7A3245;
+  --chocolate-60: #B98A97;
+
+  --neutral-900: #2B2320;
+  --neutral-700: #6B5A54;
+  --neutral-500: #A6968F;
+  --neutral-400: #D6C9C4;
+  --neutral-300: #ECE1DD;
+  --neutral-100: #F8F2F0;
+  --ui-divider: #EDE2DE;
+
+  --success-100: #249434;
+  --success-80: #4BA758;
+  --success-20: #CEE7D2;
+
+  --warning-100: #F49505;
+  --warning-80: #F5A632;
+  --warning-20: #FCE7C8;
+
+  --error-100: #DD322D;
+  --error-80: #E35652;
+  --error-20: #F7D1D0;
+
+  --info-100: #1D77ED;
+  --info-80: #458FF0;
+  --info-20: #CDE1FB;
+
+  /* --- Tipografía --- */
+  --font-display: "Poppins", "Segoe UI", sans-serif;
+  --font-body: "Poppins", "Segoe UI", sans-serif;
+}
+
+/* ==========================================================
+   --- CONFIGURACIÓN DE MODO OSCURO (DARK THEME) ---
+   ========================================================== */
+[data-theme="dark"] {
+  /* Fondos generales y de tarjetas oscuros pero cálidos (acorde al chocolate ChocoBerry) */
+  --bg-main: #1A1215;
+  --bg-card: #271A1E;
+
+  /* Textos claros para contraste óptimo */
+  --texto: #F7F1F3;
+  --texto-muted: #D1B8BF;
+  --texto-suave: #9E828A;
+
+  /* Bordes sutiles oscuros */
+  --borde: #3D262C;
+  --ui-divider: #3D262C;
+
+  /* Sobrescribir blancos fijos si es necesario */
+  --blanco: #271A1E;
+}
+
+/* --- Hover de opciones en menús de MUI (Select, Autocomplete, etc.) --- */
+.MuiMenuItem-root:hover,
+.MuiMenuItem-root.Mui-focusVisible {
+  background-color: var(--secundario-1) !important;
+}
+.MuiMenuItem-root.Mui-selected {
+  background-color: var(--secundario-2) !important;
+}
+.MuiMenuItem-root.Mui-selected:hover {
+  background-color: var(--secundario-1) !important;
+}

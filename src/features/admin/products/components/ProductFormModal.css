@@ -1,0 +1,272 @@
+/* ProductFormModal.css */
+
+.product-form-modal .form-field {
+  margin-bottom: 1.2rem;
+}
+
+.product-form-modal .form-label {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: var(--texto);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.product-form-modal .form-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--borde);
+  background-color: var(--bg-main);
+  color: var(--texto);
+  outline: none;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 0.95rem;
+}
+
+.product-form-modal .form-input:focus {
+  border-color: var(--primario-claro);
+}
+
+.product-form-modal .form-textarea {
+  resize: none;
+}
+
+.product-form-modal .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.product-form-modal .form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1.2rem;
+}
+
+.product-form-modal .btn-cancel {
+  background-color: var(--secundario-2);
+  color: var(--texto);
+  border: none;
+  padding: 0.7rem 1.4rem;
+  border-radius: 24px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
+.product-form-modal .btn-cancel:hover {
+  background-color: var(--secundario-1);
+}
+
+.product-form-modal .btn-save {
+  background-color: var(--primario);
+  color: #ffffff;
+  border: none;
+  padding: 0.7rem 1.6rem;
+  border-radius: 24px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.9rem;
+  box-shadow: 0 4px 12px rgba(230, 57, 80, 0.3);
+}
+
+.product-form-modal .btn-save:hover {
+  background-color: var(--primario-oscuro);
+}
+
+/* Subida de imagen */
+.product-form-modal .image-upload-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.8rem 1rem;
+  background-color: var(--bg-main);
+  border: 2px dashed var(--borde);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  text-align: center;
+}
+
+.product-form-modal .image-upload-zone:hover {
+  border-color: var(--primario-claro);
+}
+
+.product-form-modal .image-upload-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--secundario-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+  color: var(--primario);
+}
+
+.product-form-modal .image-upload-text {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--texto);
+}
+
+.product-form-modal .image-upload-hint {
+  font-size: 0.75rem;
+  color: var(--texto-muted);
+  margin-top: 0.2rem;
+}
+
+.product-form-modal .image-preview {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.8rem;
+  background-color: var(--secundario-3);
+  border-radius: 12px;
+  border: 1px solid var(--borde);
+}
+
+.product-form-modal .image-preview-img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--borde);
+}
+
+.product-form-modal .image-preview-info {
+  flex: 1;
+  overflow: hidden;
+}
+
+.product-form-modal .image-preview-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--texto);
+  display: block;
+}
+
+.product-form-modal .image-preview-ready {
+  font-size: 0.75rem;
+  color: var(--texto-muted);
+}
+
+.product-form-modal .image-preview-remove {
+  background: none;
+  border: none;
+  color: var(--primario);
+  cursor: pointer;
+  padding: 0.5rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+/* Modo detalle */
+.product-detail-image {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.2rem;
+}
+
+.product-detail-image-img {
+  width: 180px;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 16px;
+  border: 1px solid var(--borde);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.product-detail-image-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 130px;
+  background-color: var(--secundario-3);
+  border-radius: 16px;
+  color: var(--texto-muted);
+  border: 1px dashed var(--borde);
+}
+
+.product-detail-card {
+  background-color: var(--secundario-3);
+  padding: 1.2rem;
+  border-radius: 14px;
+  border: 1px solid var(--borde);
+  margin-bottom: 1.2rem;
+}
+
+.product-detail-name {
+  margin: 0 0 0.3rem 0;
+  color: var(--texto);
+  font-size: 1.2rem;
+}
+
+.product-detail-category {
+  font-size: 0.85rem;
+  color: var(--texto-muted);
+}
+
+.product-detail-label {
+  color: var(--texto-muted);
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
+.product-detail-value {
+  color: var(--texto);
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.product-detail-price-card {
+  background-color: var(--secundario-3);
+  padding: 1rem 1.2rem;
+  border-radius: 14px;
+  border: 1px solid var(--borde);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.2rem;
+}
+
+.product-detail-price-label {
+  font-size: 0.8rem;
+  color: var(--texto-muted);
+  font-weight: 600;
+}
+
+.product-detail-price-value {
+  color: var(--primario);
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.product-detail-close {
+  background-color: var(--primario);
+  color: #ffffff;
+  border: none;
+  padding: 0.7rem 1.8rem;
+  border-radius: 24px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.9rem;
+  box-shadow: 0 4px 12px rgba(230, 57, 80, 0.3);
+}
+
+.product-detail-close:hover {
+  background-color: var(--primario-oscuro);
+}

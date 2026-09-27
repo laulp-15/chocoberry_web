@@ -1,0 +1,122 @@
+/* CategoryFormModal.css */
+
+.category-form-modal .form-field {
+  margin-bottom: 1.2rem;
+}
+
+.category-form-modal .form-label {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: var(--texto);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.category-form-modal .form-input {
+  width: 100%;
+  padding: 0.65rem 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--borde);
+  background-color: var(--bg-main);
+  color: var(--texto);
+  outline: none;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
+.category-form-modal .form-input:focus {
+  border-color: var(--primario-claro);
+}
+
+.category-form-modal .form-textarea {
+  resize: none;
+}
+
+.category-form-modal .form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.category-form-modal .btn-cancel {
+  background-color: var(--secundario-2);
+  color: var(--texto);
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
+.category-form-modal .btn-cancel:hover {
+  background-color: var(--secundario-1);
+}
+
+.category-form-modal .btn-save {
+  background-color: var(--primario);
+  color: #ffffff;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
+.category-form-modal .btn-save:hover {
+  background-color: var(--primario-oscuro);
+}
+
+/* Modo detalle */
+.category-detail-icon {
+  font-size: 1.5rem;
+  color: var(--primario);
+}
+
+.category-detail-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background-color: var(--secundario-3);
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--borde);
+  margin-bottom: 1.2rem;
+}
+
+.category-detail-name {
+  margin: 0;
+  color: var(--texto);
+  font-size: 1.1rem;
+}
+
+.category-detail-status {
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.category-detail-status.active {
+  color: #1E8E3E;
+}
+
+.category-detail-status.inactive {
+  color: #E63950;
+}
+
+.category-detail-label {
+  color: var(--texto-muted);
+  font-weight: bold;
+  font-size: 0.85rem;
+  margin-bottom: 0.3rem;
+}
+
+.category-detail-value {
+  color: var(--texto);
+  font-size: 0.95rem;
+  margin: 0;
+}

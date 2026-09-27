@@ -1,0 +1,172 @@
+/* src/features/catalog/pages/ProductCatalog.css
+   Estilos propios de la página: fondo, contenedor y encabezado.
+   Soporte completo para Modo Claro y Modo Oscuro mediante tokens.
+*/
+
+.catalog-page {
+  background: var(--bg-main);
+  color: var(--texto);
+  font-family: "Poppins", sans-serif;
+  min-height: 100vh;
+  padding-bottom: 40px;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.catalog-wrap {
+  max-width: 1360px;
+  padding: 32px 20px 0;
+}
+
+.catalog-hero {
+  position: relative;
+  min-height: 380px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: heroAppear 0.8s ease-out both;
+}
+
+/* Overlay vacío: se oculta para no tapar la imagen en modo oscuro */
+.catalog-hero-overlay {
+  display: none;
+}
+
+/* Imagen de fondo limpia, sin cuadros oscuros encima */
+.catalog-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("/img/Catalog-banner.png");
+  background-size: cover;
+  background-position: center;
+  z-index: 0;
+}
+
+.catalog-hero-inner {
+  position: relative;
+  z-index: 2;
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 70px 20px;
+  text-align: center;
+}
+
+.catalog-hero-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  margin-bottom: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 50px;
+  color: #FFFFFF;
+  background: rgba(0, 0, 0, 0.35); /* Fondo sutil translúcido solo para la etiqueta */
+  font-size: 14px;
+  font-weight: 500;
+  backdrop-filter: blur(6px);
+}
+
+.catalog-hero-tag i {
+  color: var(--primario-claro);
+}
+
+/* Título con sombra marcada para que resalte sobre cualquier foto */
+.catalog-hero-title {
+  margin: 0 0 12px;
+  color: #FFFFFF !important;
+  font-size: 42px;
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-shadow: 0 3px 12px rgba(0, 0, 0, 0.8), 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+
+/* Subtítulo con sombra para máxima legibilidad */
+.catalog-hero-subtitle {
+  max-width: 650px;
+  margin: 0 auto;
+  color: #F7F4EF !important;
+  font-size: 17px;
+  line-height: 1.7;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8), 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+@media (max-width: 576px) {
+  .catalog-hero-title {
+    font-size: 24px;
+    line-height: 32px;
+  }
+  .catalog-hero-subtitle {
+    font-size: 16px;
+    line-height: 24px;
+  }
+}
+
+.product-col {
+  margin-bottom: 28px;
+  opacity: 0;
+  transform: translateY(16px);
+  animation: catalogFadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--texto-muted);
+}
+.empty-state i {
+  font-size: 30px;
+  color: var(--primario-claro);
+  margin-bottom: 12px;
+  display: block;
+}
+
+/* --- ADAPTACIONES PARA MODO OSCURO EN COMPONENTES DEL CATÁLOGO --- */
+[data-theme="dark"] .product-card,
+[data-theme="dark"] [class*="card"] {
+  background-color: var(--bg-card) !important;
+  color: var(--texto) !important;
+  border-color: var(--borde) !important;
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] .search-bar-input {
+  background-color: var(--bg-card) !important;
+  color: var(--texto) !important;
+  border-color: var(--borde) !important;
+}
+
+@keyframes catalogFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .catalog-hero-title,
+  .catalog-hero-subtitle,
+  .product-col,
+  .empty-state {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes heroAppear {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

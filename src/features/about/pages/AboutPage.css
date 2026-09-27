@@ -1,0 +1,81 @@
+/* src/features/about/pages/AboutPage.css */
+
+.about-page {
+  --font-display: "Playfair Display", "Georgia", serif;
+  --font-body: "Poppins", sans-serif;
+
+  font-family: var(--font-body);
+  color: var(--texto);
+  background-color: var(--bg-main);
+  overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.about-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* --- Sistema de animación al hacer scroll --- */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+.reveal-left {
+  transform: translateX(-30px);
+}
+.reveal-right {
+  transform: translateX(30px);
+}
+.reveal-visible {
+  opacity: 1;
+  transform: translate(0, 0);
+}
+
+/* --- ADAPTACIÓN A MODO OSCURO PARA LAS SECCIONES --- */
+/* Si tus subcomponentes usan clases genéricas para los fondos alternados, 
+   las adaptamos automáticamente aquí para que cambien al modo oscuro: */
+
+[data-theme="dark"] .about-page section,
+[data-theme="dark"] .about-page div[class*="section"] {
+  background-color: var(--bg-main) !important;
+  color: var(--texto) !important;
+}
+
+/* Si tienes secciones con tarjetas o contenedores internos destacados */
+[data-theme="dark"] .about-page .card,
+[data-theme="dark"] .about-page [class*="card"],
+[data-theme="dark"] .about-page [class*="box"] {
+  background-color: var(--bg-card) !important;
+  color: var(--texto) !important;
+  border-color: var(--borde) !important;
+}
+
+/* Asegurar que los títulos y textos mantengan el contraste correcto */
+[data-theme="dark"] .about-page h1,
+[data-theme="dark"] .about-page h2,
+[data-theme="dark"] .about-page h3,
+[data-theme="dark"] .about-page h4 {
+  color: var(--texto) !important;
+}
+
+[data-theme="dark"] .about-page p {
+  color: var(--texto-muted) !important;
+}
+
+@media (max-width: 991.98px) {
+  .reveal-left,
+  .reveal-right {
+    transform: translateY(20px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    transition: none !important;
+    opacity: 1;
+    transform: none;
+  }
+}
