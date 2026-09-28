@@ -127,27 +127,6 @@ export default function ReviewsListPage() {
         }
       />
 
-      {/* Paginación */}
-      <div className="reviews-pagination">
-        <button
-          className="pagination-btn"
-          onClick={() => handlePageChange(currentPage - 1)}
-          disabled={currentPage === 1}
-        >
-          Anterior
-        </button>
-        <span className="pagination-info">
-          Página {currentPage} de {totalPages} ({totalReviewsCount} reseñas)
-        </span>
-        <button
-          className="pagination-btn"
-          onClick={() => handlePageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
-        >
-          Siguiente
-        </button>
-      </div>
-
       {/* MODAL VER DETALLE */}
       <ReviewDetailModal
         isOpen={isDetailOpen}

@@ -60,6 +60,20 @@
   font-size: 13px;
 }
 
+.role-detail-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--texto);
+  margin-bottom: 14px;
+}
+.role-detail-title i {
+  color: var(--primario);
+  font-size: 15px;
+}
+
 .role-detail-label {
   font-size: 10px;
   font-weight: 700;

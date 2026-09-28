@@ -107,7 +107,7 @@ export default function RolesListPage() {
       <DataTable
         title="Roles"
         description="Define y administra los niveles de acceso para tu equipo de ChocoBerry."
-        createLabel="Nuevo rol"
+        createLabel="Crear rol"
         onCreate={openCreate}
         columns={columns}
         data={roles}
