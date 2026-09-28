@@ -24,11 +24,11 @@
 
 .users-extra-filters {
   display: flex;
-  gap: 10px;
+  gap: 16px;
   flex-wrap: wrap;
 }
 .users-extra-filters > div {
-  min-width: 160px;
+  min-width: 180px;
 }
 
 .users-status-cell {

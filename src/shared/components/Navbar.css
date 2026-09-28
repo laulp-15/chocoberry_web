@@ -1,8 +1,62 @@
 /* Navbar.css */
 
+.navbar-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0.4rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.navbar-logo {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  flex-shrink: 0;
+  margin-right: 7rem;
+}
+
+.navbar-logo img {
+  height: 60px;
+  width: auto;
+  object-fit: contain;
+}
+
+/* Botón hamburguesa (solo móvil) */
+.navbar-hamburger {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--texto);
+  font-size: 1.5rem;
+  padding: 8px;
+}
+
+/* Enlaces de navegación */
+.navbar-links {
+  display: flex;
+  gap: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  list-style: none;
+  margin: 0 auto;
+  padding: 0 8rem;
+}
+
+.navbar-links li {
+  display: flex;
+}
+
 .nav-link {
   position: relative;
   transition: color 0.2s ease;
+  text-decoration: none;
+  color: var(--texto);
+  font-weight: 800;
+  font-size: 0.95rem;
+  white-space: nowrap;
 }
 
 .nav-link::after {
@@ -30,4 +84,149 @@
 
 .nav-link.active::after {
   width: 100%;
+}
+
+/* Acciones (derecha) */
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  flex-shrink: 0;
+  margin-left: 7rem;
+}
+
+.navbar-theme-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--texto);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+  font-size: 1.15rem;
+}
+
+.navbar-theme-btn:hover {
+  background-color: var(--secundario-2);
+}
+
+.navbar-cart-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--texto);
+  position: relative;
+  font-size: 1.25rem;
+  padding: 6px;
+}
+
+.navbar-cart-badge {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  background-color: var(--primario, #E63950);
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0 4px;
+  min-width: 16px;
+  text-align: center;
+}
+
+.navbar-account-btn {
+  background-color: var(--bg-main);
+  border: 1px solid var(--borde);
+  cursor: pointer;
+  color: var(--texto);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.navbar-account-btn i {
+  color: var(--primario, #E63950);
+  font-size: 1rem;
+}
+
+.navbar-login-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--texto);
+  font-size: 1.25rem;
+  padding: 6px;
+}
+
+/* ---------- Responsive: Tablet y Móvil ---------- */
+@media (max-width: 991px) {
+  .navbar-hamburger {
+    display: block;
+  }
+
+  .navbar-links {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--bg-card);
+    flex-direction: column;
+    padding: 1rem 1.5rem;
+    gap: 0;
+    border-bottom: 1px solid var(--borde);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    display: none;
+  }
+
+  .navbar-links.open {
+    display: flex;
+  }
+
+  .navbar-links li {
+    width: 100%;
+  }
+
+  .nav-link {
+    display: block;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--borde);
+  }
+
+  .navbar-links li:last-child .nav-link {
+    border-bottom: none;
+  }
+
+  .nav-link::after {
+    display: none;
+  }
+}
+
+@media (max-width: 576px) {
+  .navbar-container {
+    padding: 0.6rem 1rem;
+  }
+
+  .navbar-logo img {
+    height: 45px;
+  }
+
+  .navbar-actions {
+    gap: 0.6rem;
+  }
+
+  .navbar-account-btn span {
+    display: none;
+  }
+
+  .navbar-account-btn {
+    padding: 6px 8px;
+  }
 }

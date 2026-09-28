@@ -213,22 +213,19 @@ export default function UsersListPage() {
           searchPlaceholder="Buscar usuario por nombre o correo..."
           emptyMessage="No se encontraron usuarios con esos criterios."
           extraFilter={
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <i className="fa-solid fa-filter" style={{ color: "var(--texto-muted, #888)" }} title="Filtrar" />
-              <div className="users-extra-filters" style={{ display: "flex", gap: "10px" }}>
-                <FormSelect
-                  value={roleFilter}
-                  onChange={setRoleFilter}
-                  placeholder="Todos los roles"
-                  options={ROLE_OPTIONS}
-                />
-                <FormSelect
-                  value={statusFilter}
-                  onChange={setStatusFilter}
-                  placeholder="Todos los estados"
-                  options={STATUS_OPTIONS}
-                />
-              </div>
+            <div className="users-extra-filters">
+              <FormSelect
+                value={roleFilter}
+                onChange={setRoleFilter}
+                placeholder="Todos los roles"
+                options={ROLE_OPTIONS}
+              />
+              <FormSelect
+                value={statusFilter}
+                onChange={setStatusFilter}
+                placeholder="Todos los estados"
+                options={STATUS_OPTIONS}
+              />
             </div>
           }
         />

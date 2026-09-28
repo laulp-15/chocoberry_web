@@ -60,6 +60,10 @@ export default function AdminLayout() {
           ))}
         </nav>
 
+        <div className="admin-sidebar-theme">
+          <ThemeToggleBtn />
+        </div>
+
         <div className="admin-sidebar-footer">
           <div className="admin-profile">
             <i className="fa-solid fa-circle-user" />
@@ -90,7 +94,7 @@ export default function AdminLayout() {
 
       <div className="admin-content">
         {/* Barra superior con espacio entre el menú hamburguesa y el botón Dark/Light Mode */}
-        <header className="admin-topbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 24px' }}>
+        <header className="admin-topbar">
           <IconButton
             className="admin-menu-toggle"
             disableRipple
@@ -98,9 +102,6 @@ export default function AdminLayout() {
           >
             <i className="fa-solid fa-bars" />
           </IconButton>
-
-          {/* 2. Colocamos el botón del sol y la luna aquí */}
-          <ThemeToggleBtn />
         </header>
 
         <main className="admin-main">

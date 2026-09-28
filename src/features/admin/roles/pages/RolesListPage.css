@@ -44,9 +44,6 @@
 .roles-row-actions i {
   cursor: pointer;
 }
-.roles-row-actions i:nth-child(2) {
-  color: var(--primario);
-}
 .roles-row-actions i.disabled {
   color: var(--texto-suave);
   cursor: not-allowed;

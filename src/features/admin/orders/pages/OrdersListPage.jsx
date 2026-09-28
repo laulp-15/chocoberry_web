@@ -135,7 +135,7 @@ export default function OrdersListPage() {
             <i
               className="fa-solid fa-pen"
               style={{
-                color: locked ? "var(--borde)" : "var(--primario)",
+                color: locked ? "var(--borde)" : "var(--texto-muted)",
                 cursor: locked ? "not-allowed" : "pointer",
               }}
               title={locked ? "Ya no se puede editar este pedido" : "Editar"}
@@ -144,7 +144,7 @@ export default function OrdersListPage() {
             <i
               className="fa-solid fa-circle-xmark"
               style={{
-                color: locked ? "var(--borde)" : "#DD322D",
+                color: locked ? "var(--borde)" : "var(--texto-muted)",
                 cursor: locked ? "not-allowed" : "pointer",
               }}
               title={locked ? "Ya no se puede cancelar este pedido" : "Cancelar pedido"}
