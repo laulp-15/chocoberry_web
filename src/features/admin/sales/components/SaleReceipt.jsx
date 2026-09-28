@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { formatPrice } from "../../../../shared/utils/formatPrice";
 import { formatDisplayDate, getMunicipioLabel, getPaymentLabel, getProofUrl } from "../../orders/utils/orderDisplay";
-import { PRODUCTS } from "../../../catalog/data/products";
+import { PRODUCTS } from "../../../catalog/data/Products";
 import ImageLightbox from "../../../../shared/components/ImageLightbox";
 import "./SaleReceipt.css";
 

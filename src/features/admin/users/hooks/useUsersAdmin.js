@@ -13,7 +13,7 @@ import {
 
 import {
   INITIAL_ORDERS,
-} from "../../orders/data/mockOrders";
+} from "../../orders/data/MockOrders";
 
 /**
  * Subproceso de gestión de usuarios

@@ -5,7 +5,7 @@ import FormSearchableSelect from "../../../../shared/components/FormSearchableSe
 import FormTextField from "../../../../shared/components/FormTextField";
 import { PRODUCTS } from "../../../catalog/data/Products";
 import { PRICE_BY_QUANTITY, getPriceByQuantity } from "../../../catalog/data/Pricing";
-import { COLOR_OPTIONS } from "../../../catalog/data/colors";
+import { COLOR_OPTIONS } from "../../../catalog/data/Colors";
 import { formatPrice } from "../../../../shared/utils/formatPrice";
 import "./OrderProductLineForm.css";
 
