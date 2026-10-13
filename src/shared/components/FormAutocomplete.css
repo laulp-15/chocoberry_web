@@ -1,14 +1,87 @@
-/* src/shared/components/FormAutocomplete.css */
+/* FormAutocomplete: mismo aspecto que .form-input (FormFields.css) */
 
+/* --- Contenedor del campo --- */
 .form-autocomplete .MuiOutlinedInput-root {
-  min-height: 42px;
-  padding-top: 3px !important;
-  padding-bottom: 3px !important;
+  min-height: 42px !important;
+  height: 42px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  border-radius: 10px !important;
+  background: var(--secundario-3) !important;
+  font-size: 13px !important;
+  font-family: "Poppins", sans-serif !important;
 }
+
+/* --- Input interno --- */
 .form-autocomplete .MuiAutocomplete-input {
-  padding-top: 7px !important;
-  padding-bottom: 7px !important;
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+  padding-left: 5px !important;
+  font-size: 13px !important;
+  font-family: "Poppins", sans-serif !important;
+  background: transparent !important; /* evita el rectángulo oscuro */
 }
-.form-autocomplete.has-error .MuiOutlinedInput-notchedOutline {
+
+.form-autocomplete .MuiAutocomplete-input::placeholder {
+  color: var(--texto-suave) !important;
+  background: transparent !important;
+  opacity: 1 !important;
+}
+
+/* --- Bordes (usan variables, cambian solos con el tema) --- */
+.form-autocomplete .MuiOutlinedInput-notchedOutline {
+  border-color: var(--borde) !important;
+  border-radius: 10px !important;
+}
+.form-autocomplete .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: var(--primario-claro) !important;
+  border-width: 1px !important;
+}
+/* Error: va después del foco y con igual especificidad */
+.form-autocomplete.has-error .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline {
   border-color: var(--primario) !important;
+}
+
+/* --- Autofill del navegador en modo oscuro --- */
+[data-theme="dark"] .form-autocomplete input:-webkit-autofill,
+[data-theme="dark"] .form-autocomplete input:-webkit-autofill:hover,
+[data-theme="dark"] .form-autocomplete input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--secundario-3) inset !important;
+  -webkit-text-fill-color: var(--texto) !important;
+  caret-color: var(--texto) !important;
+}
+
+/* --- Dropdown del Autocomplete ---*/
+.MuiAutocomplete-paper {
+  background-color: var(--bg-card) !important;
+  color: var(--texto) !important;
+  border: 1px solid var(--borde);
+  border-radius: 10px !important;
+  font-family: "Poppins", sans-serif !important;
+  font-size: 13px !important;
+}
+
+.MuiAutocomplete-option {
+  font-family: "Poppins", sans-serif !important;
+  font-size: 13px !important;
+  color: var(--texto) !important;
+}
+
+/* Hover y navegación con teclado */
+.MuiAutocomplete-option.Mui-focused,
+.MuiAutocomplete-option:hover {
+  background-color: var(--secundario-1) !important;
+}
+
+/* Opción seleccionada */
+.MuiAutocomplete-option[aria-selected="true"] {
+  background-color: var(--secundario-2) !important;
+}
+.MuiAutocomplete-option[aria-selected="true"].Mui-focused,
+.MuiAutocomplete-option[aria-selected="true"]:hover {
+  background-color: var(--secundario-1) !important;
+}
+
+.MuiAutocomplete-noOptions {
+  color: var(--texto-muted) !important;
 }

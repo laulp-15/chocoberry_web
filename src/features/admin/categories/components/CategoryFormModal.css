@@ -1,38 +1,5 @@
 /* CategoryFormModal.css */
 
-.category-form-modal .form-field {
-  margin-bottom: 1.2rem;
-}
-
-.category-form-modal .form-label {
-  display: block;
-  margin-bottom: 0.4rem;
-  color: var(--texto);
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-
-.category-form-modal .form-input {
-  width: 100%;
-  padding: 0.65rem 1rem;
-  border-radius: 10px;
-  border: 1px solid var(--borde);
-  background-color: var(--bg-main);
-  color: var(--texto);
-  outline: none;
-  box-sizing: border-box;
-  font-family: inherit;
-  font-size: 0.9rem;
-}
-
-.category-form-modal .form-input:focus {
-  border-color: var(--primario-claro);
-}
-
-.category-form-modal .form-textarea {
-  resize: none;
-}
-
 .category-form-modal .form-actions {
   display: flex;
   gap: 1rem;
@@ -73,50 +40,103 @@
 }
 
 /* Modo detalle */
-.category-detail-icon {
-  font-size: 1.5rem;
-  color: var(--primario);
-}
-
 .category-detail-card {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  background-color: var(--secundario-3);
-  padding: 1rem;
-  border-radius: 12px;
+  gap: 1.5rem;
+  background: linear-gradient(135deg, var(--secundario-3) 0%, var(--secundario-2) 100%);
+  padding: 1.5rem;
+  border-radius: 16px;
   border: 1px solid var(--borde);
-  margin-bottom: 1.2rem;
+  box-shadow: 0 4px 12px rgba(42, 35, 29, 0.08);
+  margin-bottom: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+.category-detail-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--primario);
 }
 
 .category-detail-name {
   margin: 0;
   color: var(--texto);
+  font-family: var(--font-display);
   font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .category-detail-status {
-  font-size: 0.8rem;
-  font-weight: bold;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 0.5rem;
 }
-
+.category-detail-status::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
 .category-detail-status.active {
-  color: #1E8E3E;
+  background: rgba(46, 141, 62, 0.15);
+  color: var(--success-100, #2E7D32);
 }
-
 .category-detail-status.inactive {
-  color: #E63950;
+  background: rgba(230, 57, 74, 0.15);
+  color: var(--primario, #E63946);
 }
 
-.category-detail-label {
-  color: var(--texto-muted);
-  font-weight: bold;
-  font-size: 0.85rem;
-  margin-bottom: 0.3rem;
+/* Switch de estado en el formulario de categoría */
+.category-form-modal .status-toggle {
+  width: 46px;
+  height: 24px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  transition: background-color 0.2s ease;
 }
 
-.category-detail-value {
-  color: var(--texto);
-  font-size: 0.95rem;
-  margin: 0;
+.category-form-modal .status-toggle.active {
+  background-color: #2E7D32;
+}
+
+.category-form-modal .status-toggle.inactive {
+  background-color: #E8D7DC;
+}
+
+.category-form-modal .status-toggle-knob {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  position: absolute;
+  transition: left 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.category-form-modal .status-toggle-knob.active {
+  left: 24px;
+}
+
+.category-form-modal .status-toggle-knob.inactive {
+  left: 2px;
 }

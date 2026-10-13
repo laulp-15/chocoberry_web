@@ -74,7 +74,7 @@ export default function RoleFormModal({ open, onClose, initialData, onSaved }) {
             Cancelar
           </button>
           <button type="button" className="btn-save" onClick={handleSave} disabled={saving}>
-            {saving ? "Guardando..." : isEditing ? "Guardar Cambios" : "Guardar Rol"}
+            {saving ? "Guardando..." : "Guardar"}
           </button>
         </>
       }

@@ -24,7 +24,7 @@
 
 .data-table-toolbar {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 12px;
   flex-wrap: wrap;
 }
@@ -40,7 +40,9 @@
   font-size: 13px;
   font-weight: 700;
   border-radius: 999px;
-  padding: 11px 20px;
+  padding: 10px 20px;
+  min-height: 42px;
+  height: 42px;
   cursor: pointer;
   transition: background 0.15s ease;
   white-space: nowrap;
@@ -60,10 +62,12 @@
   color: var(--texto);
   font-size: 13px;
   font-family: "Poppins", sans-serif;
+  min-height: 42px;
+  height: 42px;
 }
 .data-table-search-input .MuiOutlinedInput-input {
-  padding-top: 10px;
-  padding-bottom: 10px;
+  padding-top: 8px;
+  padding-bottom: 8px;
   color: var(--texto);
 }
 .data-table-search-input .MuiOutlinedInput-notchedOutline {
@@ -73,6 +77,21 @@
   border-color: var(--primario-claro) !important;
   border-width: 1px !important;
 }
+
+[data-theme="dark"] .data-table-search-input .MuiOutlinedInput-notchedOutline {
+  border-color: var(--borde) !important;
+}
+[data-theme="dark"] .data-table-search-input.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: var(--primario-claro) !important;
+}
+
+[data-theme="dark"] .data-table-toolbar .form-select .MuiOutlinedInput-notchedOutline {
+  border-color: var(--borde) !important;
+}
+[data-theme="dark"] .data-table-toolbar .form-select.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: var(--primario-claro) !important;
+}
+
 .data-table-search-input i {
   color: var(--texto-suave);
   font-size: 13px;
@@ -102,6 +121,19 @@
   background: var(--secundario-3);
 }
 
+/* --- FormSelect en toolbar: forzar misma altura que botón e input --- */
+.data-table-toolbar .form-select.MuiOutlinedInput-root {
+  min-height: 42px !important;
+  height: 42px !important;
+  border-radius: 999px !important;
+}
+.data-table-toolbar .form-select .MuiSelect-select {
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+  font-size: 13px !important;
+  font-family: "Poppins", sans-serif !important;
+}
+
 .data-table-card {
   background: var(--blanco);
   border: 1px solid var(--borde);
@@ -122,7 +154,7 @@
 }
 
 .data-table thead tr {
-  background: var(--secundario-1);
+  background: var(--secundario-2);
 }
 .data-table thead th {
   color: var(--texto);
@@ -211,8 +243,13 @@
   background: var(--secundario-1);
 }
 .page-number.active {
-  background: var(--primario);
-  color: var(--blanco);
+  background: var(--primario) !important;
+  color: #FFFFFF !important;
+}
+
+/* Modo oscuro: hacer que el borde superior sea más sutil */
+[data-theme="dark"] .data-table-pagination {
+  border-top: 1px solid var(--borde);
 }
 
 .page-ellipsis {

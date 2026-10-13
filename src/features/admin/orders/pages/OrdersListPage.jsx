@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import DataTable from "../../../../shared/components/DataTable";
 import FormSelect from "../../../../shared/components/FormSelect";
 import ConfirmModal from "../../../../shared/components/ConfirmModal";
-import OrderStatusBadge from "../components/OrderStatusBadge";
+import OrderStatusSelector from "../components/OrderStatusSelector";
 import OrderFormModal from "../components/OrderFormModal";
 import OrderDetailModal from "../components/OrderDetailModal";
 import CancelReasonModal from "../components/CancelReasonModal";
@@ -31,26 +31,6 @@ export default function OrdersListPage() {
   // Solo se bloquea la edición/cancelación si el pedido ya fue Entregado o Cancelado.
   const isLocked = (order) => order.estado === "entregado" || order.estado === "cancelado";
 
-  // Función para rotar el estado del pedido al hacer clic en el badge
-  const handleCycleStatus = (order) => {
-    if (isLocked(order)) return; // Si ya está entregado o cancelado, no cambia con clic directo
-
-    // Secuencia de estados lícita
-    const sequence = ["pendiente", "en_preparacion", "despachado", "entregado"];
-    const currentIndex = sequence.indexOf(order.estado);
-    
-    // Si encuentra el estado en la secuencia, pasa al siguiente; de lo contrario lo deja igual
-    if (currentIndex !== -1 && currentIndex < sequence.length - 1) {
-      const nextStatus = sequence[currentIndex + 1];
-      setOrders((prev) =>
-        prev.map((o) => (o.id === order.id ? { ...o, estado: nextStatus } : o))
-      );
-      setNotification({
-        message: `Estado actualizado a "${nextStatus.replace('_', ' ')}".`,
-      });
-    }
-  };
-
   const handleCreate = () => {
     setEditingOrder(null);
     setFormOpen(true);
@@ -70,7 +50,7 @@ export default function OrdersListPage() {
       });
     } else {
       const newId = Math.max(...orders.map((o) => o.id)) + 1;
-      setOrders((prev) => [...prev, { ...order, id: newId }]);
+      setOrders((prev) => [{ ...order, id: newId }, ...prev]);
       setNotification({
         message: "Pedido creado correctamente.",
       });
@@ -112,10 +92,13 @@ export default function OrdersListPage() {
       key: "estado", 
       label: "Estado", 
       render: (row) => (
-        <OrderStatusBadge 
-          status={row.estado} 
-          onClick={() => handleCycleStatus(row)}
-          title={isLocked(row) ? "Este pedido está bloqueado" : "Haz clic para avanzar al siguiente estado"}
+        <OrderStatusSelector
+          status={row.estado}
+          onChange={(newStatus) => setOrders((prev) =>
+            prev.map((o) => (o.id === row.id ? { ...o, estado: newStatus } : o))
+          )}
+          disabled={isLocked(row)}
+          lockedReason="Este pedido está bloqueado"
         />
       ) 
     },

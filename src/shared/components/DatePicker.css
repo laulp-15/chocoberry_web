@@ -12,7 +12,9 @@
   border: 1px solid var(--borde);
   background: var(--secundario-3);
   border-radius: 999px;
-  padding: 6px 16px 6px 6px;
+  padding: 8px 16px 8px 8px;
+  min-height: 42px;
+  height: 42px;
   cursor: pointer;
   font-family: "Poppins", sans-serif;
   text-align: left;
@@ -146,4 +148,30 @@
   font-size: 11px;
   color: var(--texto-suave);
   margin-top: 6px;
+}
+
+[data-theme="dark"] .date-picker-placeholder {
+  color: var(--texto-suave) !important;
+  background: transparent !important;
+}
+
+[data-theme="dark"] .date-picker-input {
+  background: var(--secundario-3) !important;
+  border-color: var(--borde) !important;
+}
+[data-theme="dark"] .date-picker-input:hover {
+  border-color: var(--primario-claro) !important;
+}
+[data-theme="dark"] .date-picker-input.has-error {
+  border-color: var(--primario) !important;
+}
+
+[data-theme="dark"] .date-picker-input {
+  border-color: var(--borde) !important;
+}
+[data-theme="dark"] .date-picker-input:hover {
+  border-color: var(--primario-claro) !important;
+}
+[data-theme="dark"] .date-picker-input.has-error {
+  border-color: var(--primario) !important;
 }

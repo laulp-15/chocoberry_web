@@ -24,22 +24,29 @@ const renderIcon = (name) => {
 
 export default function CategoryFormModal({ isOpen, onClose, onSubmit, initialData, isReadOnly = false }) {
   const [nombre, setNombre] = useState('');
-  const [descripcion, setDescripcion] = useState('');
+  const [estado, setEstado] = useState('Activo');
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (initialData) {
       setNombre(initialData.nombre || '');
-      setDescripcion(initialData.descripcion || '');
+      setEstado(initialData.estado || 'Activo');
     } else {
       setNombre('');
-      setDescripcion('');
+      setEstado('Activo');
     }
+    setErrors({});
   }, [initialData, isOpen]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!nombre.trim()) return;
-    onSubmit({ nombre, descripcion });
+    const newErrors = {};
+    if (!nombre.trim()) newErrors.nombre = "El nombre es obligatorio.";
+    
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) return;
+    
+    onSubmit({ nombre, estado });
     onClose();
   };
 
@@ -80,28 +87,35 @@ export default function CategoryFormModal({ isOpen, onClose, onSubmit, initialDa
                 </span>
               </div>
             </div>
-            <div>
-              <label className="category-detail-label">DESCRIPCIÓN</label>
-              <p className="category-detail-value">{initialData?.descripcion}</p>
-            </div>
           </>
         ) : (
           <form onSubmit={handleSubmit}>
             <FormTextField
               label="Nombre"
               value={nombre}
-              onChange={setNombre}
+              onChange={(v) => { setNombre(v); setErrors(prev => ({ ...prev, nombre: undefined })); }}
               placeholder="Ej: Día de la Madre"
               required
+              error={errors.nombre}
             />
-            <FormTextField
-              label="Descripción"
-              value={descripcion}
-              onChange={setDescripcion}
-              placeholder="Descripción..."
-              multiline
-              minRows={3}
-            />
+            <div className="form-field">
+              <label className="form-label">Estado</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.3rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setEstado(estado === 'Activo' ? 'Inactivo' : 'Activo')}
+                  className={`status-toggle ${estado === 'Activo' ? 'active' : 'inactive'}`}
+                  style={{ width: '46px', height: '24px', borderRadius: '12px', border: 'none', cursor: 'pointer', position: 'relative', display: 'inline-flex', alignItems: 'center', padding: '2px', backgroundColor: estado === 'Activo' ? '#2E7D32' : '#E8D7DC', transition: 'background-color 0.2s ease' }}
+                  title={estado === 'Activo' ? 'Desactivar' : 'Activar'}
+                >
+                  <div
+                    className={`status-toggle-knob ${estado === 'Activo' ? 'active' : 'inactive'}`}
+                    style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: '#ffffff', position: 'absolute', left: estado === 'Activo' ? '24px' : '2px', transition: 'left 0.2s ease', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }}
+                  />
+                </button>
+                <span style={{ color: 'var(--texto)', fontSize: '0.9rem' }}>{estado}</span>
+              </div>
+            </div>
           </form>
         )}
       </div>

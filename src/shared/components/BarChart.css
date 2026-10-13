@@ -1,6 +1,6 @@
 /* src/shared/components/BarChart.css */
 
-.bar-chart-card {
+.bc-card {
   background: var(--blanco);
   border: 1px solid var(--borde);
   border-radius: 16px;
@@ -8,28 +8,117 @@
   height: 100%;
 }
 
-.bar-chart-title {
-  font-size: 16px; /* H5 */
-  font-weight: 700;
-  margin-bottom: 20px;
-}
-
-.bar-chart {
+/* --- Encabezado --- */
+.bc-header {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
   gap: 12px;
-  height: 200px;
+}
+.bc-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--texto);
+}
+.bc-subtitle {
+  font-size: 12px;
+  color: var(--texto-muted);
+  margin: 2px 0 0;
 }
 
-.bar-chart-col {
-  flex: 1;
+.bc-stats {
+  display: flex;
+  gap: 20px;
+}
+.bc-stat {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  height: 100%;
+  align-items: flex-end;
+  line-height: 1.2;
+}
+.bc-stat-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--texto);
+}
+.bc-stat-label {
+  font-size: 11px;
+  color: var(--texto-muted);
 }
 
-.bar-chart-track {
+/* --- Área de la gráfica --- */
+.bc-chart {
+  display: flex;
+  height: 232px;
+  margin-top: 44px; /* espacio para el tooltip de la barra más alta */
+}
+
+.bc-yaxis {
+  position: relative;
+  width: 40px;
+  height: calc(100% - 28px); /* excluye la fila de etiquetas */
+  flex-shrink: 0;
+}
+.bc-ytick {
+  position: absolute;
+  right: 10px;
+  transform: translateY(50%);
+  font-size: 11px;
+  color: var(--texto-suave);
+  line-height: 1;
+}
+
+.bc-plot {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.bc-grid {
+  position: absolute;
+  inset: 0 0 28px 0;
+  pointer-events: none;
+}
+.bc-gridline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 1px solid var(--borde);
+  opacity: 0.7;
+}
+
+/* --- Columnas --- */
+.bc-cols {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  gap: 6px;
+}
+.bc-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s ease;
+}
+.bc-col.is-active {
+  background: var(--secundario-3);
+}
+.bc-col:focus-visible {
+  outline: 2px solid var(--primario-claro);
+  outline-offset: 1px;
+}
+
+.bc-track {
   flex: 1;
   width: 100%;
   display: flex;
@@ -37,23 +126,104 @@
   justify-content: center;
 }
 
-.bar-chart-bar {
+.bc-bar {
+  position: relative;
   width: 100%;
   max-width: 45px;
   min-height: 4px;
   border-radius: 6px 6px 0 0;
   background: var(--secundario-1);
-  transition: opacity 0.15s ease;
+  transition: height 0.6s cubic-bezier(0.22, 1, 0.36, 1), background 0.15s ease, transform 0.15s ease;
 }
-.bar-chart-bar.highlight {
+.bc-bar.highlight {
   background: linear-gradient(180deg, var(--primario) 0%, var(--primario-oscuro) 100%);
 }
-.bar-chart-bar:hover {
-  opacity: 0.85;
+.bc-col.is-active .bc-bar {
+  transform: scaleX(1.06);
+  transform-origin: bottom;
 }
 
-.bar-chart-label {
-  margin-top: 10px;
+.bc-label {
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 12px;
   color: var(--texto-muted);
+  transition: color 0.15s ease;
+}
+.bc-col.is-active .bc-label {
+  color: var(--texto);
+  font-weight: 600;
+}
+
+/* --- Tooltip (colores invertidos: funciona en claro y oscuro) --- */
+.bc-tip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 96px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--texto);
+  color: var(--blanco);
+  text-align: left;
+  white-space: nowrap;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.bc-tip.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+/* Primera y última columna: el tooltip no se sale de la tarjeta */
+.bc-tip.tip-start {
+  left: 0;
+  transform: translateY(4px);
+}
+.bc-tip.tip-start.visible {
+  transform: translateY(0);
+}
+.bc-tip.tip-end {
+  left: auto;
+  right: 0;
+  transform: translateY(4px);
+}
+.bc-tip.tip-end.visible {
+  transform: translateY(0);
+}
+
+.bc-tip-label {
+  font-size: 11px;
+  opacity: 0.75;
+}
+.bc-tip-value {
+  font-size: 13px;
+  font-weight: 700;
+}
+@media (max-width: 576px) {
+  .bc-card {
+    padding: 18px;
+  }
+  .bc-cols {
+    gap: 3px;
+  }
+  .bc-label {
+    font-size: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bc-bar,
+  .bc-tip,
+  .bc-col {
+    transition: none;
+  }
 }

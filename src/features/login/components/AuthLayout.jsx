@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Link } from "react-router-dom";
+import { useTheme } from "../../../shared/context/ThemeContext";
 import "./AuthLayout.css";
 
 export default function AuthLayout({
@@ -16,10 +17,10 @@ export default function AuthLayout({
   footer,
 }) {
   /* ============================================================
-     TEMA
+     TEMA - Usa el contexto global (light | dark)
      ============================================================ */
 
-  const theme = "light";
+  const { theme } = useTheme();
 
   /* ============================================================
      LOGO
@@ -30,7 +31,7 @@ export default function AuthLayout({
      public/img/Logo/logo_login.jpg
      
      entonces en React se llama con:
-   
+    
      ============================================================ */
 
   const logoSrc =

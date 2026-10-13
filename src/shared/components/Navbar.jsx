@@ -29,8 +29,10 @@ export default function Navbar() {
       style={{
         backgroundColor: 'var(--bg-card)',
         borderBottom: '1px solid var(--borde)',
-        position: 'sticky',
+        position: 'fixed',
         top: 0,
+        left: 0,
+        right: 0,
         zIndex: 1000,
         boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
         transition: 'background-color 0.3s ease, border-color 0.3s ease',

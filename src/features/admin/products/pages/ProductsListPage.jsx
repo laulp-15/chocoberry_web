@@ -1,15 +1,15 @@
 // src/admin/products/pages/ProductsListPage.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import { useProducts } from '../hooks/useProducts';
 import ProductFormModal from '../components/ProductFormModal';
 import DataTable from '../../../../shared/components/DataTable';
 import ConfirmModal from '../../../../shared/components/ConfirmModal';
 import FormSelect from '../../../../shared/components/FormSelect';
-import { useToast } from '../../../../shared/components/Toast';
+import OrderNotification from "../../orders/components/OrderNotification";
 import './ProductsListPage.css';
 
 export default function ProductsListPage() {
-  const { showToast } = useToast();
+  const [notification, setNotification] = useState(null);
   const {
     searchTerm,
     handleSearchChange,
@@ -35,9 +35,7 @@ export default function ProductsListPage() {
 
   const handleSave = (data) => {
     handleSaveProduct(data);
-    showToast({
-      type: 'success',
-      title: productToEdit ? 'Producto actualizado' : 'Producto creado',
+    setNotification({
       message: productToEdit
         ? `"${data.nombre}" se actualizó correctamente.`
         : `"${data.nombre}" se creó correctamente.`,
@@ -46,9 +44,7 @@ export default function ProductsListPage() {
 
   const handleDelete = () => {
     handleConfirmDelete();
-    showToast({
-      type: 'success',
-      title: 'Producto eliminado',
+    setNotification({
       message: `"${selectedProduct?.nombre}" se eliminó correctamente.`,
     });
   };
@@ -192,6 +188,13 @@ export default function ProductsListPage() {
         description={`¿Estás seguro de que deseas eliminar el producto "${selectedProduct?.nombre}"? Esta acción no se puede deshacer.`}
         confirmLabel="Eliminar"
         cancelLabel="Cancelar"
+      />
+
+      {/* Notificación flotante de éxito */}
+      <OrderNotification
+        open={Boolean(notification)}
+        onClose={() => setNotification(null)}
+        message={notification?.message}
       />
     </div>
   );

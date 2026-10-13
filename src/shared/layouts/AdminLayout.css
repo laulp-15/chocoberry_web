@@ -74,37 +74,7 @@
   font-weight: 700;
 }
 
-/* ---------- Botón de tema (fuera del recuadro del perfil) ---------- */
-.admin-sidebar-theme {
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--borde);
-}
-
-.admin-sidebar-theme button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  padding: 8px 16px;
-  border: 2px solid var(--primario);
-  border-radius: 999px;
-  background: var(--secundario-3);
-  color: var(--texto);
-  font-family: "Poppins", sans-serif;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.admin-sidebar-theme button:hover {
-  background: var(--primario);
-  color: var(--blanco);
-  border-color: var(--primario);
-}
-
-/* ---------- Footer del sidebar: perfil + cerrar sesión ---------- */
+/* ---------- Footer del sidebar: perfil + acciones ---------- */
 .admin-sidebar-footer {
   border-top: 1px solid var(--borde);
   padding: 14px 24px;
@@ -139,22 +109,34 @@
   color: var(--texto-muted);
 }
 
-.admin-logout {
+.admin-sidebar-actions {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  border: none;
-  background: none;
-  padding: 0;
-  font-family: "Poppins", sans-serif;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--texto-muted);
-  cursor: pointer;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.admin-logout:hover {
-  color: var(--primario);
+.admin-sidebar-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 16px;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  background: var(--secundario-3);
+  color: var(--texto);
+  font-family: "Poppins", sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.admin-sidebar-action-btn:hover {
+  background: var(--primario);
+  color: var(--blanco);
+  border-color: var(--primario);
 }
 
 /* ---------- Contenido principal (Zona de Scroll) ---------- */

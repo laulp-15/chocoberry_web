@@ -18,13 +18,10 @@ export const useCategories = () => {
   const [categoryToEdit, setCategoryToEdit] = useState(null);
 
   const [categorias, setCategorias] = useState([
-    { id: 1, nombre: 'Día de la Madre', descripcion: 'Detalles especiales para celebrar a mamá en su día.', iconName: 'Heart', estado: 'Activo' },
-    { id: 2, nombre: 'Día del Padre', descripcion: 'Empaques y diseños pensados para papá.', iconName: 'User', estado: 'Activo' },
-    { id: 3, nombre: 'Día de la Mujer', descripcion: 'Arreglos y fresas especiales para conmemorar este día.', iconName: 'Sparkles', estado: 'Activo' },
-    { id: 4, nombre: 'Cumpleaños', descripcion: 'Cajas personalizadas con números y mensajes de cumpleaños.', iconName: 'Cake', estado: 'Activo' },
-    { id: 5, nombre: 'Antojos', descripcion: 'Porciones individuales y antojos dulces del día a día.', iconName: 'Sparkles', estado: 'Inactivo' },
-    { id: 6, nombre: 'Aniversarios', descripcion: 'Cajas románticas para parejas y fechas especiales.', iconName: 'Calendar', estado: 'Activo' },
-    { id: 7, nombre: 'Regalos', descripcion: 'Detalles generales ideales para cualquier ocasión.', iconName: 'Gift', estado: 'Activo' },
+    { id: 1, nombre: 'Fechas especiales', descripcion: 'Detalles especiales para fechas importantes como Día de la Madre, Día del Padre, Día de la Mujer.', iconName: 'Heart', estado: 'Activo' },
+    { id: 2, nombre: 'Cumpleaños', descripcion: 'Cajas personalizadas con números y mensajes de cumpleaños.', iconName: 'Cake', estado: 'Activo' },
+    { id: 3, nombre: 'Aniversarios', descripcion: 'Cajas románticas para parejas y fechas especiales.', iconName: 'Calendar', estado: 'Activo' },
+    { id: 4, nombre: 'Regalos', descripcion: 'Detalles generales ideales para cualquier ocasión.', iconName: 'Gift', estado: 'Activo' },
   ]);
 
   // Filtrado
@@ -53,8 +50,8 @@ export const useCategories = () => {
       );
     } else {
       setCategorias(prev => [
+        { id: Date.now(), ...data, iconName: 'Gift', estado: 'Activo' },
         ...prev,
-        { id: Date.now(), ...data, iconName: 'Gift', estado: 'Activo' }
       ]);
     }
     setCategoryToEdit(null);

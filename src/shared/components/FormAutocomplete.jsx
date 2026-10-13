@@ -38,6 +38,7 @@ export default function FormAutocomplete({
         className={`form-autocomplete ${error ? "has-error" : ""}`}
         freeSolo
         options={options}
+        value={value || null}
         inputValue={value}
         onInputChange={(_, newValue) => onChange(newValue)}
         renderInput={(params) => (

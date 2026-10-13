@@ -183,8 +183,8 @@ export default function useUsersAdmin() {
 
           // Nueva lista
           const next = [
-            ...current,
             newUser,
+            ...current,
           ];
 
           // Guardar en localStorage

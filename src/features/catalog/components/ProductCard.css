@@ -205,6 +205,21 @@
   background: var(--secundario-2);
 }
 
+/* ============================================================
+   MODO OSCURO - ProductCard category chip
+   ============================================================ */
+[data-theme="dark"] .product-category {
+  background: var(--secundario-2);       /* #4A303B - rosa profundo */
+  color: var(--primario-claro);          /* #EF818A - carmesí claro */
+  border: 1px solid var(--primario-claro); /* borde sutil para definición */
+}
+
+[data-theme="dark"] .product-card:hover .product-category {
+  background: var(--secundario-1);       /* #6B4655 - rosa oscuro hover */
+  color: var(--primario-claro);
+  border-color: var(--primario-claro);
+}
+
 
 /* =========================================================
    NOMBRE

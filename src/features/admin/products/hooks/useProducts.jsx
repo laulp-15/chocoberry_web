@@ -1,16 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-
-const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?q=80&w=500";
-
-const INITIAL_PRODUCTS = [
-  { id: 1, nombre: 'Caja Corazón Rosas y Fresas', descripcion: 'Hermosa caja en forma de corazón con fresas chic y rosas.', categoria: 'Día de la Madre', precio: 85000, estado: 'Activo', imagen: DEFAULT_IMAGE },
-  { id: 2, nombre: 'Arreglo Dulce Papá', descripcion: 'Detalle para papá con cerveza artesanal y fresas con chocolate.', categoria: 'Día del Padre', precio: 65000, estado: 'Activo', imagen: DEFAULT_IMAGE },
-  { id: 3, nombre: 'Ramo de Fresas con Chocolates', descripcion: 'Ramo bouquet de 12 fresas bañadas en chocolate fino.', categoria: 'Aniversarios', precio: 95000, estado: 'Activo', imagen: DEFAULT_IMAGE },
-  { id: 4, nombre: 'Caja Sorpresa Cumpleaños', descripcion: 'Caja decorada con globo personalizado y fresas.', categoria: 'Cumpleaños', precio: 78000, estado: 'Activo', imagen: DEFAULT_IMAGE },
-  { id: 5, nombre: 'Porción ChocoBerry Fresa', descripcion: 'Vaso de fresas frescas con cobertura de chocolate caliente.', categoria: 'Antojos', precio: 15000, estado: 'Inactivo', imagen: DEFAULT_IMAGE },
-  { id: 6, nombre: 'Caja Romántica Aniversario', descripcion: 'Caja de madera con vino pequeño y fresas con chocolate.', categoria: 'Aniversarios', precio: 110000, estado: 'Activo', imagen: DEFAULT_IMAGE },
-  { id: 7, nombre: 'Empaque Especial Día de la Mujer', descripcion: 'Caja en forma de flor con trufas de chocolate y fresas.', categoria: 'Regalos', precio: 82000, estado: 'Activo', imagen: DEFAULT_IMAGE },
-];
+import { PRODUCTS } from "../../../catalog/data/Products";
 
 function delay(ms = 350) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -20,10 +9,6 @@ export const useProducts = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
 
-  // Paginación
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
-
   // Modales
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -32,28 +17,32 @@ export const useProducts = () => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [productToEdit, setProductToEdit] = useState(null);
 
-  // Inicialización con LocalStorage y autocompletado de imagen si falta
+  // Inicialización con LocalStorage
   const [productos, setProductos] = useState(() => {
-    const saved = localStorage.getItem('chocoberry_products');
+    const saved = localStorage.getItem('chocoberry_products_v2');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (parsed && parsed.length > 0) {
-          return parsed.map(prod => ({
-            ...prod,
-            imagen: prod.imagen || prod.foto || prod.url || DEFAULT_IMAGE
-          }));
+          return parsed;
         }
       } catch (e) {
         console.error("Error al leer localStorage", e);
       }
     }
-    return INITIAL_PRODUCTS;
+    return PRODUCTS.map((p, i) => ({
+      id: i + 1,
+      nombre: p.name,
+      descripcion: p.desc,
+      categoria: p.catLabel,
+      estado: 'Activo',
+      imagen: p.image,
+    }));
   });
 
   // Guardar cambios automáticamente en el almacenamiento local del navegador
   useEffect(() => {
-    localStorage.setItem('chocoberry_products', JSON.stringify(productos));
+    localStorage.setItem('chocoberry_products_v2', JSON.stringify(productos));
   }, [productos]);
 
   // Filtrado
@@ -65,27 +54,13 @@ export const useProducts = () => {
     return matchesSearch && matchesStatus;
   });
 
-  // Cálculo de Paginación
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage) || 1;
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentProducts = filteredProducts.slice(indexOfFirstItem, indexOfLastItem);
-
-  const handlePageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-      setCurrentPage(newPage);
-    }
-  };
-
-  // Reset a página 1 al buscar o filtrar
+  // Reset a página 1 al buscar o filtrar (DataTable maneja la paginación)
   const handleSearchChange = (value) => {
     setSearchTerm(value);
-    setCurrentPage(1);
   };
 
   const handleStatusFilterChange = (value) => {
     setStatusFilter(value);
-    setCurrentPage(1);
   };
 
   // Toggle de Estado
@@ -110,7 +85,6 @@ export const useProducts = () => {
         {
           id: Date.now(),
           ...data,
-          imagen: data.imagen || DEFAULT_IMAGE,
           estado: 'Activo'
         },
         ...prev
@@ -155,9 +129,6 @@ export const useProducts = () => {
     handleSearchChange,
     statusFilter,
     handleStatusFilterChange,
-    currentPage,
-    totalPages,
-    handlePageChange,
     isModalOpen,
     setIsModalOpen,
     isDetailOpen,
@@ -166,7 +137,7 @@ export const useProducts = () => {
     setIsDeleteOpen,
     selectedProduct,
     productToEdit,
-    currentProducts,
+    currentProducts: filteredProducts,
     totalProductsCount: filteredProducts.length,
     handleToggleStatus,
     handleSaveProduct,

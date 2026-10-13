@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import Modal from "../../../../shared/components/Modal";
 import FormTextField from "../../../../shared/components/FormTextField";
 import FormSelect from "../../../../shared/components/FormSelect";
-import FormSearchableSelect from "../../../../shared/components/FormSearchableSelect";
+import FormAutocomplete from "../../../../shared/components/FormAutocomplete";
 import DatePicker, { todayISO } from "../../../../shared/components/DatePicker";
 import FileDropzone from "../../../../shared/components/FileDropZone";
 import OrderProductLineForm from "./OrderProductLineForm";
@@ -67,6 +67,8 @@ export default function OrderFormModal({ open, onClose, initialData, onSave }) {
     const newErrors = {};
     if (!order.cliente.trim()) newErrors.cliente = "El cliente es obligatorio.";
     if (!order.fecha) newErrors.fecha = "La fecha es obligatoria.";
+    if (!order.direccion.trim()) newErrors.direccion = "La dirección es obligatoria.";
+    if (!order.municipio) newErrors.municipio = "El municipio es obligatorio.";
     if (!order.medioPago) newErrors.medioPago = "Selecciona un medio de pago.";
     if (!order.estado) newErrors.estado = "Selecciona un estado.";
     if (!order.comprobante) newErrors.comprobante = "Debes adjuntar el comprobante de pago.";
@@ -109,12 +111,12 @@ export default function OrderFormModal({ open, onClose, initialData, onSave }) {
         <div className="order-form-block">
           <h3 className="order-block-title">1. Datos del pedido</h3>
           
-          <FormSearchableSelect
+          <FormAutocomplete
             label="Cliente"
             required
             value={order.cliente}
             onChange={(v) => update("cliente", v)}
-            options={CLIENT_OPTIONS}
+            options={CLIENT_OPTIONS.map(o => o.label)}
             placeholder="Escribe o selecciona un cliente"
             error={errors.cliente}
           />
@@ -140,22 +142,29 @@ export default function OrderFormModal({ open, onClose, initialData, onSave }) {
 
           <FormTextField
             label="Dirección"
+            required
             value={order.direccion}
             onChange={(v) => update("direccion", v)}
             placeholder="Ej. Calle 48 # 72-18"
+            error={errors.direccion}
           />
 
           <div className="order-form-row">
             <FormSelect
               label="Municipio"
+              required
               value={order.municipio}
               onChange={(v) => update("municipio", v)}
               options={MUNICIPIOS}
               placeholder="Selecciona un municipio"
+              error={errors.municipio}
             />
-            <div className="order-form-shipping-hint">
-              Costo domicilio: <strong>{formatPrice(shippingCost)}</strong>
-            </div>
+            <FormTextField
+              label="Costo domicilio"
+              value={formatPrice(shippingCost)}
+              readOnly
+              placeholder="—"
+            />
           </div>
 
           <FormTextField

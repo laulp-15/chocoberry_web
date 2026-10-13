@@ -125,7 +125,7 @@ export default function DataTable({
           </table>
         </div>
 
-        <div className="data-table-pagination" style={{ borderTop: '1px solid var(--borde)' }}>
+        <div className="data-table-pagination">
           <span className="data-table-page-info" style={{ color: 'var(--texto-muted)' }}>
             Página {currentPage} de {totalPages}
           </span>

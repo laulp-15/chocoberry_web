@@ -6,36 +6,37 @@ import FormSelect from '../../../../shared/components/FormSelect';
 import './ProductFormModal.css';
 
 const CATEGORIA_OPTIONS = [
-  { value: 'Día de la Madre', label: 'Día de la Madre' },
-  { value: 'Día del Padre', label: 'Día del Padre' },
-  { value: 'Aniversarios', label: 'Aniversarios' },
+  { value: 'Fechas especiales', label: 'Fechas especiales' },
   { value: 'Cumpleaños', label: 'Cumpleaños' },
-  { value: 'Antojos', label: 'Antojos' },
+  { value: 'Aniversarios', label: 'Aniversarios' },
   { value: 'Regalos', label: 'Regalos' },
 ];
 
 export default function ProductFormModal({ isOpen, onClose, onSubmit, initialData, isReadOnly = false }) {
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
-  const [categoria, setCategoria] = useState('Día de la Madre');
+  const [categoria, setCategoria] = useState('');
 
   const [imagen, setImagen] = useState('');
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (initialData) {
       setNombre(initialData.nombre || '');
       setDescripcion(initialData.descripcion || '');
-      setCategoria(initialData.categoria || 'Día de la Madre');
+      setCategoria(initialData.categoria || 'Fechas especiales');
       setImagen(initialData.imagen || initialData.foto || initialData.url || '');
     } else {
       setNombre('');
       setDescripcion('');
-      setCategoria('Día de la Madre');
+      setCategoria('');
       setImagen('');
     }
+    setErrors({});
   }, [initialData, isOpen]);
 
   const handleImageChange = (e) => {
+    setErrors(prev => ({ ...prev, imagen: undefined }));
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
@@ -48,7 +49,15 @@ export default function ProductFormModal({ isOpen, onClose, onSubmit, initialDat
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!nombre.trim()) return;
+    const newErrors = {};
+    if (!nombre.trim()) newErrors.nombre = "El nombre es obligatorio.";
+    if (!descripcion.trim()) newErrors.descripcion = "La descripción es obligatoria.";
+    if (!categoria) newErrors.categoria = "Selecciona una categoría.";
+    if (!imagen) newErrors.imagen = "La fotografía del producto es obligatoria.";
+    
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) return;
+    
     onSubmit({
       nombre,
       descripcion,
@@ -74,7 +83,7 @@ export default function ProductFormModal({ isOpen, onClose, onSubmit, initialDat
               Cancelar
             </button>
             <button type="submit" className="btn-save" onClick={handleSubmit}>
-              Guardar Producto
+              Guardar
             </button>
           </>
         ) : (
@@ -87,50 +96,55 @@ export default function ProductFormModal({ isOpen, onClose, onSubmit, initialDat
       <div className="product-form-modal">
         {isReadOnly ? (
           <>
-            {productImg ? (
-              <div className="product-detail-image">
+            <div className="product-detail-image-wrapper">
+              {productImg ? (
                 <img
                   src={productImg}
                   alt={initialData?.nombre}
                   className="product-detail-image-img"
                   onError={(e) => { e.target.style.display = 'none'; }}
                 />
-              </div>
-            ) : (
-              <div className="product-detail-image">
+              ) : (
                 <div className="product-detail-image-placeholder">
                   <i className="fa-solid fa-image" style={{ fontSize: '2rem', marginBottom: '0.4rem' }}></i>
                   <span style={{ fontSize: '0.8rem' }}>Sin imagen registrada</span>
                 </div>
-              </div>
-            )}
-
-            <div className="product-detail-card">
-              <h3 className="product-detail-name">{initialData?.nombre}</h3>
-              <span className="product-detail-category">
-                Categoría: <strong style={{ color: 'var(--texto)' }}>{initialData?.categoria}</strong>
-              </span>
+              )}
             </div>
 
-            <div className="form-field">
-              <label className="product-detail-label">DESCRIPCIÓN</label>
+            <div className="product-detail-card">
+              <div className="product-detail-header">
+                <h2 className="product-detail-name">{initialData?.nombre}</h2>
+                <span className={`product-detail-status ${initialData?.estado === 'Activo' ? 'active' : 'inactive'}`}>
+                  {initialData?.estado}
+                </span>
+              </div>
+              <div className="product-detail-meta">
+                <span className="product-detail-category">
+                  <i className="fa-solid fa-tag" /> {initialData?.categoria}
+                </span>
+              </div>
+            </div>
+
+            <div className="product-detail-card product-detail-description-card">
+              <h3 className="product-detail-section-title">Descripción</h3>
               <p className="product-detail-value">{initialData?.descripcion || 'Sin descripción disponible'}</p>
             </div>
 
-
-          </>
+            </>
         ) : (
           <form onSubmit={handleSubmit}>
             <FormTextField
               label="Nombre del Producto"
               value={nombre}
-              onChange={setNombre}
+              onChange={(v) => { setNombre(v); setErrors(prev => ({ ...prev, nombre: undefined })); }}
               placeholder="Ej: Caja Corazón Rosas"
               required
+              error={errors.nombre}
             />
 
             <div className="form-field">
-              <label className="form-label">Fotografía del Producto</label>
+              <label className="form-label">Fotografía del Producto *</label>
               {imagen ? (
                 <div className="image-preview">
                   <img src={imagen} alt="Vista previa" className="image-preview-img" />
@@ -148,7 +162,7 @@ export default function ProductFormModal({ isOpen, onClose, onSubmit, initialDat
                   </button>
                 </div>
               ) : (
-                <label className="image-upload-zone">
+                <label className={`image-upload-zone ${errors.imagen ? 'has-error' : ''}`}>
                   <div className="image-upload-icon">
                     <i className="fa-solid fa-cloud-arrow-up"></i>
                   </div>
@@ -162,22 +176,27 @@ export default function ProductFormModal({ isOpen, onClose, onSubmit, initialDat
                   />
                 </label>
               )}
+              {errors.imagen && <div className="form-error">{errors.imagen}</div>}
             </div>
 
             <FormTextField
               label="Descripción"
               value={descripcion}
-              onChange={setDescripcion}
+              onChange={(v) => { setDescripcion(v); setErrors(prev => ({ ...prev, descripcion: undefined })); }}
               placeholder="Breve descripción del producto..."
               multiline
               minRows={3}
+              required
+              error={errors.descripcion}
             />
 
             <FormSelect
               label="Categoría"
               value={categoria}
-              onChange={setCategoria}
+              onChange={(v) => { setCategoria(v); setErrors(prev => ({ ...prev, categoria: undefined })); }}
               options={CATEGORIA_OPTIONS}
+              required
+              error={errors.categoria}
             />
           </form>
         )}

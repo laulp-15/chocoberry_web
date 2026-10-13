@@ -11,14 +11,21 @@
   --auth-input-bg: #ffffff;
   --auth-radius: 22px;
 
+  /* El <nav class="navbar"> de Bootstrap suma padding vertical (0.5rem x 2) y borde,
+     así que mide ~17px más que --navbar-height. Sin esto la tarjeta queda tapada. */
+  --navbar-extra: 17px;
+
   width: 100%;
   min-height: 100dvh;
 
   display: flex;
-  align-items: center;
+  align-items: center; /* centrada verticalmente en el espacio bajo el navbar */
   justify-content: center;
 
   padding: 12px;
+  /* El espacio de arriba y de abajo es el mismo (16px) para que se vea centrada */
+  padding-top: calc(var(--navbar-height) + var(--navbar-extra) + 16px);
+  padding-bottom: 16px;
 
   font-family: var(--font-body);
 
@@ -42,7 +49,7 @@
 }
 
 /* ============================================================
-   MODO OSCURO - AUTH LAYOUT (AÑADIDO)
+   MODO OSCURO - AUTH LAYOUT
    ============================================================ */
 .auth-layout[data-theme="dark"] {
   --auth-bg: #1a1215;
@@ -74,20 +81,24 @@
 
 /* ============================================================
    TARJETA PRINCIPAL
+   Sin max-height: la tarjeta crece con su contenido (por ejemplo,
+   cuando aparecen los mensajes de validación del registro) y la
+   página hace scroll si hace falta.
    ============================================================ */
 
 .auth-container {
   width: 90%;
   max-width: 930px;
 
-  height: min(650px, calc(90dvh - 24px));
+  min-height: 540px;
+  height: auto;
 
   display: grid;
 
   grid-template-columns:
     42% 58%;
 
-  overflow: hidden;
+  overflow: visible;
 
   border-radius:
     var(--auth-radius);
@@ -119,8 +130,13 @@
 
   max-width: 440px;
 
+  min-height: auto;
   height: auto;
-  max-height: min(660px, calc(100dvh - 24px));
+}
+
+/* En la variante centrada solo hay panel: redondeado en las 4 esquinas */
+.auth-layout--centered .auth-panel {
+  border-radius: var(--auth-radius);
 }
 
 /* ============================================================
@@ -140,6 +156,10 @@
 
   background:
     #471c26;
+
+  /* Esquinas del lado izquierdo (la tarjeta tiene overflow: visible) */
+  border-radius:
+    var(--auth-radius) 0 0 var(--auth-radius);
 }
 
 /* ============================================================
@@ -170,6 +190,19 @@
 .auth-visual:hover .auth-visual-image {
   transform:
     scale(1.02);
+}
+
+/* Solo en el registro: la foto tiene una altura fija (no se re-escala cuando
+   el formulario crece con los mensajes de validación). Si la tarjeta es más
+   alta, el borde inferior se funde con el fondo chocolate del panel.
+   Ajusta --auth-image-height a la altura de la tarjeta SIN errores. */
+.auth-layout:has(.auth-register-form) {
+  --auth-image-height: 780px;
+}
+.auth-layout:has(.auth-register-form) .auth-visual-image {
+  height: var(--auth-image-height);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 85%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 85%, transparent 100%);
 }
 
 /* ============================================================
@@ -297,7 +330,8 @@
 .auth-panel {
   min-width: 0;
 
-  height: 100%;
+  height: auto;
+  min-height: 100%;
 
   display: flex;
 
@@ -305,9 +339,9 @@
   justify-content: center;
 
   padding:
-    10px 28px;
+    10px 28px 28px;
 
-  overflow: hidden;
+  overflow: visible;
 
   background:
     linear-gradient(
@@ -316,6 +350,10 @@
       #fffafb 100%
     );
   transition: background 0.3s ease;
+
+  /* Esquinas del lado derecho */
+  border-radius:
+    0 var(--auth-radius) var(--auth-radius) 0;
 }
 
 .auth-layout[data-theme="dark"] .auth-panel {
@@ -457,7 +495,7 @@
 
   flex-direction: column;
 
-  gap: 4px;
+  gap: 10px;
 
   width: 100%;
 }
@@ -472,9 +510,9 @@
   grid-template-columns:
     repeat(2, minmax(0, 1fr));
 
-  column-gap: 10px;
+  column-gap: 14px;
 
-  row-gap: 4px;
+  row-gap: 12px;
 
   width: 100%;
 }
@@ -503,6 +541,8 @@
    REQUISITOS DE CONTRASEÑA (1 EN LíNEA)
    ============================================================ */
 
+/* Va justo debajo del campo Contraseña y solo existe mientras se escribe,
+   así no reserva espacio cuando el campo está vacío. */
 .auth-password-requirements {
   display: flex;
 
@@ -512,9 +552,9 @@
 
   gap: 4px;
 
-  margin-top: 2px;
+  margin-top: 5px;
 
-  min-height: 16px;
+  min-height: 0;
 }
 
 .auth-password-requirement {
@@ -522,9 +562,9 @@
 
   align-items: center;
 
-  gap: 4px;
+  gap: 5px;
 
-  font-size: 9.5px;
+  font-size: 11px;
 
   font-weight: 600;
 
@@ -534,7 +574,7 @@
 }
 
 .auth-password-requirement i {
-  font-size: 8px;
+  font-size: 10px;
 
   flex-shrink: 0;
 }
@@ -748,7 +788,7 @@
    ============================================================ */
 
 .auth-panel-footer {
-  margin-top: 4px;
+  margin-top: 10px;
 
   text-align: center;
 
@@ -956,6 +996,8 @@
 @media (max-width: 950px) {
   .auth-layout {
     padding: 10px;
+    padding-top: calc(var(--navbar-height) + var(--navbar-extra) + 20px);
+    padding-bottom: 20px;
   }
 
   .auth-container {
@@ -964,12 +1006,15 @@
     grid-template-columns:
       40% 60%;
 
-    height: min(660px, calc(100dvh - 20px));
+    min-height: 540px;
+    height: auto;
   }
 
   .auth-panel {
     padding:
-      10px 22px;
+      10px 22px 28px;
+    height: auto;
+    min-height: 100%;
   }
 
   .auth-panel-inner {
@@ -984,6 +1029,8 @@
 @media (max-width: 780px) {
   .auth-layout {
     padding: 8px;
+    padding-top: calc(var(--navbar-height-mobile) + var(--navbar-extra) + 16px);
+    padding-bottom: 16px;
   }
 
   .auth-container {
@@ -991,13 +1038,24 @@
 
     max-width: 520px;
 
-    height: min(680px, calc(100dvh - 16px));
+    min-height: 0;
+    height: auto;
 
-    overflow: hidden;
+    overflow: visible;
   }
 
   .auth-visual {
     height: 100px;
+
+    /* Imagen arriba, formulario abajo */
+    border-radius:
+      var(--auth-radius) var(--auth-radius) 0 0;
+  }
+
+  .auth-layout:has(.auth-register-form) .auth-visual-image {
+    height: 100%;
+    -webkit-mask-image: none;
+    mask-image: none;
   }
 
   .auth-visual::after {
@@ -1027,10 +1085,15 @@
   }
 
   .auth-panel {
-    height: calc(100% - 100px);
+    height: auto;
+    min-height: 0;
 
     padding:
-      10px 18px;
+      10px 18px 24px;
+    overflow: visible;
+
+    border-radius:
+      0 0 var(--auth-radius) var(--auth-radius);
   }
 
   .auth-panel-inner {
@@ -1058,13 +1121,18 @@
 
 @media (max-width: 600px) {
   .auth-layout {
+    --auth-radius: 18px; /* coincide con el radio de la tarjeta */
+
     padding: 6px;
+    padding-top: calc(var(--navbar-height-mobile) + var(--navbar-extra) + 14px);
+    padding-bottom: 14px;
   }
 
   .auth-container {
     border-radius: 18px;
 
-    height: min(680px, calc(100dvh - 12px));
+    min-height: 0;
+    height: auto;
   }
 
   .auth-visual {
@@ -1077,10 +1145,12 @@
   }
 
   .auth-panel {
-    height: calc(100% - 85px);
+    height: auto;
+    min-height: 0;
 
     padding:
-      10px 12px 12px;
+      10px 12px 20px;
+    overflow: visible;
   }
 
   .auth-logo {
@@ -1100,11 +1170,11 @@
   }
 
   .auth-register-form {
-    row-gap: 4px;
+    row-gap: 10px;
   }
 
   .auth-panel-body {
-    gap: 4px;
+    gap: 8px;
   }
 
   .auth-submit-btn {
@@ -1123,19 +1193,20 @@
 @media (max-width: 380px) {
   .auth-layout {
     padding: 4px;
+    padding-top: calc(var(--navbar-height-mobile) + var(--navbar-extra) + 12px);
+    padding-bottom: 12px;
   }
 
   .auth-panel {
     padding:
-      8px 8px 10px;
+      8px 8px 16px;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
   }
 
   .auth-visual {
     height: 65px;
-  }
-
-  .auth-panel {
-    height: calc(100% - 65px);
   }
 
   .auth-panel-title {

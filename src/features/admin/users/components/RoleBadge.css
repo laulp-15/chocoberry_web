@@ -24,3 +24,13 @@
   background: var(--secundario-1);
   color: var(--primario-oscuro);
 }
+
+[data-theme="dark"] .role-badge--repartidor {
+  background: var(--info-100, #1d77ed);
+  color: var(--blanco);
+}
+
+[data-theme="dark"] .role-badge--cliente {
+  background: var(--secundario-1);
+  color: var(--blanco);
+}

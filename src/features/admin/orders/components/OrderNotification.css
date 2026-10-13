@@ -9,8 +9,8 @@
   align-items: flex-start;
   gap: 12px;
   max-width: 360px;
-  background: #eaf7ec;
-  border: 1px solid #b9e6c0;
+  background: var(--bg-main);
+  border: 1px solid var(--borde);
   border-radius: 14px;
   padding: 16px 18px;
   box-shadow: 0 12px 28px rgba(42, 35, 29, 0.12);
@@ -27,7 +27,7 @@
   height: 26px;
   flex-shrink: 0;
   border-radius: 50%;
-  background: #24943c;
+  background: var(--success-80);
   color: var(--blanco);
   display: flex;
   align-items: center;

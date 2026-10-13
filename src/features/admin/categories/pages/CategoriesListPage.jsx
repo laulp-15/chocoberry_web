@@ -1,15 +1,15 @@
 // src/admin/categories/pages/CategoriesListPage.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import { useCategories } from '../hooks/useCategories';
 import CategoryFormModal from '../components/CategoryFormModal';
 import DataTable from '../../../../shared/components/DataTable';
 import ConfirmModal from '../../../../shared/components/ConfirmModal';
 import FormSelect from '../../../../shared/components/FormSelect';
-import { useToast } from '../../../../shared/components/Toast';
+import OrderNotification from "../../orders/components/OrderNotification";
 import './CategoriesListPage.css';
 
 export default function CategoriesListPage() {
-  const { showToast } = useToast();
+  const [notification, setNotification] = useState(null);
   const {
     searchTerm,
     setSearchTerm,
@@ -35,9 +35,7 @@ export default function CategoriesListPage() {
 
   const handleSave = (data) => {
     handleSaveCategory(data);
-    showToast({
-      type: 'success',
-      title: categoryToEdit ? 'Categoría actualizada' : 'Categoría creada',
+    setNotification({
       message: categoryToEdit
         ? `"${data.nombre}" se actualizó correctamente.`
         : `"${data.nombre}" se creó correctamente.`,
@@ -46,9 +44,7 @@ export default function CategoriesListPage() {
 
   const handleDelete = () => {
     handleConfirmDelete();
-    showToast({
-      type: 'success',
-      title: 'Categoría eliminada',
+    setNotification({
       message: `"${selectedCategory?.nombre}" se eliminó correctamente.`,
     });
   };
@@ -165,6 +161,13 @@ export default function CategoriesListPage() {
         description={`¿Estás seguro de que deseas eliminar la categoría "${selectedCategory?.nombre}"?`}
         confirmLabel="Eliminar"
         cancelLabel="Cancelar"
+      />
+
+      {/* Notificación flotante de éxito */}
+      <OrderNotification
+        open={Boolean(notification)}
+        onClose={() => setNotification(null)}
+        message={notification?.message}
       />
     </div>
   );

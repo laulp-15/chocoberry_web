@@ -1,83 +1,6 @@
 /* ProductFormModal.css */
 
-.product-form-modal .form-field {
-  margin-bottom: 1.2rem;
-}
-
-.product-form-modal .form-label {
-  display: block;
-  margin-bottom: 0.4rem;
-  color: var(--texto);
-  font-weight: 600;
-  font-size: 0.85rem;
-}
-
-.product-form-modal .form-input {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border-radius: 12px;
-  border: 1px solid var(--borde);
-  background-color: var(--bg-main);
-  color: var(--texto);
-  outline: none;
-  box-sizing: border-box;
-  font-family: inherit;
-  font-size: 0.95rem;
-}
-
-.product-form-modal .form-input:focus {
-  border-color: var(--primario-claro);
-}
-
-.product-form-modal .form-textarea {
-  resize: none;
-}
-
-.product-form-modal .form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-.product-form-modal .form-actions {
-  display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
-  margin-top: 1.2rem;
-}
-
-.product-form-modal .btn-cancel {
-  background-color: var(--secundario-2);
-  color: var(--texto);
-  border: none;
-  padding: 0.7rem 1.4rem;
-  border-radius: 24px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 0.9rem;
-}
-
-.product-form-modal .btn-cancel:hover {
-  background-color: var(--secundario-1);
-}
-
-.product-form-modal .btn-save {
-  background-color: var(--primario);
-  color: #ffffff;
-  border: none;
-  padding: 0.7rem 1.6rem;
-  border-radius: 24px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 0.9rem;
-  box-shadow: 0 4px 12px rgba(230, 57, 80, 0.3);
-}
-
-.product-form-modal .btn-save:hover {
-  background-color: var(--primario-oscuro);
-}
+/* ProductFormModal.css */
 
 /* Subida de imagen */
 .product-form-modal .image-upload-zone {
@@ -169,15 +92,15 @@
 }
 
 /* Modo detalle */
-.product-detail-image {
+.product-detail-image-wrapper {
   display: flex;
   justify-content: center;
-  margin-bottom: 1.2rem;
+  margin-bottom: 1.5rem;
 }
 
 .product-detail-image-img {
-  width: 180px;
-  height: 180px;
+  width: 220px;
+  height: 220px;
   object-fit: cover;
   border-radius: 16px;
   border: 1px solid var(--borde);
@@ -189,7 +112,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 130px;
+  width: 220px;
+  height: 220px;
   background-color: var(--secundario-3);
   border-radius: 16px;
   color: var(--texto-muted);
@@ -197,61 +121,113 @@
 }
 
 .product-detail-card {
-  background-color: var(--secundario-3);
-  padding: 1.2rem;
-  border-radius: 14px;
+  background: linear-gradient(135deg, var(--secundario-3) 0%, var(--secundario-2) 100%);
+  padding: 1.5rem;
+  border-radius: 16px;
   border: 1px solid var(--borde);
-  margin-bottom: 1.2rem;
+  box-shadow: 0 4px 12px rgba(42, 35, 29, 0.08);
+  margin-bottom: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+.product-detail-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--primario);
+}
+
+.product-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .product-detail-name {
-  margin: 0 0 0.3rem 0;
+  margin: 0;
   color: var(--texto);
-  font-size: 1.2rem;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.product-detail-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.product-detail-status::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.product-detail-status.active {
+  background: rgba(46, 141, 62, 0.15);
+  color: var(--success-100, #2E7D32);
+}
+.product-detail-status.inactive {
+  background: rgba(230, 57, 74, 0.15);
+  color: var(--primario, #E63946);
+}
+
+.product-detail-meta {
+  display: flex;
+  gap: 1.5rem;
 }
 
 .product-detail-category {
-  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
   color: var(--texto-muted);
 }
 
-.product-detail-label {
+.product-detail-section-title {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: var(--texto-muted);
-  font-weight: 700;
-  font-size: 0.75rem;
-  letter-spacing: 0.5px;
-  display: block;
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.5rem;
 }
 
 .product-detail-value {
   color: var(--texto);
-  margin: 0;
-  font-size: 0.95rem;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
   line-height: 1.5;
+  margin: 0;
 }
 
-.product-detail-price-card {
-  background-color: var(--secundario-3);
-  padding: 1rem 1.2rem;
-  border-radius: 14px;
-  border: 1px solid var(--borde);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.2rem;
+.product-detail-description-card .product-detail-value,
+.product-detail-image-info-card .product-detail-value {
+  color: var(--texto);
 }
 
-.product-detail-price-label {
-  font-size: 0.8rem;
-  color: var(--texto-muted);
-  font-weight: 600;
-}
-
-.product-detail-price-value {
-  color: var(--primario);
-  font-size: 1.3rem;
-  font-weight: 700;
+.product-detail-image-info-card .product-detail-image-img {
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+  border-radius: 12px;
+  border: 1px solid var(--borde).
 }
 
 .product-detail-close {
@@ -269,4 +245,26 @@
 
 .product-detail-close:hover {
   background-color: var(--primario-oscuro);
+}
+
+/* Error styles for image upload */
+.product-form-modal .image-upload-zone.has-error {
+  border-color: var(--primario) !important;
+  border-style: solid;
+  background-color: rgba(230, 57, 74, 0.05);
+}
+
+.product-form-modal .form-error {
+  color: var(--primario);
+  font-size: 0.75rem;
+  margin-top: 0.4rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.product-form-modal .form-error::before {
+  content: "\f071";
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
+  font-size: 0.65rem;
 }

@@ -60,10 +60,6 @@ export default function AdminLayout() {
           ))}
         </nav>
 
-        <div className="admin-sidebar-theme">
-          <ThemeToggleBtn />
-        </div>
-
         <div className="admin-sidebar-footer">
           <div className="admin-profile">
             <i className="fa-solid fa-circle-user" />
@@ -76,15 +72,17 @@ export default function AdminLayout() {
               </span>
             </div>
           </div>
-          <button 
-            type="button" 
-            className="admin-logout"
-            onClick={handleLogout}
-            style={{ cursor: "pointer", position: "relative", zIndex: 999 }}
-          >
-            <i className="fa-solid fa-right-to-bracket" />
-            Cerrar sesión
-          </button>
+          <div className="admin-sidebar-actions">
+            <ThemeToggleBtn />
+            <button 
+              type="button" 
+              className="admin-sidebar-action-btn"
+              onClick={handleLogout}
+            >
+              <i className="fa-solid fa-right-to-bracket" />
+              Cerrar sesión
+            </button>
+          </div>
         </div>
       </aside>
 

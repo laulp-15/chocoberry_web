@@ -1,6 +1,7 @@
 // src/routes/AppRoutes.jsx
 import { Routes, Route } from "react-router-dom";
 import StoreLayout from "../shared/components/StoreLayout";
+import ScrollToTopWrapper from "../shared/components/ScrollToTopWrapper";
 
 import Home from "../features/home/pages/HomePage";
 import ProductCatalog from "../features/catalog/pages/ProductCatalog";
@@ -22,50 +23,52 @@ import ProfileRoutes from "./ProfileRoutes";
 export default function AppRoutes() {
   return (
     <Routes>
-      {/* TIENDA PÚBLICA Y PERFIL PROTEGIDO */}
-      <Route element={<StoreLayout />}>
-        <Route path="/" element={<Home />} />
-        <Route path="/home" element={<Home />} />
-        <Route path="/productos" element={<ProductCatalog />} />
-        <Route path="/productos/:id" element={<ProductDetail />} />
-        <Route path="/carrito" element={<CartPage />} />
-        <Route path="/carrito/pago" element={<CheckoutPage />} />
-        <Route path="/reseñas" element={<ReviewsPage />} />
-        <Route path="/conocenos" element={<AboutPage />} />
+      <Route element={<ScrollToTopWrapper />}>
+        {/* TIENDA PÚBLICA Y PERFIL PROTEGIDO */}
+        <Route element={<StoreLayout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/home" element={<Home />} />
+          <Route path="/productos" element={<ProductCatalog />} />
+          <Route path="/productos/:id" element={<ProductDetail />} />
+          <Route path="/carrito" element={<CartPage />} />
+          <Route path="/carrito/pago" element={<CheckoutPage />} />
+          <Route path="/reseñas" element={<ReviewsPage />} />
+          <Route path="/conocenos" element={<AboutPage />} />
 
-        {/* Panel de cliente protegido */}
+          {/* Panel de cliente protegido */}
+          <Route
+            path="/users/*"
+            element={
+              <RequireAuth>
+                <ProfileRoutes />
+              </RequireAuth>
+            }
+          />
+        </Route>
+
+        {/* AUTENTICACIÓN Y ADMIN */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/registro" element={<RegisterPage />} />
+        <Route path="/recuperar-contrasena" element={<ForgotPasswordPage />} />
         <Route
-          path="/users/*"
+          path="/cambiar-contrasena"
           element={
             <RequireAuth>
-              <ProfileRoutes />
+              <ChangePasswordPage />
+            </RequireAuth>
+          }
+        />
+        
+        {/* Panel de administración protegido con RequireAuth */}
+        <Route
+          path="/admin/*"
+          element={
+            <RequireAuth>
+              <AdminRoutes />
             </RequireAuth>
           }
         />
       </Route>
-
-      {/* AUTENTICACIÓN Y ADMIN */}
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/registro" element={<RegisterPage />} />
-      <Route path="/recuperar-contrasena" element={<ForgotPasswordPage />} />
-      <Route
-        path="/cambiar-contrasena"
-        element={
-          <RequireAuth>
-            <ChangePasswordPage />
-          </RequireAuth>
-        }
-      />
-      
-      {/* Panel de administración protegido con RequireAuth */}
-      <Route
-        path="/admin/*"
-        element={
-          <RequireAuth>
-            <AdminRoutes />
-          </RequireAuth>
-        }
-      />
     </Routes>
   );
 }

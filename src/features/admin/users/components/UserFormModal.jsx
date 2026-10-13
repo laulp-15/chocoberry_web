@@ -22,7 +22,7 @@ const EMPTY_FORM = {
   address: "",
   password: "",
   confirmPassword: "",
-  role: "",
+  role: "cliente",
   active: true,
 };
 
@@ -130,8 +130,7 @@ export default function UserFormModal({ open, onClose, onSubmit, initialData, su
             className="btn-save"
             disabled={submitting}
           >
-            <i className="fa-solid fa-floppy-disk" />
-            {submitting ? "Guardando..." : isEdit ? "Guardar cambios" : "Guardar Usuario"}
+            {submitting ? "Guardando..." : "Guardar"}
           </button>
         </>
       }
@@ -244,23 +243,24 @@ export default function UserFormModal({ open, onClose, onSubmit, initialData, su
           </div>
         )}
 
-        <FormSelect
-          label="Rol"
-          required
-          value={form.role}
-          onChange={(v) => setField("role", v)}
-          options={ROLE_OPTIONS}
-          placeholder="Selecciona un rol"
-          error={errors.role}
-        />
-
-        <div className="user-form-status">
-          <span className="form-label">Estado del usuario</span>
-          <div className="user-form-status-row">
-            <StatusToggle checked={form.active} onChange={(v) => setField("active", v)} />
-            <span className={`user-form-status-label ${form.active ? "is-active" : ""}`}>
-              {form.active ? "Activo" : "Inactivo"}
-            </span>
+        <div className="user-form-row">
+          <FormSelect
+            label="Rol"
+            required
+            value={form.role}
+            onChange={(v) => setField("role", v)}
+            options={ROLE_OPTIONS}
+            placeholder="Selecciona un rol"
+            error={errors.role}
+          />
+          <div className="user-form-status">
+            <span className="form-label">Estado del usuario</span>
+            <div className="user-form-status-row">
+              <StatusToggle checked={form.active} onChange={(v) => setField("active", v)} />
+              <span className={`user-form-status-label ${form.active ? "is-active" : ""}`}>
+                {form.active ? "Activo" : "Inactivo"}
+              </span>
+            </div>
           </div>
         </div>
       </form>

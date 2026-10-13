@@ -31,3 +31,33 @@
 .user-form-status-label.is-active {
   color: var(--success-100, #249434);
 }
+
+.user-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 50px;
+  margin-bottom: 16px;
+  align-items: start;
+}
+.user-form-row .form-field {
+  margin-bottom: 0;
+}
+
+.user-form-status .status-toggle.MuiSwitch-root {
+  width: 56px;
+  height: 32px;
+}
+.user-form-status .status-toggle .MuiSwitch-switchBase {
+  padding: 4px;
+}
+.user-form-status .status-toggle .MuiSwitch-thumb {
+  width: 24px;
+  height: 24px;
+}
+.user-form-status .status-toggle .MuiSwitch-switchBase.Mui-checked {
+  transform: translateX(24px);
+}
+
+.user-form-status-row {
+  align-items: center;
+}

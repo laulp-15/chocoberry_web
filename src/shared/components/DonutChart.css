@@ -1,0 +1,185 @@
+/* src/shared/components/DonutChart.css
+   Usado por DonutChart y PieChart. Todo con variables del tema (claro/oscuro). */
+
+.dc-card {
+  background: var(--blanco);
+  border: 1px solid var(--borde);
+  border-radius: 16px;
+  padding: 24px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.dc-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.dc-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--texto);
+}
+.dc-subtitle {
+  font-size: 12px;
+  color: var(--texto-muted);
+  margin: 0;
+}
+
+/* --- Gráfica --- */
+.dc-chart {
+  position: relative;
+  width: 100%;
+  max-width: 200px;
+  aspect-ratio: 1;
+  margin: 0 auto;
+}
+.dc-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+.dc-segment {
+  cursor: pointer;
+  outline: none;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+.dc-path {
+  /* El borde del color del fondo crea la separación entre sectores */
+  stroke: var(--blanco);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+}
+.dc-segment:focus-visible .dc-path {
+  stroke: var(--texto);
+  stroke-width: 2;
+}
+
+.dc-slice-label {
+  font-size: 11px;
+  font-weight: 700;
+  fill: #ffffff;
+  pointer-events: none;
+}
+
+/* --- Centro de la dona (HTML encima del SVG) --- */
+.dc-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 26%;
+  pointer-events: none;
+  line-height: 1.15;
+}
+.dc-center-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--texto);
+}
+.dc-center-caption {
+  font-size: 11px;
+  color: var(--texto-muted);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* --- Línea de detalle (solo torta) --- */
+.dc-readout {
+  text-align: center;
+  font-size: 12px;
+  color: var(--texto-muted);
+  min-height: 18px;
+}
+.dc-readout strong {
+  color: var(--texto);
+}
+
+/* --- Leyenda --- */
+.dc-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 232px;
+  overflow-y: auto;
+}
+
+.dc-legend-item {
+  display: grid;
+  grid-template-columns: 10px 1fr auto;
+  column-gap: 10px;
+  row-gap: 5px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 10px;
+  cursor: default;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+.dc-legend-item.is-active {
+  background: var(--secundario-3);
+}
+
+.dc-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+.dc-legend-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--texto);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dc-legend-value {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--texto);
+}
+
+/* Barra de proporción: ocupa toda la segunda línea */
+.dc-legend-bar {
+  grid-column: 2 / -1;
+  height: 4px;
+  border-radius: 4px;
+  background: var(--secundario-2);
+  overflow: hidden;
+}
+.dc-legend-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.dc-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--texto-muted);
+  text-align: center;
+  padding: 24px 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dc-segment,
+  .dc-legend-item,
+  .dc-legend-bar-fill {
+    transition: none;
+  }
+}

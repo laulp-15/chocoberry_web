@@ -10,10 +10,10 @@ import "./OrderNotification.css";
  * @param {object} props
  * @param {boolean} props.open
  * @param {() => void} props.onClose
- * @param {string} props.title
+ * 
  * @param {string} props.message
  */
-export default function OrderNotification({ open, onClose, title, message }) {
+export default function OrderNotification({ open, onClose, message }) {
   useEffect(() => {
     if (!open) return;
     const timer = setTimeout(onClose, 5000);
@@ -28,7 +28,6 @@ export default function OrderNotification({ open, onClose, title, message }) {
         <i className="fa-solid fa-check" />
       </div>
       <div className="order-notification-body">
-        <div className="order-notification-title">{title}</div>
         <div className="order-notification-message">{message}</div>
       </div>
       <button type="button" className="order-notification-close" onClick={onClose}>

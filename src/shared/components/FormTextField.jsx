@@ -29,6 +29,7 @@ export default function FormTextField({
   multiline,
   minRows = 3,
   type = "text",
+  readOnly,
 }) {
   return (
     <div className="form-field">
@@ -46,6 +47,7 @@ export default function FormTextField({
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        readOnly={readOnly}
       />
       {error && <div className="form-error">{error}</div>}
     </div>

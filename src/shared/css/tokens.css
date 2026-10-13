@@ -65,6 +65,10 @@
   /* --- Tipografía --- */
   --font-display: "Poppins", "Segoe UI", sans-serif;
   --font-body: "Poppins", "Segoe UI", sans-serif;
+
+  /* --- Navbar --- */
+  --navbar-height: 60px;
+  --navbar-height-mobile: 57px;
 }
 
 /* --- MODO OSCURO (Con tu paleta exacta) --- */
@@ -88,12 +92,13 @@
   /* --- Fondos generales adaptados a la captura oscura --- */
   --bg-main: #121016;     /* Fondo general de tu captura */
   --bg-card: #1C1721;     /* Fondo de tarjetas y tablas */
+
+  /* --- Navbar --- */
+--navbar-height: 60px;
+  --navbar-height-mobile: 57px;
 }
 
 /* Aplicación general al body para cubrir todas las vistas automáticamente */
-html {
-  overflow-y: scroll;
-}
 
 body {
   background-color: var(--bg-main);
@@ -152,8 +157,8 @@ body {
 [data-theme="dark"] .admin-content,
 [data-theme="dark"] .admin-main,
 [data-theme="dark"] main,
-[data-theme="dark"] [class*="page"],
-[data-theme="dark"] [class*="container"] {
+[data-theme="dark"] .page-container,   
+[data-theme="dark"] .view-container {
   background-color: var(--bg-main) !important;
   color: var(--texto) !important;
 }
@@ -163,4 +168,31 @@ body {
   background-color: var(--bg-card) !important;
   color: var(--texto) !important;
   border-color: var(--borde) !important;
+}
+
+/* --- Barras de desplazamiento: siguen el tema --- */
+[data-theme="dark"] {
+  color-scheme: dark; /* controles nativos (scrollbars, inputs, date pickers) en oscuro */
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--texto-suave) transparent; /* thumb | track */
+}
+
+/* Respaldo para navegadores que no soportan scrollbar-color (Safari antiguo) */
+@supports not (scrollbar-color: auto) {
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: var(--texto-suave);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
 }

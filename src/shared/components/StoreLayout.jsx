@@ -10,14 +10,14 @@ export default function StoreLayout() {
         display: "flex",
         flexDirection: "column",
         minHeight: "100vh",
-        backgroundColor: "#ffffff",
+        backgroundColor: "var(--bg-main)",
       }}
     >
       {/* Barra de navegación superior */}
       <Navbar />
 
       {/* Contenido dinámico de las páginas públicas (Home, Catálogo, Reseñas, etc.) */}
-      <main style={{ flex: 1 }}>
+      <main style={{ flex: 1, paddingTop: 'var(--navbar-height)', scrollMarginTop: 'var(--navbar-height)' }}>
         <Outlet />
       </main>
 

@@ -1,7 +1,8 @@
 
 // src/routes/AdminRoutes.jsx
 
-import { Routes, Route, Outlet } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
+import ScrollToTopWrapper from "../shared/components/ScrollToTopWrapper";
 
 // Layout
 import AdminLayout from "../shared/layouts/AdminLayout";
@@ -37,7 +38,8 @@ import DeliveriesListPage from "../features/admin/deliveries/pages/DeliveriesLis
 export default function AdminRoutes() {
   return (
     <Routes>
-      <Route element={<AdminLayout />}>
+      <Route element={<ScrollToTopWrapper />}>
+        <Route element={<AdminLayout />}>
         
         {/* Panel principal */}
         <Route index element={<DashboardPage />} />
@@ -73,6 +75,7 @@ export default function AdminRoutes() {
          <Route path="clientes" element={<CustomersListPage />} />
          <Route path="resenas" element={<ReviewsListPage />} />
 
+      </Route>
       </Route>
     </Routes>
   );

@@ -37,7 +37,7 @@ export default function CartPage() {
   return (
     <div className="cart-page">
       <div className="container cart-wrap">
-        <h1 className="cart-title">Tu Carrito</h1>
+        {items.length > 0 && <h1 className="cart-title">Tu Carrito</h1>}
 
         {items.length === 0 ? (
           <div className="cart-empty">

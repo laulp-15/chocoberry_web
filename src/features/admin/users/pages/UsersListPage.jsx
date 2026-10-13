@@ -5,7 +5,7 @@ import DataTable from "../../../../shared/components/DataTable";
 import StatusToggle from "../../../../shared/components/StatusToggle";
 import FormSelect from "../../../../shared/components/FormSelect";
 import ConfirmModal from "../../../../shared/components/ConfirmModal";
-import { useToast } from "../../../../shared/components/Toast";
+import OrderNotification from "../../orders/components/OrderNotification";
 import { useAuth } from "../../../login/hooks/useAuth";
 import useUsersAdmin, { hasAssociatedOrders } from "../hooks/useUsersAdmin";
 import UserFormModal from "../components/UserFormModal";
@@ -29,7 +29,6 @@ function formatDate(iso) {
 
 export default function UsersListPage() {
   const { users, createUser, updateUser, setActive, removeUser } = useUsersAdmin();
-  const { showToast } = useToast();
   const { role: currentRole } = useAuth();
   const navigate = useNavigate();
 
@@ -46,6 +45,7 @@ export default function UsersListPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const [confirmTarget, setConfirmTarget] = useState(null);
+  const [notification, setNotification] = useState(null);
 
   const filtered = useMemo(() => {
     return users.filter((u) => {
@@ -78,16 +78,12 @@ export default function UsersListPage() {
     try {
       if (editingUser) {
         await updateUser(editingUser.id, payload);
-        showToast({
-          type: "success",
-          title: "Usuario actualizado",
+        setNotification({
           message: `Los datos de ${payload.fullName} se guardaron correctamente.`,
         });
       } else {
         await createUser(payload);
-        showToast({
-          type: "success",
-          title: "Usuario creado",
+        setNotification({
           message: `${payload.fullName} ya puede iniciar sesión con el correo registrado.`,
         });
       }
@@ -101,9 +97,7 @@ export default function UsersListPage() {
 
   async function handleToggleActive(user, value) {
     await setActive(user.id, value);
-    showToast({
-      type: value ? "success" : "warning",
-      title: value ? "Usuario habilitado" : "Usuario deshabilitado",
+    setNotification({
       message: value
         ? `${user.fullName} ya puede acceder al sistema.`
         : `${user.fullName} no podrá iniciar sesión hasta que se vuelva a habilitar.`,
@@ -112,9 +106,7 @@ export default function UsersListPage() {
 
   function askDelete(user) {
     if (hasAssociatedOrders(user)) {
-      showToast({
-        type: "error",
-        title: "No se puede eliminar",
+      setNotification({
         message: `${user.fullName} tiene pedidos asociados. Elimínalo solo si ya no debe conservarse la trazabilidad.`,
       });
       return;
@@ -126,15 +118,11 @@ export default function UsersListPage() {
     if (!confirmTarget) return;
     try {
       await removeUser(confirmTarget.id);
-      showToast({
-        type: "success",
-        title: "Usuario eliminado",
+      setNotification({
         message: `${confirmTarget.fullName} perdió su acceso al sistema.`,
       });
     } catch (err) {
-      showToast({
-        type: "error",
-        title: "No se pudo eliminar",
+      setNotification({
         message: err.message,
       });
     } finally {
@@ -162,7 +150,6 @@ export default function UsersListPage() {
             onChange={(v) => handleToggleActive(row, v)}
             disabled={!canManage}
           />
-          <span>{row.active !== false ? "Activo" : "Inactivo"}</span>
         </div>
       ),
     },
@@ -261,6 +248,13 @@ export default function UsersListPage() {
             : ""
         }
         confirmLabel="Sí, eliminar"
+      />
+
+      {/* Notificación flotante de éxito */}
+      <OrderNotification
+        open={Boolean(notification)}
+        onClose={() => setNotification(null)}
+        message={notification?.message}
       />
     </>
   );

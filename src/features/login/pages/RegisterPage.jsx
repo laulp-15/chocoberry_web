@@ -289,7 +289,7 @@ export default function RegisterPage() {
       } else {
         setServerError(
           error?.message ||
-            "No fue posible crear la cuenta. Inténtalo nuevamente."
+          "No fue posible crear la cuenta. Inténtalo nuevamente."
         );
       }
     } finally {
@@ -393,6 +393,23 @@ export default function RegisterPage() {
             />
           </div>
 
+          {/* DIRECCIÓN DE ENTREGA */}
+          <div className="auth-register-field">
+            <AuthInput
+              label="Dirección de entrega"
+              name="address"
+              icon="location-dot"
+              placeholder="Ej. Calle 13 #45 - 67"
+              value={form.address}
+              onChange={(value) => updateField("address", value)}
+              onBlur={() => handleBlur("address")}
+              error={errors.address}
+              autoComplete="street-address"
+              disabled={isDisabled}
+              required
+            />
+          </div>
+
           {/* CONTRASEÑA */}
           <div className="auth-register-field">
             <AuthInput
@@ -410,10 +427,9 @@ export default function RegisterPage() {
               required
             />
 
-            {/* VALIDACIÓN EN TIEMPO REAL: 1 POR 1 EN UNA SOLA FILA */}
-            <div className="auth-password-requirements">
-              {form.password && (
-                allValid ? (
+            {form.password && (
+              <div className="auth-password-requirements">
+                {allValid ? (
                   <span className="auth-password-requirement is-valid">
                     <i className="fa-solid fa-circle-check" aria-hidden="true" />
                     Contraseña segura
@@ -425,9 +441,9 @@ export default function RegisterPage() {
                       Falta: {currentReq.label}
                     </span>
                   )
-                )
-              )}
-            </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* CONFIRMAR CONTRASEÑA */}
@@ -443,23 +459,6 @@ export default function RegisterPage() {
               onBlur={() => handleBlur("confirmPassword")}
               error={errors.confirmPassword}
               autoComplete="new-password"
-              disabled={isDisabled}
-              required
-            />
-          </div>
-
-          {/* DIRECCIÓN DE ENTREGA */}
-          <div className="auth-register-field">
-            <AuthInput
-              label="Dirección de entrega"
-              name="address"
-              icon="location-dot"
-              placeholder="Ej. Calle 13 #45 - 67"
-              value={form.address}
-              onChange={(value) => updateField("address", value)}
-              onBlur={() => handleBlur("address")}
-              error={errors.address}
-              autoComplete="street-address"
               disabled={isDisabled}
               required
             />
@@ -497,10 +496,10 @@ export default function RegisterPage() {
             disabled={isDisabled}
           >
 
-              <>
-                <i className="fa-solid fa-user-plus" aria-hidden="true" />
-                Registrarse
-              </>
+            <>
+              <i className="fa-solid fa-user-plus" aria-hidden="true" />
+              Registrarse
+            </>
 
           </button>
 

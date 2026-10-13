@@ -1,9 +1,14 @@
 // src/features/admin/dashboard/pages/DashboardPage.jsx
-import React from "react";
+import React, { useMemo } from "react";
 import KpiCard from "../../../../shared/components/KpiCard";
 import BarChart from "../../../../shared/components/BarChart";
+import DonutChart from "../../../../shared/components/DonutChart";
+import PieChart from "../../../../shared/components/PieChart";
 import TopProductsList from "../components/TopProductsList";
 import { formatPrice } from "../../../../shared/utils/formatPrice";
+import { MUNICIPIOS } from "../../../cart/data/Shipping";
+import { ORDER_STATUSES } from "../../orders/data/orderStatus";
+import { INITIAL_ORDERS } from "../../orders/data/MockOrders";
 import "./DashboardPage.css";
 
 // TODO: reemplazar todo por datos reales del backend (features/admin/dashboard/services)
@@ -50,7 +55,47 @@ const TOP_PRODUCTS = [
   { name: "Caja Especial Cumpleaños", sold: 29 },
 ];
 
+// Mock ratings data (1-5 estrellas) - constante fuera del componente
+const RATINGS_DATA = [
+  { label: "5 estrellas", value: 42, color: "var(--success-100)" },
+  { label: "4 estrellas", value: 28, color: "var(--success-80)" },
+  { label: "3 estrellas", value: 15, color: "var(--warning-80)" },
+  { label: "2 estrellas", value: 5, color: "var(--error-80)" },
+  { label: "1 estrella", value: 3, color: "var(--error-100)" },
+];
+const RATINGS_TOTAL = RATINGS_DATA.reduce((s, r) => s + r.value, 0);
+const RATINGS_AVG = (
+  [5, 4, 3, 2, 1].reduce((s, star, i) => s + star * RATINGS_DATA[i].value, 0) / RATINGS_TOTAL
+).toFixed(1);
+
 export default function DashboardPage() {
+  // Datos para las nuevas gráficas (useMemo DENTRO del componente)
+  const ORDERS_BY_MUNICIPIO = useMemo(() => {
+    const counts = {};
+    INITIAL_ORDERS.forEach((o) => {
+      if (o.municipio) {
+        counts[o.municipio] = (counts[o.municipio] || 0) + 1;
+      }
+    });
+    return MUNICIPIOS.map((m) => ({
+      label: m.label,
+      value: counts[m.value] || 0,
+    })).filter((m) => m.value > 0)
+      .sort((a, b) => b.value - a.value);
+  }, []);
+
+  const ORDERS_BY_STATUS = useMemo(() => {
+    const counts = {};
+    INITIAL_ORDERS.forEach((o) => {
+      counts[o.estado] = (counts[o.estado] || 0) + 1;
+    });
+    return ORDER_STATUSES.map((s) => ({
+      label: s.label,
+      value: counts[s.value] || 0,
+      color: s.color,
+    })).filter((s) => s.value > 0);
+  }, []);
+
   const handleGenerate = () => {
     console.log("TODO: generar reporte");
   };
@@ -98,6 +143,34 @@ export default function DashboardPage() {
       <div className="row dashboard-row">
         <div className="col-12 dashboard-col">
           <BarChart title="Ventas por mes" data={SALES_BY_MONTH} />
+        </div>
+      </div>
+
+      <div className="row dashboard-row">
+        <div className="col-12 col-lg-4 dashboard-col">
+          <DonutChart
+            title="Pedidos por municipio"
+            subtitle="Dónde se concentran las entregas"
+            data={ORDERS_BY_MUNICIPIO}
+            unit="pedidos"
+          />
+        </div>
+        <div className="col-12 col-lg-4 dashboard-col">
+          <PieChart
+            title="Pedidos por estado"
+            subtitle="Avance de los pedidos actuales"
+            data={ORDERS_BY_STATUS}
+            unit="pedidos"
+          />
+        </div>
+        <div className="col-12 col-lg-4 dashboard-col">
+          <DonutChart
+            title="Calificaciones de los clientes"
+            subtitle={`${RATINGS_TOTAL} reseñas`}
+            data={RATINGS_DATA}
+            centerValue={RATINGS_AVG}
+            centerCaption="promedio"
+          />
         </div>
       </div>
     </div>

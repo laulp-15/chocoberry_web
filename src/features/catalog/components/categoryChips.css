@@ -64,3 +64,39 @@
 .chip.MuiChip-root .MuiChip-label {
   padding: 0 8px;
 }
+
+/* ============================================================
+   MODO OSCURO - CategoryChips (MUI Chip)
+   ============================================================ */
+[data-theme="dark"] .chip.MuiChip-root {
+  background: var(--secundario-2);      /* #4A303B - rosa profundo más visible */
+  color: var(--primario-claro);          /* #EF818A - carmesí claro para contraste */
+  border-color: var(--primario-claro);   /* borde más visible */
+}
+
+[data-theme="dark"] .chip.MuiChip-root:hover {
+  background: var(--secundario-1);       /* #6B4655 - rosa oscuro */
+  color: var(--primario-claro);
+  box-shadow: 0 4px 10px rgba(230, 57, 70, 0.25);
+}
+
+[data-theme="dark"] .chip.MuiChip-root.active {
+  background: var(--primario);           /* rojo principal */
+  color: var(--blanco);
+  border-color: var(--primario);
+  box-shadow: 0 5px 14px rgba(230, 57, 70, 0.35);
+}
+
+[data-theme="dark"] .chip.MuiChip-root.active:hover {
+  background: var(--primario-oscuro);
+  box-shadow: 0 7px 16px rgba(230, 57, 70, 0.40);
+}
+
+/* Delete icon (cuando es deletable) */
+[data-theme="dark"] .chip.MuiChip-root .MuiChip-deleteIcon {
+  color: var(--texto-muted);
+}
+
+[data-theme="dark"] .chip.MuiChip-root .MuiChip-deleteIcon:hover {
+  color: var(--texto);
+}
