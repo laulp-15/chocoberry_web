@@ -1,3 +1,5 @@
+/* src/features/home/components/Home.css */
+
 /* --- RESET Y SEGURIDAD GLOBAL --- */
 html, body {
   margin: 0;
@@ -9,8 +11,15 @@ html, body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+/* Fondo con manchas suaves de rosa para que la página no se vea plana */
 .home-page-wrapper {
   width: 100%;
+  background:
+    radial-gradient(circle at 92% 14%, var(--secundario-2) 0, transparent 34%),
+    radial-gradient(circle at 4% 46%, var(--secundario-2) 0, transparent 36%),
+    radial-gradient(circle at 96% 82%, var(--secundario-2) 0, transparent 34%),
+    var(--bg-main);
+  background-repeat: no-repeat;
 }
 
 .home-container {
@@ -21,10 +30,41 @@ html, body {
   color: var(--texto);
 }
 
+/* --- ELEMENTOS COMUNES --- */
+.section-badge {
+  display: inline-block;
+  background-color: var(--secundario-1);
+  border: 1px solid var(--borde);
+  color: var(--primario-oscuro);
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+[data-theme="dark"] .section-badge {
+  color: var(--texto);
+}
+
+/* Barra decorativa bajo los títulos de sección */
+.pillars-title::after,
+.tiktok-title::after,
+.categories-title::after,
+.reviews-title::after {
+  content: "";
+  display: block;
+  width: 56px;
+  height: 4px;
+  margin: 0.8rem auto 0;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--primario), var(--primario-claro));
+}
+
 /* --- 1. CARRUSEL PRINCIPAL --- */
 .full-width-carousel {
   width: 100%;
-  margin-bottom: 2.5rem;
+  margin-bottom: 3rem;
 }
 
 .carousel-inner {
@@ -32,15 +72,33 @@ html, body {
   width: 100%;
   height: 500px;
   overflow: hidden;
-  background-color: var(--bg-card);
+  background-color: var(--chocolate-100, #471C26);
+  box-shadow: 0 22px 40px -26px rgba(71, 28, 38, 0.55);
 }
 
+/* Degradado chocolate abajo: da profundidad y hace legibles los puntos */
+.carousel-inner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 55%, rgba(71, 28, 38, 0.55) 100%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Las imágenes se apilan; solo la activa es visible */
 .carousel-img {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  height: 620px;
+  height: 100%;
   object-fit: cover;
   object-position: center 50%;
   display: block;
+  opacity: 0;
+}
+.carousel-img.active {
+  opacity: 1;
 }
 
 .carousel-nav-btn {
@@ -56,16 +114,20 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--texto);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  color: var(--primario);
+  box-shadow: 0 4px 10px rgba(71, 28, 38, 0.2);
   z-index: 10;
   transition: all 0.25s ease;
 }
 
 .carousel-nav-btn:hover {
-  background: var(--primario, #C2435A);
+  background: var(--primario);
   color: #ffffff;
-  border-color: var(--primario, #C2435A);
+  border-color: var(--primario);
+}
+.carousel-nav-btn:focus-visible {
+  outline: 2px solid var(--primario-claro);
+  outline-offset: 2px;
 }
 
 .btn-left {
@@ -83,6 +145,10 @@ html, body {
   transform: translateX(-50%);
   display: flex;
   gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(71, 28, 38, 0.45);
+  backdrop-filter: blur(6px);
   z-index: 10;
 }
 
@@ -91,14 +157,19 @@ html, body {
   height: 10px;
   border-radius: 50%;
   border: none;
-  background-color: var(--borde);
+  background-color: var(--rosa-100, #FAD2E1);
+  opacity: 0.7;
   cursor: pointer;
   padding: 0;
   transition: all 0.3s ease;
 }
+.carousel-dots .dot:hover {
+  opacity: 1;
+}
 
 .carousel-dots .dot.active {
-  background-color: var(--primario, #C2435A);
+  background-color: var(--primario);
+  opacity: 1;
   width: 28px;
   border-radius: 10px;
 }
@@ -111,19 +182,6 @@ html, body {
 .pillars-header {
   text-align: center;
   margin-bottom: 3rem;
-}
-
-.section-badge {
-  display: inline-block;
-  background-color: var(--bg-card);
-  border: 1px solid var(--borde);
-  color: var(--primario, #C2435A);
-  font-size: 0.85rem;
-  font-weight: 700;
-  padding: 0.4rem 1rem;
-  border-radius: 20px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 .pillars-title {
@@ -141,21 +199,39 @@ html, body {
 
 .pillar-card {
   position: relative;
+  overflow: hidden;
   background: var(--bg-card);
   border: 1px solid var(--borde);
   border-radius: 20px;
   padding: 2.5rem 1.8rem 2rem 1.8rem;
   text-align: left;
   transition: all 0.35s ease;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 10px 26px -18px rgba(230, 57, 70, 0.35);
   display: flex;
   flex-direction: column;
 }
 
+/* Franja de color que aparece al pasar el mouse */
+.pillar-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primario), var(--primario-claro));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.35s ease;
+}
+
 .pillar-card:hover {
   transform: translateY(-8px);
-  border-color: var(--primario, #C2435A);
-  box-shadow: 0 15px 30px rgba(194, 67, 90, 0.12);
+  border-color: var(--primario);
+  box-shadow: 0 20px 34px -16px rgba(230, 57, 70, 0.4);
+}
+.pillar-card:hover::before {
+  transform: scaleX(1);
 }
 
 .pillar-tag {
@@ -164,7 +240,7 @@ html, body {
   right: 18px;
   font-size: 0.75rem;
   font-weight: 700;
-  background: var(--bg-main);
+  background: var(--secundario-2);
   border: 1px solid var(--borde);
   color: var(--texto);
   padding: 0.25rem 0.75rem;
@@ -172,8 +248,8 @@ html, body {
 }
 
 .pillar-tag.badge-star {
-  background: var(--primario, #C2435A);
-  border-color: var(--primario, #C2435A);
+  background: var(--primario);
+  border-color: var(--primario);
   color: #ffffff;
 }
 
@@ -184,8 +260,8 @@ html, body {
 .pillar-icon {
   width: 60px;
   height: 60px;
-  background-color: var(--bg-main);
-  color: var(--primario, #C2435A);
+  background: linear-gradient(135deg, var(--secundario-1) 0%, var(--secundario-2) 100%);
+  color: var(--primario);
   border: 1px solid var(--borde);
   border-radius: 16px;
   display: flex;
@@ -196,9 +272,9 @@ html, body {
 }
 
 .pillar-card:hover .pillar-icon {
-  background-color: var(--primario, #C2435A);
+  background: var(--primario);
   color: #ffffff;
-  border-color: var(--primario, #C2435A);
+  border-color: var(--primario);
   transform: rotate(-8deg) scale(1.08);
 }
 
@@ -211,8 +287,7 @@ html, body {
 
 .pillar-text {
   font-size: 0.92rem;
-  color: var(--texto);
-  opacity: 0.8;
+  color: var(--texto-muted);
   line-height: 1.5;
   margin-bottom: 1.2rem;
 }
@@ -236,35 +311,111 @@ html, body {
 }
 
 .pillar-list li i {
-  color: var(--primario, #C2435A);
+  color: var(--primario);
   font-size: 0.8rem;
 }
 
-/* --- SECCIÓN TIKTOK --- */
+/* Tarjeta destacada ("Más Popular"): llena de color carmesí */
+.pillar-card.highlight {
+  background: linear-gradient(160deg, var(--primario) 0%, var(--primario-oscuro) 100%);
+  border-color: var(--primario-oscuro);
+  box-shadow: 0 22px 38px -18px rgba(201, 47, 60, 0.65);
+}
+.pillar-card.highlight::before {
+  display: none;
+}
+.pillar-card.highlight .pillar-title,
+.pillar-card.highlight .pillar-text,
+.pillar-card.highlight .pillar-list li,
+.pillar-card.highlight .pillar-list li i {
+  color: #ffffff;
+}
+.pillar-card.highlight .pillar-text {
+  opacity: 0.92;
+}
+.pillar-card.highlight .pillar-list {
+  border-top-color: rgba(255, 255, 255, 0.45);
+}
+.pillar-card.highlight .pillar-icon {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #ffffff;
+}
+.pillar-card.highlight:hover .pillar-icon {
+  background: #ffffff;
+  border-color: #ffffff;
+  color: var(--primario);
+}
+.pillar-card.highlight .pillar-tag.badge-star {
+  background: #ffffff;
+  border-color: #ffffff;
+  color: var(--primario-oscuro);
+}
+
+/* --- SECCIÓN TIKTOK (bloque oscuro de contraste) --- */
 .tiktok-section {
-  background: var(--bg-card);
-  border: 1px solid var(--borde);
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(230, 57, 70, 0.35) 0, transparent 45%),
+    linear-gradient(135deg, var(--chocolate-100, #471C26) 0%, var(--chocolate-80, #7A3245) 100%);
+  border: 1px solid var(--chocolate-80, #7A3245);
   border-radius: 30px;
   padding: 4rem 2rem;
   margin-bottom: 5rem;
   text-align: center;
+  box-shadow: 0 26px 44px -30px rgba(71, 28, 38, 0.8);
+}
+
+/* Círculos decorativos de fondo */
+.tiktok-section::before,
+.tiktok-section::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.tiktok-section::before {
+  width: 320px;
+  height: 320px;
+  right: -110px;
+  bottom: -130px;
+  background: rgba(250, 210, 225, 0.1);
+}
+.tiktok-section::after {
+  width: 180px;
+  height: 180px;
+  left: -60px;
+  bottom: 40px;
+  background: rgba(230, 57, 70, 0.18);
+}
+
+.tiktok-header,
+.tiktok-content {
+  position: relative;
+  z-index: 1;
 }
 
 .tiktok-header {
   margin-bottom: 3rem;
 }
 
+.tiktok-section .section-badge {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(250, 210, 225, 0.35);
+  color: var(--rosa-100, #FAD2E1);
+}
+
 .tiktok-title {
   font-size: 2rem;
-  color: var(--texto);
+  color: #ffffff;
   font-weight: 800;
   margin-top: 0.6rem;
   margin-bottom: 0.4rem;
 }
 
 .tiktok-subtitle {
-  color: var(--texto);
-  opacity: 0.8;
+  color: var(--rosa-100, #FAD2E1);
   font-size: 0.95rem;
 }
 
@@ -279,10 +430,11 @@ html, body {
 .tiktok-phone {
   width: 280px;
   height: 520px;
-  background: #121212;
+  background: var(--neutral-900, #2B2320);
+  border: 1px solid rgba(250, 210, 225, 0.25);
   border-radius: 36px;
   padding: 12px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 24px 44px rgba(0, 0, 0, 0.4);
   position: relative;
   display: flex;
   flex-direction: column;
@@ -291,9 +443,25 @@ html, body {
 .tiktok-phone-header {
   width: 100px;
   height: 16px;
-  background: #222;
+  background: var(--chocolate-100, #471C26);
   border-radius: 0 0 10px 10px;
   margin: 0 auto 10px auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.tiktok-camera {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--neutral-700, #6B5A54);
+}
+.tiktok-speaker {
+  width: 36px;
+  height: 4px;
+  border-radius: 4px;
+  background: var(--neutral-700, #6B5A54);
 }
 
 .tiktok-video {
@@ -306,7 +474,7 @@ html, body {
 .tiktok-phone-bottom {
   width: 100px;
   height: 4px;
-  background: #444;
+  background: var(--neutral-700, #6B5A54);
   border-radius: 2px;
   margin: 8px auto 0 auto;
 }
@@ -319,19 +487,19 @@ html, body {
 .tiktok-small-title {
   font-size: 0.75rem;
   font-weight: 800;
-  color: var(--primario, #C2435A);
+  color: var(--primario-claro);
   letter-spacing: 1px;
 }
 
 .tiktok-info h3 {
   font-size: 1.8rem;
-  color: var(--texto);
+  color: #ffffff;
   margin: 0.5rem 0 1rem 0;
 }
 
 .tiktok-info p {
-  color: var(--texto);
-  opacity: 0.8;
+  color: var(--rosa-80, #FCE8EF);
+  opacity: 0.9;
   font-size: 0.95rem;
   line-height: 1.6;
   margin-bottom: 1.5rem;
@@ -350,29 +518,39 @@ html, body {
   gap: 0.8rem;
   font-size: 0.9rem;
   font-weight: 600;
-  color: var(--texto);
+  color: #ffffff;
 }
 
 .tiktok-feature i {
-  color: var(--primario, #C2435A);
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--primario-claro);
+  font-size: 0.85rem;
 }
 
 .tiktok-button {
   display: inline-flex;
   align-items: center;
   gap: 0.8rem;
-  background: var(--primario, #C2435A);
+  background: var(--primario);
   color: #ffffff;
   padding: 0.8rem 1.8rem;
   border-radius: 25px;
   font-weight: 700;
   text-decoration: none;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(194, 67, 90, 0.3);
+  box-shadow: 0 6px 18px rgba(230, 57, 70, 0.45);
 }
 
 .tiktok-button:hover {
-  background: #A03348;
+  background: var(--primario-oscuro);
+  color: #ffffff;
   transform: translateY(-2px);
 }
 
@@ -381,8 +559,8 @@ html, body {
   flex-direction: column;
   gap: 1.5rem;
   font-size: 1.5rem;
-  color: var(--primario, #C2435A);
-  opacity: 0.3;
+  color: var(--primario-claro);
+  opacity: 0.5;
 }
 
 /* --- SECCIÓN CATEGORÍAS --- */
@@ -404,9 +582,9 @@ html, body {
 }
 
 .categories-subtitle {
-  color: var(--texto);
-  opacity: 0.8;
+  color: var(--texto-muted);
   font-size: 0.95rem;
+  margin-top: 0.8rem;
 }
 
 .categories-grid {
@@ -420,7 +598,7 @@ html, body {
   border-radius: 20px;
   overflow: hidden;
   border: 1px solid var(--borde);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 10px 26px -18px rgba(71, 28, 38, 0.4);
   cursor: pointer;
   transition: all 0.35s ease;
   display: flex;
@@ -429,8 +607,12 @@ html, body {
 
 .category-card:hover {
   transform: translateY(-8px);
-  border-color: var(--primario, #C2435A);
-  box-shadow: 0 15px 30px rgba(194, 67, 90, 0.12);
+  border-color: var(--primario);
+  box-shadow: 0 20px 34px -16px rgba(230, 57, 70, 0.4);
+}
+.category-card:focus-visible {
+  outline: 2px solid var(--primario-claro);
+  outline-offset: 3px;
 }
 
 .category-image-wrapper {
@@ -455,23 +637,25 @@ html, body {
   position: absolute;
   top: 15px;
   left: 15px;
-  background: var(--bg-card);
-  border: 1px solid var(--borde);
-  color: var(--texto);
+  background: var(--primario);
+  border: 1px solid var(--primario);
+  color: #ffffff;
   font-size: 0.75rem;
   font-weight: 700;
   padding: 0.25rem 0.75rem;
   border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(71, 28, 38, 0.3);
   z-index: 2;
 }
 
 .category-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: linear-gradient(180deg, rgba(71, 28, 38, 0.15) 0%, rgba(71, 28, 38, 0.8) 100%);
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
+  padding-bottom: 1.2rem;
   opacity: 0;
   transition: opacity 0.3s ease;
   z-index: 3;
@@ -485,7 +669,7 @@ html, body {
   color: #ffffff;
   font-size: 0.9rem;
   font-weight: 700;
-  background: var(--primario, #C2435A);
+  background: var(--primario);
   padding: 0.6rem 1.2rem;
   border-radius: 25px;
   display: flex;
@@ -496,6 +680,11 @@ html, body {
 .category-content {
   padding: 1.5rem;
   text-align: left;
+  border-top: 3px solid var(--secundario-1);
+  transition: border-color 0.3s ease;
+}
+.category-card:hover .category-content {
+  border-top-color: var(--primario);
 }
 
 .category-card-title {
@@ -503,28 +692,52 @@ html, body {
   font-weight: 700;
   color: var(--texto);
   margin-bottom: 0.5rem;
+  transition: color 0.3s ease;
+}
+.category-card:hover .category-card-title {
+  color: var(--primario);
 }
 
 .category-card-desc {
   font-size: 0.88rem;
-  color: var(--texto);
-  opacity: 0.8;
+  color: var(--texto-muted);
   line-height: 1.4;
   margin: 0;
 }
 
 /* --- SECCIÓN RESEÑAS MODERNA E INTERACTIVA --- */
 .reviews-section {
+  position: relative;
+  overflow: hidden;
   text-align: center;
   padding: 3rem 0 5rem 0;
-  background: var(--bg-card);
+  background: linear-gradient(160deg, var(--secundario-2) 0%, var(--secundario-3) 100%);
   border: 1px solid var(--borde);
   border-radius: 30px;
   margin-top: 3rem;
 }
 
+.reviews-section .section-badge {
+  background: var(--bg-card);
+}
+
 .reviews-header-modern {
   margin-bottom: 2.5rem;
+}
+
+/* Estas dos clases se usaban en el JSX pero no tenían estilos */
+.reviews-title {
+  font-size: 2rem;
+  color: var(--texto);
+  font-weight: 800;
+  margin-top: 0.6rem;
+  margin-bottom: 0.4rem;
+}
+
+.reviews-subtitle {
+  color: var(--texto-muted);
+  font-size: 0.95rem;
+  margin-top: 0.8rem;
 }
 
 .reviews-interactive-wrapper {
@@ -540,28 +753,29 @@ html, body {
 .review-card-modern {
   position: relative;
   width: 100%;
-  background: var(--bg-main);
+  background: var(--bg-card);
   border: 1px solid var(--borde);
+  border-top: 4px solid var(--primario);
   border-radius: 24px;
   padding: 3rem 3.5rem;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 18px 38px -22px rgba(71, 28, 38, 0.45);
   transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
   overflow: hidden;
 }
 
 .review-card-modern:hover {
   transform: translateY(-5px);
-  box-shadow: 0 20px 40px rgba(194, 67, 90, 0.12);
-  border-color: var(--primario, #C2435A);
+  box-shadow: 0 24px 44px -20px rgba(230, 57, 70, 0.4);
+  border-color: var(--primario);
 }
 
 .quote-watermark {
   position: absolute;
-  top: -10px;
+  top: -6px;
   left: 20px;
-  font-size: 6rem;
-  color: var(--primario, #C2435A);
-  opacity: 0.08;
+  font-size: 6.5rem;
+  color: var(--primario);
+  opacity: 0.12;
   z-index: 0;
   pointer-events: none;
 }
@@ -576,9 +790,9 @@ html, body {
 }
 
 .star-icon {
-  color: #FFD166;
+  color: var(--warning-80, #F5A632);
   font-size: 1.1rem;
-  filter: drop-shadow(0 2px 4px rgba(255, 209, 102, 0.3));
+  filter: drop-shadow(0 2px 4px rgba(245, 166, 50, 0.35));
 }
 
 .review-comment-modern {
@@ -604,7 +818,7 @@ html, body {
 .client-avatar {
   width: 48px;
   height: 48px;
-  background: linear-gradient(135deg, var(--primario, #C2435A) 0%, #8A2D3E 100%);
+  background: linear-gradient(135deg, var(--primario) 0%, var(--chocolate-80, #7A3245) 100%);
   color: #ffffff;
   font-weight: 800;
   font-size: 1.2rem;
@@ -612,7 +826,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 10px rgba(194, 67, 90, 0.2);
+  box-shadow: 0 4px 10px rgba(230, 57, 70, 0.3);
 }
 
 .client-details {
@@ -631,9 +845,9 @@ html, body {
   align-items: center;
   gap: 0.3rem;
   font-size: 0.75rem;
-  background-color: var(--bg-card);
+  background-color: var(--secundario-2);
   border: 1px solid var(--borde);
-  color: var(--primario, #C2435A);
+  color: var(--primario);
   padding: 0.2rem 0.6rem;
   border-radius: 10px;
   font-weight: 700;
@@ -652,17 +866,21 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--primario, #C2435A);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  color: var(--primario);
+  box-shadow: 0 6px 14px -6px rgba(71, 28, 38, 0.35);
   z-index: 10;
   transition: all 0.25s ease;
 }
 
 .review-arrow-btn:hover {
-  background: var(--primario, #C2435A);
+  background: var(--primario);
   color: #ffffff;
-  border-color: var(--primario, #C2435A);
+  border-color: var(--primario);
   transform: translateY(-50%) scale(1.08);
+}
+.review-arrow-btn:focus-visible {
+  outline: 2px solid var(--primario-claro);
+  outline-offset: 2px;
 }
 
 .btn-left-modern {
@@ -686,7 +904,7 @@ html, body {
   height: 36px;
   border-radius: 50%;
   border: 2px solid var(--borde);
-  background-color: var(--bg-main);
+  background-color: var(--bg-card);
   color: var(--texto);
   font-weight: 700;
   font-size: 0.85rem;
@@ -699,16 +917,16 @@ html, body {
 }
 
 .avatar-dot:hover {
-  border-color: var(--primario, #C2435A);
-  color: var(--primario, #C2435A);
+  border-color: var(--primario);
+  color: var(--primario);
   transform: scale(1.1);
 }
 
 .avatar-dot.active {
-  background-color: var(--primario, #C2435A);
-  border-color: var(--primario, #C2435A);
+  background-color: var(--primario);
+  border-color: var(--primario);
   color: #ffffff;
-  box-shadow: 0 4px 10px rgba(194, 67, 90, 0.3);
+  box-shadow: 0 4px 10px rgba(230, 57, 70, 0.35);
   transform: scale(1.15);
 }
 
@@ -737,8 +955,7 @@ html, body {
 
 /* --- RESPONSIVO PARA MÓVILES --- */
 @media (max-width: 768px) {
-  .carousel-inner,
-  .carousel-img {
+  .carousel-inner {
     height: 320px;
   }
 
@@ -746,8 +963,10 @@ html, body {
     padding: 0 1rem 3rem 1rem;
   }
 
-  .pillars-title, 
+  .pillars-title,
   .categories-title,
+  .reviews-title,
+  .tiktok-title,
   .tiktok-info h3 {
     font-size: 1.5rem;
   }
@@ -763,22 +982,81 @@ html, body {
   .reviews-interactive-wrapper {
     padding: 0 1rem;
   }
-  
+
   .review-card-modern {
     padding: 2rem 1.5rem;
   }
-  
+
   .review-arrow-btn {
     width: 36px;
     height: 36px;
     font-size: 0.85rem;
   }
-  
+
   .btn-left-modern {
     left: -2px;
   }
-  
+
   .btn-right-modern {
     right: -2px;
+  }
+}
+
+/* --- MOVIMIENTO REDUCIDO --- */
+@media (prefers-reduced-motion: reduce) {
+  .pillar-card,
+  .pillar-card::before,
+  .pillar-icon,
+  .category-card,
+  .category-img,
+  .review-card-modern {
+    transition: none;
+  }
+
+  .pillar-card:hover,
+  .category-card:hover,
+  .review-card-modern:hover {
+    transform: none;
+  }
+}
+
+/* --- ANIMACIÓN DE APARICIÓN AL HACER SCROLL ---
+   Cualquier elemento con data-reveal aparece (sube y se desvanece hacia adentro)
+   cuando entra en pantalla. Se usa una animación con "backwards" para que no
+   interfiera con los efectos hover (transform) de las tarjetas.
+   Retraso escalonado opcional: style={{ "--reveal-delay": "120ms" }} */
+[data-reveal]:not(.is-revealed) {
+  opacity: 0;
+}
+
+[data-reveal].is-revealed {
+  animation: reveal-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: var(--reveal-delay, 0ms);
+}
+
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* En móvil las tarjetas van apiladas y entran de una en una: sin escalonado */
+@media (max-width: 768px) {
+  [data-reveal].is-revealed {
+    animation-delay: 0ms;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal]:not(.is-revealed) {
+    opacity: 1;
+  }
+  [data-reveal].is-revealed {
+    animation: none;
   }
 }

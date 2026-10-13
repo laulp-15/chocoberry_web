@@ -2,11 +2,13 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import HeroBanner from "../components/HeroBanner";
+import useScrollReveal from "../hooks/useScrollReveal";
 import "../components/Home.css";
 
 export default function HomePage() {
   const navigate = useNavigate();
   const [currentReview, setCurrentReview] = useState(0);
+  const revealRef = useScrollReveal();
 
   const categories = [
     {
@@ -68,12 +70,12 @@ export default function HomePage() {
 
   return (
     <div className="home-page-wrapper">
-      
+
       {/* ================= 1. CARRUSEL PRINCIPAL ================= */}
       <HeroBanner />
 
       {/* ================= 2. CONTENEDOR GENERAL ================= */}
-      <div className="home-container">
+      <div className="home-container" ref={revealRef}>
 
         {/* SECCIÓN PILARES */}
         <section className="pillars-section">
@@ -83,7 +85,7 @@ export default function HomePage() {
           </div>
 
           <div className="pillars-grid">
-            <div className="pillar-card">
+            <div className="pillar-card" data-reveal style={{ "--reveal-delay": "0ms" }}>
               <span className="pillar-tag">100% Cacao</span>
               <div className="pillar-icon-wrapper">
                 <div className="pillar-icon"><i className="fa-solid fa-heart" /></div>
@@ -96,7 +98,7 @@ export default function HomePage() {
               </ul>
             </div>
 
-            <div className="pillar-card highlight">
+            <div className="pillar-card highlight" data-reveal style={{ "--reveal-delay": "140ms" }}>
               <span className="pillar-tag badge-star">Más Popular</span>
               <div className="pillar-icon-wrapper">
                 <div className="pillar-icon"><i className="fa-solid fa-gift" /></div>
@@ -109,7 +111,7 @@ export default function HomePage() {
               </ul>
             </div>
 
-            <div className="pillar-card">
+            <div className="pillar-card" data-reveal style={{ "--reveal-delay": "280ms" }}>
               <span className="pillar-tag">Garantía</span>
               <div className="pillar-icon-wrapper">
                 <div className="pillar-icon"><i className="fa-solid fa-award" /></div>
@@ -158,7 +160,7 @@ export default function HomePage() {
               <span className="tiktok-small-title">CHOCOBERRY</span>
               <h3>Un poquito de lo que hacemos </h3>
               <p>Conoce nuestras fresas, diseños y detalles preparados especialmente para cada ocasión.</p>
-              
+
               <div className="tiktok-features">
                 <div className="tiktok-feature"><i className="fa-solid fa-heart"></i><span>Detalles personalizados</span></div>
                 <div className="tiktok-feature"><i className="fa-solid fa-gift"></i><span>Presentaciones especiales</span></div>
@@ -192,10 +194,12 @@ export default function HomePage() {
           </div>
 
           <div className="categories-grid">
-            {categories.map((cat) => (
+            {categories.map((cat, index) => (
               <div
                 key={cat.id}
                 className="category-card"
+                data-reveal
+                style={{ "--reveal-delay": `${index * 120}ms` }}
                 onClick={() => navigate("/productos")}
                 role="button"
                 tabIndex={0}
@@ -219,7 +223,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* SECCIÓN RESEÑAS MODERNA E INTERACTIVA */}
+        {/* SECCIÓN RESEÑAS */}
         <section className="reviews-section">
           <div className="reviews-header-modern">
             <span className="section-badge">Testimonios</span>

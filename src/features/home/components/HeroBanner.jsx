@@ -1,56 +1,69 @@
+// src/features/home/components/HeroBanner.jsx
 import React, { useState, useEffect } from "react";
 import "./Home.css";
 
 const bannerImages = [
   {
     id: 1,
-    url: "/img/carrusel/imagen1.png", 
+    url: "/img/carrusel/imagen1.png",
     alt: "Fresas cubiertas de chocolate Chocoberry",
   },
   {
     id: 2,
-    url: "/img/carrusel/imagen2.png", 
+    url: "/img/carrusel/imagen2.png",
     alt: "Arreglos florales y detalles dulces",
   },
   {
     id: 3,
-    url: "/img/carrusel/imagen3.png", 
+    url: "/img/carrusel/imagen3.png",
     alt: "Regalos sorpresa para ocasiones especiales",
   },
   {
     id: 4,
-    url: "/img/carrusel/imagen4.png", 
+    url: "/img/carrusel/imagen4.png",
     alt: "Regalos sorpresa para ocasiones especiales",
   },
 ];
 
 export default function HeroBanner() {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
 
-  // Cambio automático cada 5 segundos
+  // Cambio automático cada 5 segundos. Se reinicia al navegar a mano
+  // y se detiene mientras el mouse está sobre el banner.
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentIndex((prevIndex) => (prevIndex + 1) % bannerImages.length);
+    if (paused) return undefined;
+    const timer = setTimeout(() => {
+      setCurrentIndex((prev) => (prev + 1) % bannerImages.length);
     }, 5000);
-    return () => clearInterval(timer);
-  }, []);
+    return () => clearTimeout(timer);
+  }, [currentIndex, paused]);
 
   const handleNext = () => {
-    setCurrentIndex((prevIndex) => (prevIndex + 1) % bannerImages.length);
+    setCurrentIndex((prev) => (prev + 1) % bannerImages.length);
   };
 
   const handlePrev = () => {
-    setCurrentIndex((prevIndex) => (prevIndex - 1 + bannerImages.length) % bannerImages.length);
+    setCurrentIndex((prev) => (prev - 1 + bannerImages.length) % bannerImages.length);
   };
 
   return (
     <div className="full-width-carousel">
-      <div className="carousel-inner">
-        <img
-          src={bannerImages[currentIndex].url}
-          alt={bannerImages[currentIndex].alt}
-          className="carousel-img"
-        />
+      <div
+        className="carousel-inner"
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
+      >
+        {/* Todas las imágenes se apilan; solo la activa es visible */}
+        {bannerImages.map((img, index) => (
+          <img
+            key={img.id}
+            src={img.url}
+            alt={img.alt}
+            className={`carousel-img ${index === currentIndex ? "active" : ""}`}
+            aria-hidden={index !== currentIndex}
+          />
+        ))}
 
         {/* Botón Anterior */}
         <button className="carousel-nav-btn btn-left" onClick={handlePrev} aria-label="Anterior">
