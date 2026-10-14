@@ -1,15 +1,46 @@
 import React, { useState } from 'react';
+import ReactDOM from 'react-dom';
 import { useReviews } from '../hooks/useReviews';
+import { useAuth } from '../../login/hooks/useAuth';
 import ReviewCard from '../components/ReviewCard';
 import ReviewFormModal from '../components/ReviewFormModal';
 import './ReviewsPage.css';
 
+// Portal para la alerta de autenticación - se renderiza en document.body
+function AuthAlert({ isOpen, onClose }) {
+  if (!isOpen) return null;
+
+  return ReactDOM.createPortal(
+    <div className="auth-alert-toast">
+      <i className="fa-solid fa-triangle-exclamation" aria-hidden="true" />
+      <div>
+        <strong>¡Atención!</strong>
+        <span>Debes iniciar sesión o registrarte para poder dejar una reseña. Redirigiendo...</span>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 export default function ReviewsPage() {
   const { reviews, loading, addReview } = useReviews();
+  const { user, isAuthenticated } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [authAlert, setAuthAlert] = useState(false);
   
   // Estado para controlar el filtro de estrellas (null u 0 significa "Todas")
   const [selectedRating, setSelectedRating] = useState(null);
+
+  const handleAddReview = () => {
+    if (!isAuthenticated) {
+      setAuthAlert(true);
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 3000);
+      return;
+    }
+    setIsModalOpen(true);
+  };
 
   // Filtrar las reseñas según la estrella seleccionada
   const filteredReviews = selectedRating 
@@ -54,7 +85,7 @@ export default function ReviewsPage() {
               </div>
             </div>
 
-            <button className="btn-add-review-hero" onClick={() => setIsModalOpen(true)}>
+            <button className="btn-add-review-hero" onClick={handleAddReview}>
               <i className="fa-solid fa-comment-medical" aria-hidden="true" />
               <span>Dejar mi Reseña</span>
             </button>
@@ -129,6 +160,9 @@ export default function ReviewsPage() {
             </div>
           )}
         </main>
+
+        {/* ALERTA DE AUTENTICACIÓN - Portal en document.body */}
+        <AuthAlert isOpen={authAlert} onClose={() => setAuthAlert(false)} />
 
         {/* MODAL PARA NUEVA RESEÑA */}
         <ReviewFormModal 

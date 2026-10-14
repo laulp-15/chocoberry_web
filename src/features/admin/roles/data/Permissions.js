@@ -1,7 +1,6 @@
 // src/features/admin/roles/data/Permissions.js
 // Catálogo de permisos disponibles en el sistema: cada permiso combina un
-// módulo (Dashboard, Roles, Usuarios...) con una acción autorizada
-// (Ver, Crear, Editar, Eliminar). Es la fuente para:
+// módulo con una acción autorizada. Es la fuente para:
 //  - el checklist de permisos al crear/editar un rol
 //  - el panel "Administrar permisos" (crear, editar, consultar, cambiar estado)
 
@@ -17,18 +16,85 @@ export const MODULES = [
   { key: "ventas", label: "Ventas", icon: "fa-credit-card" },
 ];
 
-export const ACTIONS = [
+// Acciones por módulo (clave del módulo -> array de acciones)
+const MODULE_ACTIONS = {
+  dashboard: [
+    { key: "ver", label: "Ver" },
+    { key: "generar_reporte", label: "Generar reporte" },
+    { key: "exportar_reporte", label: "Exportar reporte" },
+  ],
+  ventas: [
+    { key: "ver", label: "Ver" },
+    { key: "generar_reporte", label: "Generar reporte" },
+    { key: "exportar_reporte", label: "Exportar reporte" },
+  ],
+  // Módulos con CRUD + Cambiar estado
+  roles: [
+    { key: "ver", label: "Ver" },
+    { key: "crear", label: "Crear" },
+    { key: "editar", label: "Editar" },
+    { key: "eliminar", label: "Eliminar" },
+    { key: "cambiar_estado", label: "Cambiar estado" },
+  ],
+  usuarios: [
+    { key: "ver", label: "Ver" },
+    { key: "crear", label: "Crear" },
+    { key: "editar", label: "Editar" },
+    { key: "eliminar", label: "Eliminar" },
+    { key: "cambiar_estado", label: "Cambiar estado" },
+  ],
+  categorias: [
+    { key: "ver", label: "Ver" },
+    { key: "crear", label: "Crear" },
+    { key: "editar", label: "Editar" },
+    { key: "eliminar", label: "Eliminar" },
+    { key: "cambiar_estado", label: "Cambiar estado" },
+  ],
+  productos: [
+    { key: "ver", label: "Ver" },
+    { key: "crear", label: "Crear" },
+    { key: "editar", label: "Editar" },
+    { key: "eliminar", label: "Eliminar" },
+    { key: "cambiar_estado", label: "Cambiar estado" },
+  ],
+  carrito: [
+    { key: "ver", label: "Ver" },
+    { key: "crear", label: "Crear" },
+    { key: "editar", label: "Editar" },
+    { key: "eliminar", label: "Eliminar" },
+    { key: "cambiar_estado", label: "Cambiar estado" },
+  ],
+  resenas: [
+    { key: "ver", label: "Ver" },
+    { key: "crear", label: "Crear" },
+    { key: "editar", label: "Editar" },
+    { key: "eliminar", label: "Eliminar" },
+    { key: "cambiar_estado", label: "Cambiar estado" },
+  ],
+  pedidos: [
+    { key: "ver", label: "Ver" },
+    { key: "crear", label: "Crear" },
+    { key: "editar", label: "Editar" },
+    { key: "eliminar", label: "Eliminar" },
+    { key: "cambiar_estado", label: "Cambiar estado" },
+  ],
+};
+
+// Acciones por defecto para módulos no definidos explícitamente (CRUD + Cambiar estado)
+const DEFAULT_ACTIONS = [
   { key: "ver", label: "Ver" },
   { key: "crear", label: "Crear" },
   { key: "editar", label: "Editar" },
   { key: "eliminar", label: "Eliminar" },
+  { key: "cambiar_estado", label: "Cambiar estado" },
 ];
 
 function buildInitialPermissions() {
   const permissions = [];
   let autoId = 1;
   for (const mod of MODULES) {
-    for (const action of ACTIONS) {
+    const actions = MODULE_ACTIONS[mod.key] || DEFAULT_ACTIONS;
+    for (const action of actions) {
       permissions.push({
         id: autoId++,
         module: mod.key,

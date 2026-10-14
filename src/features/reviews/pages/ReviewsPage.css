@@ -301,3 +301,80 @@
   }
   .stars-and-label { text-align: center; }
 }
+
+/* ============================================================
+   PORTAL DE ALERTA DE AUTENTICACIÓN
+   Se renderiza en document.body vía ReactDOM.createPortal
+   ============================================================ */
+.auth-alert-toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10000; /* Por encima del navbar (1000) y modales */
+  background-color: #FEF3C7;
+  color: #92400E;
+  border: 1px solid #F59E0B;
+  padding: 16px 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: inherit;
+  max-width: 350px;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.auth-alert-toast i {
+  font-size: 20px;
+  color: #D97706;
+  flex-shrink: 0;
+}
+
+.auth-alert-toast strong {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.auth-alert-toast span {
+  font-size: 13px;
+}
+
+/* Modo oscuro - ajustes para coherencia */
+[data-theme="dark"] .auth-alert-toast {
+  background-color: var(--secundario-2);
+  color: var(--texto);
+  border-color: var(--primario);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .auth-alert-toast i {
+  color: var(--primario);
+}
+
+[data-theme="dark"] .auth-alert-toast strong,
+[data-theme="dark"] .auth-alert-toast span {
+  color: var(--texto);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive para el toast */
+@media (max-width: 480px) {
+  .auth-alert-toast {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    max-width: none;
+  }
+}

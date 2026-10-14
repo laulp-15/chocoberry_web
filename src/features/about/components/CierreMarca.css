@@ -1,4 +1,9 @@
-/* src/features/about/components/CierreMarca.css */
+/* src/features/about/components/CierreMarca.css
+
+   Esta sección siempre va sobre una foto con overlay oscuro, así que sus
+   colores son FIJOS (los valores del modo claro). No usan variables como
+   --blanco, --secundario-1 o --secundario-3 porque tokens.css las redefine
+   en modo oscuro y el texto dejaría de leerse. */
 
 .cierre-marca {
   position: relative;
@@ -8,7 +13,7 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: var(--texto);
+  background: #2A231D; 
 }
 
 .cierre-marca-img {
@@ -34,46 +39,46 @@
   max-width: 600px;
 }
 
-.cierre-marca-brand {
+.cierre-marca .cierre-marca-content .cierre-marca-brand {
   display: block;
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 30px;
-  color: var(--blanco);
+  color: #FFFFFF; 
   letter-spacing: 0.03em;
 }
 
-.cierre-marca-sub {
+.cierre-marca .cierre-marca-content .cierre-marca-sub {
   display: block;
   font-family: var(--font-body);
   font-size: 14px;
   font-weight: 500;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--secundario-1);
+  color: #FAD2E1; 
   margin-bottom: 26px;
 }
 
-.cierre-marca-slogan {
+.cierre-marca .cierre-marca-content .cierre-marca-slogan {
   font-family: var(--font-display);
   font-style: italic;
   font-weight: 600;
   font-size: 26px;
-  color: var(--blanco);
+  color: #FFFFFF;
   margin-bottom: 14px;
 }
 
-.cierre-marca-text {
+.cierre-marca .cierre-marca-content .cierre-marca-text {
   font-family: var(--font-body);
   font-size: 15px;
-  color: var(--secundario-3);
+  color: #FEF7F9 !important; 
   opacity: 0.9;
   margin-bottom: 32px;
 }
 
-.cierre-marca-cta {
+.cierre-marca .cierre-marca-content .cierre-marca-cta {
   background: var(--primario) !important;
-  color: var(--blanco) !important;
+  color: #FFFFFF !important; 
   border-radius: 999px !important;
   padding: 13px 34px !important;
   font-family: var(--font-body) !important;
@@ -84,8 +89,9 @@
   transition: transform 0.3s ease, box-shadow 0.3s ease,
     background 0.3s ease !important;
 }
-.cierre-marca-cta:hover {
+.cierre-marca .cierre-marca-content .cierre-marca-cta:hover {
   background: var(--primario-oscuro) !important;
+  color: #FFFFFF !important;
   transform: translateY(-3px);
   box-shadow: 0 16px 32px rgba(201, 47, 60, 0.4) !important;
 }
@@ -94,10 +100,10 @@
   .cierre-marca {
     min-height: 60vh;
   }
-  .cierre-marca-brand {
+  .cierre-marca .cierre-marca-content .cierre-marca-brand {
     font-size: 25px;
   }
-  .cierre-marca-slogan {
+  .cierre-marca .cierre-marca-content .cierre-marca-slogan {
     font-size: 21px;
   }
 }
