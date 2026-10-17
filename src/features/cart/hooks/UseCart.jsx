@@ -1,8 +1,11 @@
 // src/features/cart/hooks/useCart.jsx
-import React, { createContext, useContext, useState, useMemo, useCallback } from "react";
-import { useAuth } from "../../login/hooks/useAuth"; // Ajusta la ruta si es necesario
+import React, { createContext, useContext, useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useAuth } from "../../login/hooks/useAuth";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const CartContext = createContext(null);
+
+const PENDING_ITEM_KEY = "cb_pending_cart_item";
 
 export function CartProvider({ children }) {
   const [items, setItems] = useState([]);
@@ -12,19 +15,13 @@ export function CartProvider({ children }) {
   const [authAlert, setAuthAlert] = useState(false);
 
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const flushPendingRef = useRef(false);
 
-  const addItem = useCallback(
+  // Función interna para añadir item al carrito (sin verificación de auth)
+  const doAddItem = useCallback(
     (item) => {
-      // Validar si el usuario está autenticado
-      if (!user) {
-        setAuthAlert(true);
-        // Opcional: Ocultar la alerta y redirigir después de unos segundos (ej. 3 segundos)
-        setTimeout(() => {
-          window.location.href = "/login";
-        }, 3000);
-        return;
-      }
-
       const existing = items.find(
         (it) => it.productId === item.productId && it.quantity === item.quantity && it.color === item.color
       );
@@ -51,7 +48,72 @@ export function CartProvider({ children }) {
       ]);
       return { merged: false };
     },
-    [items, user]
+    [items]
+  );
+
+  // Flushea el item pendiente si hay uno y el usuario está autenticado
+  const flushPendingItem = useCallback(() => {
+    if (!user) return;
+
+    try {
+      const raw = sessionStorage.getItem(PENDING_ITEM_KEY);
+      if (!raw) return;
+
+      const pending = JSON.parse(raw);
+      sessionStorage.removeItem(PENDING_ITEM_KEY);
+
+      // Añadir el item al carrito
+      doAddItem(pending.item);
+      
+      // Opcional: mostrar notificación de éxito
+      setAuthAlert(true);
+      setTimeout(() => setAuthAlert(false), 3000);
+    } catch (e) {
+      console.warn("Error al procesar item pendiente:", e);
+      sessionStorage.removeItem(PENDING_ITEM_KEY);
+    }
+  }, [user, doAddItem]);
+
+  // Efecto: cuando el usuario inicia sesión (user pasa de null a truthy), flushear item pendiente
+  useEffect(() => {
+    if (user && !flushPendingRef.current) {
+      flushPendingRef.current = true;
+      flushPendingItem();
+    } else if (!user) {
+      flushPendingRef.current = false;
+    }
+  }, [user, flushPendingItem]);
+
+  // API pública: addItem guarda item pendiente y redirige a login si no hay sesión
+  const addItem = useCallback(
+    (item, options = {}) => {
+      const { fromPath } = options;
+
+      // Validar si el usuario está autenticado
+      if (!user) {
+        // Guardar item pendiente con la ruta de retorno
+        const pendingData = {
+          item,
+          fromPath: fromPath || location.pathname,
+          timestamp: Date.now(),
+        };
+        sessionStorage.setItem(PENDING_ITEM_KEY, JSON.stringify(pendingData));
+
+        setAuthAlert(true);
+        // Esperar 3 segundos antes de redirigir (comportamiento original)
+        // y cerrar la alerta tras 3s
+        const alertTimer = setTimeout(() => setAuthAlert(false), 3000);
+        const redirectTimer = setTimeout(() => {
+          navigate("/login", { state: { from: fromPath || location.pathname }, replace: true });
+        }, 3000);
+        
+        // Devolver timers por si el consumidor quiere limpiar (opcional)
+        return { alertTimer, redirectTimer };
+      }
+
+      return doAddItem(item);
+    },
+    [user, location, navigate, doAddItem]
   );
 
   const removeItem = useCallback((cartItemId) => {
@@ -105,9 +167,9 @@ export function CartProvider({ children }) {
             top: "20px",
             right: "20px",
             zIndex: 9999,
-            backgroundColor: "#FEF3C7", // Fondo amarillo claro (tipo warning)
-            color: "#92400E", // Texto marrón/amarillo oscuro legible
-            border: "1px solid #F59E0B", // Borde amarillo intenso
+            backgroundColor: "#FEF3C7",
+            color: "#92400E",
+            border: "1px solid #F59E0B",
             padding: "16px 20px",
             borderRadius: "8px",
             boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
@@ -122,7 +184,11 @@ export function CartProvider({ children }) {
           <i className="fa-solid fa-triangle-exclamation" style={{ fontSize: "20px", color: "#D97706" }}></i>
           <div>
             <strong style={{ display: "block", fontSize: "14px", marginBottom: "2px" }}>¡Atención!</strong>
-            <span style={{ fontSize: "13px" }}>Debes iniciar sesión o registrarte para continuar con tu pedido. Redirigiendo...</span>
+            <span style={{ fontSize: "13px" }}>
+              {user 
+                ? "Producto añadido al carrito" 
+                : "Debes iniciar sesión o registrarte para continuar con tu pedido. Redirigiendo..."}
+            </span>
           </div>
         </div>
       )}

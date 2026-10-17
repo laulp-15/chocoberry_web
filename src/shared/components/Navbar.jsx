@@ -106,7 +106,7 @@ export default function Navbar() {
           {isAuthenticated ? (
             <button
               type="button"
-              onClick={() => navigate('/users/listdomicilios')}
+              onClick={() => navigate('/users/orders')}
               className="navbar-account-btn"
             >
               <i className="fa-solid fa-user" />

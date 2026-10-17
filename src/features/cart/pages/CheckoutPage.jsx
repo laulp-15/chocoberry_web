@@ -1,30 +1,50 @@
 // src/features/cart/pages/CheckoutPage.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { IconButton } from "@mui/material";
+import { useAuth } from "../../login/hooks/useAuth";
 import { useCart } from "../hooks/UseCart";
 import ShippingForm from "../components/ShippingForm";
 import PaymentSection from "../components/PaymentSection";
 import OrderSummary from "../components/OrderSummary";
+import OrderCardMessage from "../components/OrderCardMessage";
 import { getShippingCost } from "../data/Shipping";
 import "./CheckoutPage.css";
 
 const INITIAL_FORM = {
   fullName: "",
   address: "",
+  neighborhood: "",
   municipio: "",
+  recipientName: "",
+  recipientPhone: "",
   instructions: "",
-  paymentMethod: "",
   deliveryDate: "",
+  cardMessage: "",
 };
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { items, cardMessage, clearCart } = useCart();
 
   const [form, setForm] = useState(INITIAL_FORM);
   const [proofFile, setProofFile] = useState(null);
   const [errors, setErrors] = useState({});
+
+  // Precarga el nombre y la dirección con los datos del perfil del usuario.
+  // Solo rellena si el campo está vacío, para no sobrescribir lo que el
+  // usuario ya haya escrito o modificado en esta pantalla.
+  useEffect(() => {
+    if (!user) return;
+    setForm((prev) => ({
+      ...prev,
+      fullName: prev.fullName || user.fullName || "",
+      address: prev.address || user.address || "",
+      neighborhood: prev.neighborhood || user.neighborhood || "",
+      recipientPhone: prev.recipientPhone || user.phone || "",
+    }));
+  }, [user]);
 
   const shippingCost = getShippingCost(form.municipio);
 
@@ -42,7 +62,15 @@ export default function CheckoutPage() {
     if (!form.address.trim()) {
       newErrors.address = "Debe escribir una dirección para su entrega.";
     }
-    if (!form.paymentMethod) newErrors.paymentMethod = "Selecciona un medio de pago.";
+    if (!form.neighborhood.trim()) {
+      newErrors.neighborhood = "Debe escribir un barrio para su entrega.";
+    }
+    if (!form.recipientName.trim()) {
+      newErrors.recipientName = "El nombre de quien recibe es obligatorio.";
+    }
+    if (!form.recipientPhone.trim()) {
+      newErrors.recipientPhone = "El teléfono de quien recibe es obligatorio.";
+    }
     if (!proofFile) newErrors.proofFile = "Debes adjuntar el comprobante de pago.";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -83,6 +111,10 @@ export default function CheckoutPage() {
 
         <div className="row">
           <div className="col-12 col-lg-7">
+            <OrderCardMessage
+              value={form.cardMessage}
+              onChange={(v) => handleFieldChange("cardMessage", v)}
+            />
             <ShippingForm
               values={form}
               onChange={handleFieldChange}
@@ -90,13 +122,13 @@ export default function CheckoutPage() {
               deliveryDateError={errors.deliveryDate}
               municipioError={errors.municipio}
               addressError={errors.address}
+              neighborhoodError={errors.neighborhood}
+              recipientNameError={errors.recipientName}
+              recipientPhoneError={errors.recipientPhone}
             />
             <PaymentSection
-              paymentMethod={form.paymentMethod}
-              onPaymentMethodChange={(value) => handleFieldChange("paymentMethod", value)}
               proofFile={proofFile}
               onProofFileChange={setProofFile}
-              paymentMethodError={errors.paymentMethod}
               proofFileError={errors.proofFile}
             />
           </div>

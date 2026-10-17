@@ -4,10 +4,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--error-20, #f7d1d0);
   color: var(--error-100, #dd322d);
-  border-radius: 10px;
-  padding: 10px 14px;
   font-size: 13px;
   margin-bottom: 16px;
 }
