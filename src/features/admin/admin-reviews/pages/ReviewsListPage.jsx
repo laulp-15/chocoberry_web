@@ -32,11 +32,6 @@ export default function ReviewsListPage() {
       render: (review) => <span style={{ fontWeight: '600', color: 'var(--texto)' }}>{review.cliente}</span>
     },
     {
-      key: 'producto',
-      label: 'PRODUCTO',
-      render: (review) => <span style={{ color: 'var(--texto-muted)' }}>{review.producto}</span>
-    },
-    {
       key: 'calificacion',
       label: 'CALIFICACIÓN',
       render: (review) => (
@@ -87,7 +82,7 @@ export default function ReviewsListPage() {
     {
       key: 'actions',
       label: 'ACCIONES',
-      align: 'right',
+      style: { textAlign: 'right', paddingRight: '2rem' },
       render: (review) => (
         <div className="table-actions">
           <button
@@ -110,7 +105,7 @@ export default function ReviewsListPage() {
         description="Consulta y gestiona las calificaciones y comentarios enviados por los clientes."
         columns={columns}
         data={currentReviews}
-        searchPlaceholder="Buscar por cliente, producto o comentario..."
+        searchPlaceholder="Buscar por cliente o comentario..."
         searchTerm={searchTerm}
         onSearchChange={handleSearchChange}
         extraFilter={

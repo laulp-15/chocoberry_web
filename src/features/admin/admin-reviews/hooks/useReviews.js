@@ -21,7 +21,6 @@ export const useReviews = () => {
   // Filtrado por búsqueda y estado
   const filteredReviews = reviews.filter(rev => {
     const matchesSearch = rev.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          rev.producto.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           rev.comentario.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'todos' || rev.estado.toLowerCase() === statusFilter.toLowerCase();
     return matchesSearch && matchesStatus;

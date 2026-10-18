@@ -36,6 +36,11 @@
   margin-bottom: 16px;
   align-items: start;
 }
+/* Filas de pares de campos (documento, nombres, dirección/barrio):
+   un gap más compacto que el de Rol | Estado. */
+.user-form-row--fields {
+  gap: 20px;
+}
 .user-form-row .form-field {
   margin-bottom: 0;
 }
@@ -57,4 +62,21 @@
 
 .user-form-status-row {
   align-items: center;
+}
+
+/* Ojito de las contraseñas: MUI lo centra verticalmente vía endAdornment */
+.password-toggle.MuiIconButton-root {
+  width: 32px;
+  height: 32px;
+  margin-right: 2px;
+  color: var(--texto-muted);
+  border-radius: 8px;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+.password-toggle.MuiIconButton-root:hover {
+  color: var(--primario);
+  background-color: var(--secundario-2);
+}
+.password-toggle i {
+  font-size: 14px;
 }

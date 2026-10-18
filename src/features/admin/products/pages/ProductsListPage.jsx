@@ -102,7 +102,7 @@ export default function ProductsListPage() {
     {
       key: 'actions',
       label: 'ACCIONES',
-      align: 'center',
+      style: { textAlign: 'right', paddingRight: '2rem' },
       render: (prod) => (
         <div className="table-actions">
           <button

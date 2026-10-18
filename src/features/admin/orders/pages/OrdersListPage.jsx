@@ -2,11 +2,10 @@
 import React, { useState } from "react";
 import DataTable from "../../../../shared/components/DataTable";
 import FormSelect from "../../../../shared/components/FormSelect";
-import ConfirmModal from "../../../../shared/components/ConfirmModal";
 import OrderStatusSelector from "../components/OrderStatusSelector";
 import OrderFormModal from "../components/OrderFormModal";
 import OrderDetailModal from "../components/OrderDetailModal";
-import CancelReasonModal from "../components/CancelReasonModal";
+import RejectReasonModal from "../components/RejectReasonModal";
 import OrderNotification from "../components/OrderNotification";
 import { ORDER_STATUSES } from "../data/orderStatus";
 import { INITIAL_ORDERS } from "../data/MockOrders";
@@ -20,16 +19,22 @@ export default function OrdersListPage() {
   const [editingOrder, setEditingOrder] = useState(null);
   const [detailOrder, setDetailOrder] = useState(null);
 
-  // Flujo de cancelación en 2 pasos: primero confirmar, luego pedir el motivo.
-  const [cancelStep, setCancelStep] = useState(null); // null | "confirm" | "reason"
-  const [cancelingOrder, setCancelingOrder] = useState(null);
+  // Pedido que se está rechazando: se pide el motivo antes de aplicar el estado.
+  const [rejectingOrder, setRejectingOrder] = useState(null);
 
   const [notification, setNotification] = useState(null); // { title, message }
 
   const filtered = orders.filter((o) => !statusFilter || o.estado === statusFilter);
 
-  // Solo se bloquea la edición/cancelación si el pedido ya fue Entregado o Cancelado.
-  const isLocked = (order) => order.estado === "entregado" || order.estado === "cancelado";
+  // Solo se bloquea la edición/rechazo si el pedido ya fue Entregado,
+  // Cancelado o Rechazado.
+  const isLocked = (order) =>
+    order.estado === "entregado" ||
+    order.estado === "cancelado" ||
+    order.estado === "rechazado";
+
+  // Regla de negocio: un pedido solo se puede rechazar mientras está Pendiente.
+  const canReject = (order) => order.estado === "pendiente";
 
   const handleCreate = () => {
     setEditingOrder(null);
@@ -58,28 +63,30 @@ export default function OrdersListPage() {
     setFormOpen(false);
   };
 
-  const handleStartCancel = (order) => {
-    if (isLocked(order)) return;
-    setCancelingOrder(order);
-    setCancelStep("confirm");
+  // Cambio de estado desde el desplegable. "Rechazado" no se aplica directo:
+  // primero se pide el motivo (mismo flujo que el icono "Rechazar pedido").
+  const handleStatusChange = (order, newStatus) => {
+    if (newStatus === "rechazado") {
+      if (!canReject(order)) return;
+      setRejectingOrder(order);
+      return;
+    }
+    setOrders((prev) =>
+      prev.map((o) => (o.id === order.id ? { ...o, estado: newStatus } : o))
+    );
   };
 
-  const handleConfirmCancel = () => {
-    setCancelStep("reason");
-  };
-
-  const handleSubmitCancelReason = (reason) => {
+  const handleSubmitRejectReason = (reason) => {
     setOrders((prev) =>
       prev.map((o) =>
-        o.id === cancelingOrder.id
-          ? { ...o, estado: "cancelado", motivoCancelacion: reason, fechaCancelacion: todayISO() }
+        o.id === rejectingOrder.id
+          ? { ...o, estado: "rechazado", motivoRechazo: reason, fechaRechazo: todayISO() }
           : o
       )
     );
-    setCancelStep(null);
-    setCancelingOrder(null);
+    setRejectingOrder(null);
     setNotification({
-      message: "Pedido cancelado correctamente.",
+      message: "Pedido rechazado correctamente.",
     });
   };
 
@@ -94,11 +101,10 @@ export default function OrdersListPage() {
       render: (row) => (
         <OrderStatusSelector
           status={row.estado}
-          onChange={(newStatus) => setOrders((prev) =>
-            prev.map((o) => (o.id === row.id ? { ...o, estado: newStatus } : o))
-          )}
+          onChange={(newStatus) => handleStatusChange(row, newStatus)}
           disabled={isLocked(row)}
           lockedReason="Este pedido está bloqueado"
+          canReject={canReject(row)}
         />
       ) 
     },
@@ -107,6 +113,7 @@ export default function OrdersListPage() {
       label: "Acciones",
       render: (row) => {
         const locked = isLocked(row);
+        const rejectable = canReject(row);
         return (
           <div style={{ display: "flex", gap: "12px", color: "var(--texto-muted)" }}>
             <i
@@ -127,11 +134,11 @@ export default function OrdersListPage() {
             <i
               className="fa-solid fa-circle-xmark"
               style={{
-                color: locked ? "var(--borde)" : "var(--texto-muted)",
-                cursor: locked ? "not-allowed" : "pointer",
+                color: rejectable ? "var(--texto-muted)" : "var(--borde)",
+                cursor: rejectable ? "pointer" : "not-allowed",
               }}
-              title={locked ? "Ya no se puede cancelar este pedido" : "Cancelar pedido"}
-              onClick={() => handleStartCancel(row)}
+              title={rejectable ? "Rechazar pedido" : "Solo se puede rechazar un pedido pendiente"}
+              onClick={() => rejectable && handleStatusChange(row, "rechazado")}
             />
           </div>
         );
@@ -177,26 +184,11 @@ export default function OrdersListPage() {
         order={detailOrder}
       />
 
-      {/* Paso 1: confirmar */}
-      <ConfirmModal
-        open={cancelStep === "confirm"}
-        onClose={() => setCancelStep((prev) => (prev === "confirm" ? null : prev))}
-        onConfirm={handleConfirmCancel}
-        variant="danger"
-        title="Cancelar pedido"
-        description={`El pedido de ${cancelingOrder?.cliente ?? ""} será cancelado y esta acción no se puede deshacer.`}
-        confirmLabel="Sí, cancelar pedido"
-        cancelLabel="Volver"
-      />
-
-      {/* Paso 2: motivo */}
-      <CancelReasonModal
-        open={cancelStep === "reason"}
-        onClose={() => {
-          setCancelStep(null);
-          setCancelingOrder(null);
-        }}
-        onSubmit={handleSubmitCancelReason}
+      {/* Motivo del rechazo (mismo flujo desde el desplegable y el icono) */}
+      <RejectReasonModal
+        open={Boolean(rejectingOrder)}
+        onClose={() => setRejectingOrder(null)}
+        onSubmit={handleSubmitRejectReason}
       />
 
       <OrderNotification

@@ -14,7 +14,7 @@ export default function RoleDetailModal({ open, onClose, role, permissions }) {
   if (!role) return null;
 
   return (
-    <Modal open={open} onClose={onClose} title={`Detalle del rol: ${role.name}`} maxWidth="sm">
+    <Modal open={open} onClose={onClose} title={`Detalle del rol: ${role.name}`} maxWidth="md">
       <RoleDetailContent role={role} permissions={permissions} />
     </Modal>
   );

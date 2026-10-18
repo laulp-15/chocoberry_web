@@ -3,12 +3,6 @@ import React from "react";
 import { groupPermissionsByModule } from "../data/Permissions";
 import "./RoleDetailContent.css";
 
-function formatDisplayDate(iso) {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  return d.toLocaleDateString("es-CO", { day: "2-digit", month: "2-digit", year: "numeric" });
-}
-
 /**
  * Contenido de "ver detalle" de un rol. Solo lectura.
  */
@@ -16,41 +10,71 @@ export default function RoleDetailContent({ role, permissions }) {
   const rolePermissions = permissions.filter((p) => role.permissionIds.includes(p.id));
   const groups = groupPermissionsByModule(rolePermissions);
 
+  // Total de acciones disponibles por módulo (para el contador "concedidas/total").
+  const totalByModule = permissions.reduce((acc, p) => {
+    acc[p.module] = (acc[p.module] || 0) + 1;
+    return acc;
+  }, {});
+
   return (
     <div className="role-detail-content">
-      <div className="role-detail-top">
-        <span className="role-detail-date">
-          <i className="fa-solid fa-calendar" /> Creado el {formatDisplayDate(role.createdAt)}
-        </span>
+      {/* Resumen del rol */}
+      <div className="detail-section role-detail-summary">
+        <div className="role-detail-summary-head">
+          <h3 className="role-detail-name">{role.name}</h3>
+          <span className={`role-detail-status ${role.active ? "active" : "inactive"}`}>
+            <i className="fa-solid fa-circle" /> {role.active ? "Activo" : "Inactivo"}
+          </span>
+        </div>
+
+        <div className="role-detail-stats">
+          <div className="role-detail-stat">
+            <span className="role-detail-stat-value">{role.usersCount}</span>
+            <span className="role-detail-stat-label">
+              <i className="fa-solid fa-users" /> Usuarios asignados
+            </span>
+          </div>
+          <div className="role-detail-stat">
+            <span className="role-detail-stat-value">{rolePermissions.length}</span>
+            <span className="role-detail-stat-label">
+              <i className="fa-solid fa-key" /> Permisos
+            </span>
+          </div>
+        </div>
       </div>
 
-      <div className="detail-section">
-        <div className="role-detail-label">Nombre del rol</div>
-        <div className="role-detail-value">{role.name}</div>
-      </div>
-
-      <div className="detail-section">
-        <div className="role-detail-label">Usuarios asignados</div>
-        <div className="role-detail-value">{role.usersCount}</div>
-      </div>
-
+      {/* Módulos y acciones con acceso */}
       <div className="detail-section">
         <div className="role-detail-title">
           <i className="fa-solid fa-shield-halved" />
-          Módulos con acceso ({groups.length})
+          Módulos y acciones con acceso ({groups.length})
         </div>
 
         {groups.length === 0 ? (
           <div className="role-detail-muted">Este rol no tiene módulos asignados.</div>
         ) : (
-          <div className="role-detail-permission-groups">
-            <div className="role-detail-permission-chips">
-              {groups.map((group) => (
-                <span key={group.module} className="role-detail-chip">
-                  {group.moduleLabel}
-                </span>
-              ))}
-            </div>
+          <div className="role-modules-grid">
+            {groups.map((group) => (
+              <div key={group.module} className="role-module">
+                <div className="role-module-header">
+                  <span className="role-module-icon">
+                    <i className={`fa-solid ${group.moduleIcon}`} />
+                  </span>
+                  <span className="role-module-name">{group.moduleLabel}</span>
+                  <span className="role-module-count">
+                    {group.permissions.length}/{totalByModule[group.module] || group.permissions.length}
+                  </span>
+                </div>
+
+                <div className="role-module-actions">
+                  {group.permissions.map((perm) => (
+                    <span key={perm.id} className="role-action-chip">
+                      <i className="fa-solid fa-check" /> {perm.actionLabel}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>

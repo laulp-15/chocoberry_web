@@ -19,25 +19,19 @@ import {
   validatePassword,
   validateConfirmPassword,
   validateTermsAccepted,
+  validatePhone,
 } from "../utils/validators";
 
 
 // ============================================================
-// VALIDACIÓN LOCAL DEL TELÉFONO
+// VALIDACIÓN DEL TELÉFONO
+// Se delega en la validación compartida (utils/validators): solo números
+// (se toleran espacios y guiones) y exactamente 10 dígitos.
 // ============================================================
 
-function validatePhone(phone) {
-  const cleanPhone = phone.replace(/\s+/g, "");
-
-  if (!cleanPhone) {
-    return "El número de teléfono es obligatorio.";
-  }
-
-  if (!/^\+?\d{7,15}$/.test(cleanPhone)) {
-    return "Ingresa un número de teléfono válido.";
-  }
-
-  return "";
+function validateRegisterPhone(phone) {
+  if (!phone?.trim()) return "El número de teléfono es obligatorio.";
+  return validatePhone(phone);
 }
 
 
@@ -137,7 +131,7 @@ export default function RegisterPage() {
         return validateFullName(values.fullName);
 
       case "phone":
-        return validatePhone(values.phone);
+        return validateRegisterPhone(values.phone);
 
       case "email":
         return validateEmail(normalizeEmail(values.email));
@@ -224,7 +218,7 @@ export default function RegisterPage() {
 
     const nextErrors = {
       fullName: validateFullName(values.fullName),
-      phone: validatePhone(values.phone),
+      phone: validateRegisterPhone(values.phone),
       email: validateEmail(values.email),
       password: validatePassword(values.password),
       confirmPassword: validateConfirmPassword(

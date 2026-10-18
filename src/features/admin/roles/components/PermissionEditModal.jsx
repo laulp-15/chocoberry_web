@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import Modal from "../../../../shared/components/Modal";
 import FormTextField from "../../../../shared/components/FormTextField";
+import useFormValidation from "../../../../shared/hooks/useFormValidation";
 import "../../../../shared/css/buttons.css";
 
 /**
@@ -12,28 +13,29 @@ import "../../../../shared/css/buttons.css";
  * @param {(id: number, data: object) => Promise<any>} props.onSave
  */
 export default function PermissionEditModal({ open, onClose, permission, onSave }) {
-  const [label, setLabel] = useState("");
-  const [error, setError] = useState("");
   const [saveError, setSaveError] = useState("");
   const [saving, setSaving] = useState(false);
 
+  const { values, errors, setField, handleBlur, validateAll, reset } = useFormValidation({
+    initialValues: { label: "" },
+    validators: {
+      label: (v) => (v.label.trim() ? "" : "El nombre del permiso es obligatorio."),
+    },
+  });
+
   useEffect(() => {
-    setLabel(permission?.label ?? "");
-    setError("");
+    reset({ label: permission?.label ?? "" });
     setSaveError("");
   }, [permission, open]);
 
   if (!permission) return null;
 
   const handleSave = async () => {
-    if (!label.trim()) {
-      setError("El nombre del permiso es obligatorio.");
-      return;
-    }
+    if (!validateAll()) return;
     setSaving(true);
     setSaveError("");
     try {
-      await onSave(permission.id, { label });
+      await onSave(permission.id, { label: values.label });
       onClose();
     } catch (err) {
       setSaveError(err.message || "No se pudo completar la operación.");
@@ -64,7 +66,14 @@ export default function PermissionEditModal({ open, onClose, permission, onSave 
         <label className="form-label">Módulo</label>
         <div className="role-detail-value">{permission.moduleLabel}</div>
       </div>
-      <FormTextField label="Nombre del permiso" required value={label} onChange={setLabel} error={error} />
+      <FormTextField
+        label="Nombre del permiso"
+        required
+        value={values.label}
+        onChange={(v) => setField("label", v)}
+        onBlur={() => handleBlur("label")}
+        error={errors.label}
+      />
     </Modal>
   );
 }

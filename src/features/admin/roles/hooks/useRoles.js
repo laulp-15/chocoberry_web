@@ -58,7 +58,6 @@ export default function useRoles() {
         const newRole = {
           id: Date.now(),
           name: data.name.trim(),
-          description: data.description?.trim() || "",
           permissionIds: data.permissionIds,
           usersCount: 0,
           active: true,
@@ -88,7 +87,6 @@ export default function useRoles() {
             updated = {
               ...r,
               name: data.name.trim(),
-              description: data.description?.trim() || "",
               permissionIds: data.permissionIds,
             };
             return updated;

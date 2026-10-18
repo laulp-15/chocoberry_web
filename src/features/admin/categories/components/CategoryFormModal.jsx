@@ -1,7 +1,8 @@
 // src/features/admin/categories/components/CategoryFormModal.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import Modal from '../../../../shared/components/Modal';
 import FormTextField from '../../../../shared/components/FormTextField';
+import useFormValidation from '../../../../shared/hooks/useFormValidation';
 import './CategoryFormModal.css';
 
 const renderIcon = (name) => {
@@ -23,30 +24,26 @@ const renderIcon = (name) => {
 };
 
 export default function CategoryFormModal({ isOpen, onClose, onSubmit, initialData, isReadOnly = false }) {
-  const [nombre, setNombre] = useState('');
-  const [estado, setEstado] = useState('Activo');
-  const [errors, setErrors] = useState({});
+  const { values, errors, setField, handleBlur, validateAll, reset } = useFormValidation({
+    initialValues: { nombre: '', estado: 'Activo' },
+    validators: {
+      nombre: (v) => (v.nombre.trim() ? '' : 'El nombre es obligatorio.'),
+    },
+    immediate: ['estado'],
+  });
 
   useEffect(() => {
-    if (initialData) {
-      setNombre(initialData.nombre || '');
-      setEstado(initialData.estado || 'Activo');
-    } else {
-      setNombre('');
-      setEstado('Activo');
-    }
-    setErrors({});
+    reset({
+      nombre: initialData?.nombre || '',
+      estado: initialData?.estado || 'Activo',
+    });
   }, [initialData, isOpen]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const newErrors = {};
-    if (!nombre.trim()) newErrors.nombre = "El nombre es obligatorio.";
-    
-    setErrors(newErrors);
-    if (Object.keys(newErrors).length > 0) return;
-    
-    onSubmit({ nombre, estado });
+    if (!validateAll()) return;
+
+    onSubmit({ nombre: values.nombre, estado: values.estado });
     onClose();
   };
 
@@ -92,8 +89,9 @@ export default function CategoryFormModal({ isOpen, onClose, onSubmit, initialDa
           <form onSubmit={handleSubmit}>
             <FormTextField
               label="Nombre"
-              value={nombre}
-              onChange={(v) => { setNombre(v); setErrors(prev => ({ ...prev, nombre: undefined })); }}
+              value={values.nombre}
+              onChange={(v) => setField('nombre', v)}
+              onBlur={() => handleBlur('nombre')}
               placeholder="Ej: Día de la Madre"
               required
               error={errors.nombre}
@@ -103,17 +101,17 @@ export default function CategoryFormModal({ isOpen, onClose, onSubmit, initialDa
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.3rem' }}>
                 <button
                   type="button"
-                  onClick={() => setEstado(estado === 'Activo' ? 'Inactivo' : 'Activo')}
-                  className={`status-toggle ${estado === 'Activo' ? 'active' : 'inactive'}`}
-                  style={{ width: '46px', height: '24px', borderRadius: '12px', border: 'none', cursor: 'pointer', position: 'relative', display: 'inline-flex', alignItems: 'center', padding: '2px', backgroundColor: estado === 'Activo' ? '#2E7D32' : '#E8D7DC', transition: 'background-color 0.2s ease' }}
-                  title={estado === 'Activo' ? 'Desactivar' : 'Activar'}
+                  onClick={() => setField('estado', values.estado === 'Activo' ? 'Inactivo' : 'Activo')}
+                  className={`status-toggle ${values.estado === 'Activo' ? 'active' : 'inactive'}`}
+                  style={{ width: '46px', height: '24px', borderRadius: '12px', border: 'none', cursor: 'pointer', position: 'relative', display: 'inline-flex', alignItems: 'center', padding: '2px', backgroundColor: values.estado === 'Activo' ? '#2E7D32' : '#E8D7DC', transition: 'background-color 0.2s ease' }}
+                  title={values.estado === 'Activo' ? 'Desactivar' : 'Activar'}
                 >
                   <div
-                    className={`status-toggle-knob ${estado === 'Activo' ? 'active' : 'inactive'}`}
-                    style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: '#ffffff', position: 'absolute', left: estado === 'Activo' ? '24px' : '2px', transition: 'left 0.2s ease', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }}
+                    className={`status-toggle-knob ${values.estado === 'Activo' ? 'active' : 'inactive'}`}
+                    style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: '#ffffff', position: 'absolute', left: values.estado === 'Activo' ? '24px' : '2px', transition: 'left 0.2s ease', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }}
                   />
                 </button>
-                <span style={{ color: 'var(--texto)', fontSize: '0.9rem' }}>{estado}</span>
+                <span style={{ color: 'var(--texto)', fontSize: '0.9rem' }}>{values.estado}</span>
               </div>
             </div>
           </form>

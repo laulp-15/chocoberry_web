@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import OrderStatusBadge from "./OrderStatusBadge";
 import ImageLightbox from "../../../../shared/components/ImageLightbox";
 import { formatPrice } from "../../../../shared/utils/formatPrice";
-import { formatDisplayDate, getMunicipioLabel, getProofUrl } from "../utils/orderDisplay";
+import { formatDisplayDate, getMunicipioLabel, getProofUrl, getInitials, isPdfProof } from "../utils/orderDisplay";
 import "./OrderDetailContent.css";
 
 /**
@@ -16,6 +16,7 @@ import "./OrderDetailContent.css";
 export default function OrderDetailContent({ order }) {
   const municipioLabel = getMunicipioLabel(order.municipio);
   const proofUrl = getProofUrl(order.comprobante);
+  const proofIsPdf = isPdfProof(order.comprobante);
   
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [evidenceLightboxOpen, setEvidenceLightboxOpen] = useState(false);
@@ -25,11 +26,28 @@ export default function OrderDetailContent({ order }) {
 
   return (
     <div className="order-detail-content">
-      <div className="order-detail-top">
-        <OrderStatusBadge status={order.estado} />
-        <span className="order-detail-date">
-          <i className="fa-solid fa-calendar" /> {formatDisplayDate(order.fecha)}
-        </span>
+      {/* --- Encabezado: cliente, estado, fecha y total --- */}
+      <div className="order-detail-hero">
+        <div className="order-detail-hero-main">
+          <div className="order-detail-avatar">{getInitials(order.cliente)}</div>
+          <div className="order-detail-hero-info">
+            <div className="order-detail-hero-name">{order.cliente}</div>
+            <div className="order-detail-hero-id">
+              N. identificación: <strong>{order.clienteIdentificacion || "—"}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div className="order-detail-hero-side">
+          <OrderStatusBadge status={order.estado} />
+          <span className="order-detail-date">
+            <i className="fa-solid fa-calendar" /> Entrega: {formatDisplayDate(order.fecha)}
+          </span>
+          <div className="order-detail-hero-total">
+            <span className="order-detail-hero-total-label">Total</span>
+            <strong className="order-detail-hero-total-value">{formatPrice(order.total)}</strong>
+          </div>
+        </div>
       </div>
 
       {order.estado === "cancelado" && order.motivoCancelacion && (
@@ -47,32 +65,66 @@ export default function OrderDetailContent({ order }) {
         </div>
       )}
 
-      {/* --- 1. Datos del cliente y entrega --- */}
+      {order.estado === "rechazado" && order.motivoRechazo && (
+        <div className="detail-section cancel-reason-section">
+          <div className="detail-section-title">
+            <i className="fa-solid fa-circle-xmark" />
+            Motivo del rechazo
+          </div>
+          <div className="order-detail-value">{order.motivoRechazo}</div>
+          {order.fechaRechazo && (
+            <div className="order-detail-label" style={{ marginTop: "8px" }}>
+              Rechazado el {formatDisplayDate(order.fechaRechazo)}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* --- 1. Datos de entrega --- */}
       <div className="detail-section">
         <div className="detail-section-title">
           <i className="fa-solid fa-truck-fast" />
           Datos de entrega
         </div>
-        <div className="order-detail-grid">
-          <div>
-            <div className="order-detail-label">Cliente</div>
-            <div className="order-detail-value">{order.cliente}</div>
-          </div>
-          <div>
-            <div className="order-detail-label">Municipio</div>
-            <div className="order-detail-value">{municipioLabel}</div>
-          </div>
-          <div className="order-detail-grid-full">
-            <div className="order-detail-label">Dirección</div>
-            <div className="order-detail-value">{order.direccion || "—"}</div>
-          </div>
-          {order.instrucciones && (
+
+        <div className="order-detail-subsection">
+          <div className="order-detail-subsection-title">Dirección de entrega</div>
+          <div className="order-detail-grid">
             <div className="order-detail-grid-full">
-              <div className="order-detail-label">Instrucciones de entrega</div>
-              <div className="order-detail-value">{order.instrucciones}</div>
+              <div className="order-detail-label">Dirección</div>
+              <div className="order-detail-value">{order.direccion || "—"}</div>
             </div>
-          )}
+            <div>
+              <div className="order-detail-label">Barrio</div>
+              <div className="order-detail-value">{order.barrio || "—"}</div>
+            </div>
+            <div>
+              <div className="order-detail-label">Municipio</div>
+              <div className="order-detail-value">{municipioLabel}</div>
+            </div>
+          </div>
         </div>
+
+        <div className="order-detail-subsection">
+          <div className="order-detail-subsection-title">Recepción</div>
+          <div className="order-detail-grid">
+            <div>
+              <div className="order-detail-label">Quién recibe</div>
+              <div className="order-detail-value">{order.recipientName || "—"}</div>
+            </div>
+            <div>
+              <div className="order-detail-label">Teléfono</div>
+              <div className="order-detail-value">{order.recipientPhone || "—"}</div>
+            </div>
+          </div>
+        </div>
+
+        {order.instrucciones && (
+          <div className="order-detail-subsection">
+            <div className="order-detail-subsection-title">Instrucciones</div>
+            <div className="order-detail-value">{order.instrucciones}</div>
+          </div>
+        )}
       </div>
 
       {/* --- 2. Productos --- */}
@@ -135,73 +187,81 @@ export default function OrderDetailContent({ order }) {
         </div>
       </div>
 
-      {/* --- 3. Información de pago --- */}
-      <div className="detail-section">
-        <div className="detail-section-title">
-          <i className="fa-solid fa-credit-card" />
-          Información de pago
-        </div>
-        <div className="order-detail-grid">
-          <div>
-            <div className="order-detail-label">Comprobante</div>
-            {proofUrl ? (
-              <button type="button" className="order-detail-proof-link" onClick={() => setLightboxOpen(true)}>
-                <img src={proofUrl} alt="Comprobante de pago" className="order-detail-proof-thumb" />
-              </button>
-            ) : (
-              <div className="order-detail-value order-detail-muted">Sin comprobante adjunto</div>
-            )}
+      {/* --- 3. Información de pago y evidencia de entrega --- */}
+      <div className="order-detail-columns">
+        <div className="detail-section">
+          <div className="detail-section-title">
+            <i className="fa-solid fa-credit-card" />
+            Información de pago
+          </div>
+          <div className="order-detail-grid">
+            <div>
+              <div className="order-detail-label">Comprobante</div>
+              {proofUrl ? (
+                proofIsPdf ? (
+                  <a href={proofUrl} target="_blank" rel="noreferrer" className="order-detail-proof-pdf">
+                    <i className="fa-solid fa-file-pdf" />
+                    Ver comprobante PDF
+                  </a>
+                ) : (
+                  <button type="button" className="order-detail-proof-link" onClick={() => setLightboxOpen(true)}>
+                    <img src={proofUrl} alt="Comprobante de pago" className="order-detail-proof-thumb" />
+                  </button>
+                )
+              ) : (
+                <div className="order-detail-value order-detail-muted">Sin comprobante adjunto</div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* --- 4. Evidencia de entrega --- */}
-      <div className="detail-section">
-        <div className="detail-section-title">
-          <i className="fa-solid fa-clipboard-check" />
-          Evidencia de entrega
-        </div>
-
-        {!evidence ? (
-          <div className="order-detail-muted">
-            Este pedido todavía no cuenta con evidencia de entrega registrada.
+        <div className="detail-section">
+          <div className="detail-section-title">
+            <i className="fa-solid fa-clipboard-check" />
+            Evidencia de entrega
           </div>
-        ) : (
-          <>
-            <div className="order-detail-label" style={{ marginTop: "8px" }}>Fecha y hora registrada</div>
-            <div className="order-detail-value" style={{ marginBottom: 12 }}>
-              {evidence.deliveredAt ? formatDisplayDate(evidence.deliveredAt) : "—"}
-            </div>
 
-            <div className="order-detail-label">Observaciones del repartidor</div>
-            <div className="delivery-evidence-comments" style={{ padding: "10px", background: "var(--secundario-3, #f9f9f9)", borderRadius: "8px", marginTop: "4px", marginBottom: "12px" }}>
-              {evidence.comments || "Sin observaciones registradas."}
+          {!evidence ? (
+            <div className="order-detail-muted">
+              Este pedido todavía no cuenta con evidencia de entrega registrada.
             </div>
-
-            <div className="order-detail-label" style={{ marginTop: 14 }}>
-              Foto de evidencia
-            </div>
-            {evidence.photoUrl ? (
-              <button 
-                type="button" 
-                className="order-detail-proof-link" 
-                onClick={() => setEvidenceLightboxOpen(true)}
-                style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "block", marginTop: "4px" }}
-              >
-                <img
-                  className="delivery-evidence-photo order-detail-proof-thumb"
-                  src={evidence.photoUrl}
-                  alt={`Evidencia de entrega del pedido #${order.id}`}
-                  style={{ width: "120px", height: "120px", objectFit: "cover", borderRadius: "8px" }}
-                />
-              </button>
-            ) : (
-              <div className="order-detail-muted" style={{ marginTop: "4px" }}>
-                <i className="fa-solid fa-image" /> Sin foto de evidencia
+          ) : (
+            <>
+              <div className="order-detail-label" style={{ marginTop: "8px" }}>Fecha y hora registrada</div>
+              <div className="order-detail-value" style={{ marginBottom: 12 }}>
+                {evidence.deliveredAt ? formatDisplayDate(evidence.deliveredAt) : "—"}
               </div>
-            )}
-          </>
-        )}
+
+              <div className="order-detail-label">Observaciones del repartidor</div>
+              <div className="delivery-evidence-comments" style={{ padding: "10px", background: "var(--secundario-3, #f9f9f9)", borderRadius: "8px", marginTop: "4px", marginBottom: "12px" }}>
+                {evidence.comments || "Sin observaciones registradas."}
+              </div>
+
+              <div className="order-detail-label" style={{ marginTop: 14 }}>
+                Foto de evidencia
+              </div>
+              {evidence.photoUrl ? (
+                <button
+                  type="button"
+                  className="order-detail-proof-link"
+                  onClick={() => setEvidenceLightboxOpen(true)}
+                  style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "block", marginTop: "4px" }}
+                >
+                  <img
+                    className="delivery-evidence-photo order-detail-proof-thumb"
+                    src={evidence.photoUrl}
+                    alt={`Evidencia de entrega del pedido #${order.id}`}
+                    style={{ width: "120px", height: "120px", objectFit: "cover", borderRadius: "8px" }}
+                  />
+                </button>
+              ) : (
+                <div className="order-detail-muted" style={{ marginTop: "4px" }}>
+                  <i className="fa-solid fa-image" /> Sin foto de evidencia
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       {/* Visor para comprobante de pago */}
