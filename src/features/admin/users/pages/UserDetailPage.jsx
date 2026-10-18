@@ -3,7 +3,7 @@ import React from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import useUsersAdmin from "../hooks/useUsersAdmin";
 import RoleBadge from "../components/RoleBadge";
-import { docTypeLabel } from "../utils/documentTypes";
+import { docTypeLabel } from "../../../../shared/utils/documentTypes";
 import "./UserDetailPage.css";
 
 function formatDate(iso) {

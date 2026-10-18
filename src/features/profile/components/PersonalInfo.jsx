@@ -5,6 +5,7 @@ import { useAuth } from '../../login/hooks/useAuth';
 import { getPasswordChecks, validateConfirmPassword, validateEmail, validatePhone } from '../../login/utils/validators';
 import FormTextField from '../../../shared/components/FormTextField';
 import FormSelect from '../../../shared/components/FormSelect';
+import { DOC_TYPE_OPTIONS } from '../../../shared/utils/documentTypes';
 
 const PersonalInfo = () => {
   const { theme } = useAuthTheme();
@@ -42,13 +43,6 @@ const PersonalInfo = () => {
     address: 'Calle 123 #45-67',
     neighborhood: 'Barrio Centro',
   };
-
-  const docTypes = [
-    { value: 'CC', label: 'Cédula de Ciudadanía' },
-    { value: 'TI', label: 'Tarjeta de Identidad' },
-    { value: 'CE', label: 'Cédula de Extranjería' },
-    { value: 'PP', label: 'Pasaporte' },
-  ];
 
   useEffect(() => {
     if (user && editingSection === null) {
@@ -399,7 +393,7 @@ const PersonalInfo = () => {
                     <div>
                       <strong style={{ color: colors.textMuted, fontSize: '13px', textTransform: 'uppercase' }}>Tipo de documento</strong>
                       <p style={{ margin: '4px 0 0', fontWeight: '500' }}>
-                        {docTypes.find(d => d.value === userInfo.docType)?.label || userInfo.docType}
+                        {DOC_TYPE_OPTIONS.find(d => d.value === userInfo.docType)?.label || userInfo.docType}
                       </p>
                     </div>
                     <div>
@@ -432,7 +426,7 @@ const PersonalInfo = () => {
                       name="docType"
                       value={userInfo.docType}
                       onChange={(value) => handleChange('docType', value)}
-                      options={docTypes}
+                      options={DOC_TYPE_OPTIONS}
                       error={profileErrors.docType}
                       required
                     />

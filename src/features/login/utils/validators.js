@@ -5,6 +5,10 @@
  * Cada validate* devuelve "" cuando el campo es válido, o el mensaje
  * de error a mostrar cuando no lo es. Así los formularios solo hacen:
  *   const error = validateEmail(email);
+ *
+ * También viven aquí los datos de identidad del sistema (documento,
+ * nombres/apellidos, dirección y barrio): los usan el registro, el perfil
+ * y el panel de usuarios, y deben regirse por UNA sola política.
  */
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -82,5 +86,58 @@ export function validateConfirmPassword(password, confirmPassword) {
 
 export function validateTermsAccepted(accepted) {
   if (!accepted) return "Debes aceptar los Términos y la Política de Privacidad.";
+  return "";
+}
+
+// -----------------------------------------------------------------------------
+// DATOS DE IDENTIDAD
+// -----------------------------------------------------------------------------
+
+// Solo letras (con tildes/ñ) y espacios internos. A diferencia de
+// validateFullName, NO exige dos palabras: un nombre o un apellido pueden
+// ser una sola palabra.
+const SINGLE_NAME_REGEX = /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+(?:\s[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+)*$/;
+const ID_NUMBER_REGEX = /^\d+$/;
+
+export function validateDocType(value) {
+  if (!value) return "Selecciona el tipo de documento.";
+  return "";
+}
+
+export function validateIdNumber(value) {
+  const v = value?.trim() ?? "";
+  if (!v) return "El número de documento es obligatorio.";
+  if (!ID_NUMBER_REGEX.test(v)) return "El documento solo debe contener números.";
+  if (v.length < 6 || v.length > 15) return "El documento debe tener entre 6 y 15 dígitos.";
+  return "";
+}
+
+export function validateNombres(value) {
+  const v = value?.trim() ?? "";
+  if (!v) return "El nombre es obligatorio.";
+  if (v.length < 2) return "El nombre es demasiado corto.";
+  if (!SINGLE_NAME_REGEX.test(v)) return "El nombre solo debe contener letras.";
+  return "";
+}
+
+export function validateApellidos(value) {
+  const v = value?.trim() ?? "";
+  if (!v) return "El apellido es obligatorio.";
+  if (v.length < 2) return "El apellido es demasiado corto.";
+  if (!SINGLE_NAME_REGEX.test(v)) return "El apellido solo debe contener letras.";
+  return "";
+}
+
+export function validateAddress(value) {
+  const v = value?.trim() ?? "";
+  if (!v) return "La dirección es obligatoria.";
+  if (v.length < 5) return "Ingresa una dirección válida.";
+  return "";
+}
+
+export function validateNeighborhood(value) {
+  const v = value?.trim() ?? "";
+  if (!v) return "El barrio es obligatorio.";
+  if (v.length < 3) return "El barrio es demasiado corto.";
   return "";
 }

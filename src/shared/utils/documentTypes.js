@@ -1,6 +1,8 @@
-// src/features/admin/users/utils/documentTypes.js
+// src/shared/utils/documentTypes.js
 
-// Tipos de documento disponibles en el formulario de usuarios.
+// Tipos de documento de identidad del sistema. Vive en shared porque lo usan
+// el registro de clientes (login), el perfil y el panel de usuarios (admin):
+// el código del documento debe ser el mismo en todas partes.
 export const DOC_TYPE_OPTIONS = [
   { value: "CC", label: "Cédula de ciudadanía" },
   { value: "CE", label: "Cédula de extranjería" },

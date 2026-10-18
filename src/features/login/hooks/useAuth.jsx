@@ -714,6 +714,7 @@ export function AuthProvider({ children }) {
         phone: found.phone ?? "",
         address: found.address ?? "",
         neighborhood: found.neighborhood ?? "",
+        docType: found.docType ?? "",
         idNumber: found.idNumber ?? "",
       };
 
@@ -746,10 +747,15 @@ export function AuthProvider({ children }) {
 
   const register = useCallback(
     async ({
-      fullName,
+      docType,
+      idNumber,
+      nombres,
+      apellidos,
       email,
-      password,
+      phone,
       address,
+      neighborhood,
+      password,
     }) => {
       await delay();
 
@@ -775,14 +781,31 @@ export function AuthProvider({ children }) {
         throw err;
       }
 
+      const nombresLimpios =
+        nombres?.trim() || "";
+
+      const apellidosLimpios =
+        apellidos?.trim() || "";
+
       const newUser = {
         id: `u-${Date.now()}`,
-        fullName: fullName.trim(),
+        docType: docType || "",
+        idNumber:
+          idNumber?.trim() || "",
+        nombres: nombresLimpios,
+        apellidos: apellidosLimpios,
+        // El resto del sistema (sesión, checkout, panel) sigue leyendo fullName.
+        fullName:
+          `${nombresLimpios} ${apellidosLimpios}`.trim(),
         email: normalizedEmail,
         password,
         role: "cliente",
+        phone:
+          phone?.trim() || "",
         address:
           address?.trim() || "",
+        neighborhood:
+          neighborhood?.trim() || "",
         active: true,
         createdAt:
           new Date().toISOString(),

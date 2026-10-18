@@ -21,7 +21,7 @@ import {
   validatePasswordForCreate,
   validatePasswordForEdit,
 } from "../utils/validators";
-import { DOC_TYPE_OPTIONS } from "../utils/documentTypes";
+import { DOC_TYPE_OPTIONS } from "../../../../shared/utils/documentTypes";
 import "./UserFormModal.css";
 
 const EMPTY_FORM = {
