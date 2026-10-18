@@ -10,7 +10,19 @@ export function formatDisplayDate(iso) {
 }
 
 export function getMunicipioLabel(municipio) {
-  return MUNICIPIOS.find((m) => m.value === municipio)?.label ?? "Recojo en tienda";
+  return MUNICIPIOS.find((m) => m.value === municipio)?.label ?? "—";
+}
+
+/** Iniciales del nombre (máx. 2 palabras) para avatares. */
+export function getInitials(name) {
+  if (!name) return "—";
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase();
 }
 
 /**
@@ -21,4 +33,15 @@ export function getProofUrl(comprobante) {
   if (!comprobante) return null;
   if (typeof comprobante === "string") return comprobante;
   return URL.createObjectURL(comprobante);
+}
+
+/** Indica si un comprobante (File o string) es un PDF. */
+export function isPdfProof(comprobante) {
+  if (!comprobante) return false;
+  if (typeof comprobante === "string") {
+    return (
+      comprobante.startsWith("data:application/pdf") || /\.pdf($|\?)/i.test(comprobante)
+    );
+  }
+  return comprobante.type === "application/pdf";
 }

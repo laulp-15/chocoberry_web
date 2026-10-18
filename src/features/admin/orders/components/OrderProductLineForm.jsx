@@ -1,8 +1,9 @@
 // src/features/admin/orders/components/OrderProductLineForm.jsx
-import React, { useState } from "react";
+import React from "react";
 import FormSelect from "../../../../shared/components/FormSelect";
 import FormAutocomplete from "../../../../shared/components/FormAutocomplete";
 import FormTextField from "../../../../shared/components/FormTextField";
+import useFormValidation from "../../../../shared/hooks/useFormValidation";
 import { PRODUCTS } from "../../../catalog/data/Products";
 import { PRICE_BY_QUANTITY, getPriceByQuantity } from "../../../catalog/data/Pricing";
 import { COLOR_OPTIONS } from "../../../catalog/data/Colors";
@@ -30,28 +31,26 @@ const EMPTY_LINE = {
  * @param {(line: object) => void} props.onAdd
  */
 export default function OrderProductLineForm({ onAdd }) {
-  const [line, setLine] = useState(EMPTY_LINE);
-  const [errors, setErrors] = useState({});
+  const { values: line, errors, setField, handleBlur, validateAll, reset } = useFormValidation({
+    initialValues: EMPTY_LINE,
+    validators: {
+      productId: (l) => (l.productId ? "" : "El producto es obligatorio."),
+      quantity: (l) => (l.quantity ? "" : "La cantidad de fresas es obligatoria."),
+      color: (l) => (l.color ? "" : "El color de glaseado es obligatorio."),
+      units: (l) => (l.units && Number(l.units) > 0 ? "" : "La cantidad es obligatoria."),
+    },
+    immediate: ["productId", "quantity", "color"],
+  });
 
-  const update = (field, value) => {
-    setLine((prev) => ({ ...prev, [field]: value }));
-    setErrors((prev) => ({ ...prev, [field]: undefined }));
-  };
+  const update = (field, value) => setField(field, value);
 
   const unitPrice = line.quantity ? getPriceByQuantity(Number(line.quantity)) : 0;
 
   const canAdd = line.productId && line.quantity && line.color && Number(line.units) > 0;
 
   const handleAdd = () => {
-    const newErrors = {};
-    if (!line.productId) newErrors.productId = "El producto es obligatorio.";
-    if (!line.quantity) newErrors.quantity = "La cantidad de fresas es obligatoria.";
-    if (!line.color) newErrors.color = "El color de glaseado es obligatorio.";
-    if (!line.units || Number(line.units) <= 0) newErrors.units = "La cantidad es obligatoria.";
-    
-    setErrors(newErrors);
-    if (Object.keys(newErrors).length > 0) return;
-    
+    if (!validateAll()) return;
+
     // Buscar producto por nombre (FormAutocomplete guarda el label/nombre)
     const product = PRODUCTS.find((p) => p.name === line.productId);
     const color = COLOR_OPTIONS.find((c) => c.value === line.color);
@@ -69,8 +68,7 @@ export default function OrderProductLineForm({ onAdd }) {
       unitPrice,
     });
 
-    setLine(EMPTY_LINE);
-    setErrors({});
+    reset(EMPTY_LINE);
   };
 
   return (
@@ -80,7 +78,8 @@ export default function OrderProductLineForm({ onAdd }) {
           label="Producto"
           required
           value={line.productId}
-          onChange={(v) => { update("productId", v); setErrors(prev => ({ ...prev, productId: undefined })); }}
+          onChange={(v) => update("productId", v)}
+          onBlur={() => handleBlur("productId")}
           options={PRODUCT_OPTIONS.map(o => o.label)}
           placeholder="Buscar producto"
           error={errors.productId}
@@ -89,7 +88,8 @@ export default function OrderProductLineForm({ onAdd }) {
           label="Cantidad de fresas"
           required
           value={line.quantity}
-          onChange={(v) => { update("quantity", v); setErrors(prev => ({ ...prev, quantity: undefined })); }}
+          onChange={(v) => update("quantity", v)}
+          onBlur={() => handleBlur("quantity")}
           options={QUANTITY_OPTIONS}
           placeholder="Cantidad"
           error={errors.quantity}
@@ -98,7 +98,8 @@ export default function OrderProductLineForm({ onAdd }) {
           label="Color de glaseado"
           required
           value={line.color}
-          onChange={(v) => { update("color", v); setErrors(prev => ({ ...prev, color: undefined })); }}
+          onChange={(v) => update("color", v)}
+          onBlur={() => handleBlur("color")}
           options={COLOR_SELECT_OPTIONS}
           placeholder="Color"
           error={errors.color}
@@ -108,7 +109,8 @@ export default function OrderProductLineForm({ onAdd }) {
           type="number"
           required
           value={line.units}
-          onChange={(v) => { update("units", v); setErrors(prev => ({ ...prev, units: undefined })); }}
+          onChange={(v) => update("units", v)}
+          onBlur={() => handleBlur("units")}
           error={errors.units}
         />
       </div>

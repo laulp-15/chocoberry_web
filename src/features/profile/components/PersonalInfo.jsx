@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import useAuthTheme from '../../login/hooks/useAuthTheme';
 import { useAuth } from '../../login/hooks/useAuth';
-import { getPasswordChecks, validateConfirmPassword, validateEmail } from '../../login/utils/validators';
+import { getPasswordChecks, validateConfirmPassword, validateEmail, validatePhone } from '../../login/utils/validators';
 import FormTextField from '../../../shared/components/FormTextField';
 import FormSelect from '../../../shared/components/FormSelect';
 
@@ -38,7 +38,7 @@ const PersonalInfo = () => {
 
   const fakeData = {
     idNumber: '1234567890',
-    phone: '+57 300 123 4567',
+    phone: '300 123 4567',
     address: 'Calle 123 #45-67',
     neighborhood: 'Barrio Centro',
   };
@@ -155,8 +155,10 @@ const PersonalInfo = () => {
     }
     if (!userInfo.phone) errors.phone = 'El teléfono es obligatorio';
     else {
-      const phoneDigits = userInfo.phone.replace(/\D/g, '');
-      if (!/^\d{7,15}$/.test(phoneDigits)) errors.phone = 'El teléfono debe tener entre 7 y 15 dígitos';
+      // validatePhone devuelve "" cuando el teléfono es válido (solo números,
+      // se toleran espacios y guiones) y exactamente 10 dígitos.
+      const phoneError = validatePhone(userInfo.phone);
+      if (phoneError) errors.phone = phoneError;
     }
     setProfileErrors(errors);
     return Object.keys(errors).length === 0;

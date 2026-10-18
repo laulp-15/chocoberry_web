@@ -29,7 +29,6 @@ export const INITIAL_ROLES = [
   {
     id: 1,
     name: "Administrador",
-    description: "Acceso total a todos los procesos, módulos y funcionalidades del sistema.",
     permissionIds: ALL_PERMISSION_IDS,
     usersCount: 2,
     active: true,
@@ -39,7 +38,6 @@ export const INITIAL_ROLES = [
   {
     id: 2,
     name: "Repartidor",
-    description: "Acceso a los pedidos asignados.",
     permissionIds: REPARTIDOR_PERMISSION_IDS,
     usersCount: 3,
     active: true,
@@ -49,7 +47,6 @@ export const INITIAL_ROLES = [
   {
     id: 3,
     name: "Cliente",
-    description: "Acceso al catálogo, categorías, su carrito, sus pedidos y reseñas.",
     permissionIds: CLIENTE_PERMISSION_IDS,
     usersCount: 48,
     active: true,

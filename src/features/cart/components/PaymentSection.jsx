@@ -36,6 +36,7 @@ export default function PaymentSection({
           file={proofFile}
           onChange={onProofFileChange}
           label="Subir comprobante de pago"
+          hint="PNG, JPG, WEBP o PDF (máx. 5 MB)"
           error={proofFileError}
         />
       </div>

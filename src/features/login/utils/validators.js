@@ -59,6 +59,21 @@ export function validateLoginPassword(value) {
   return "";
 }
 
+const PHONE_ALLOWED_REGEX = /^[\d\s-]+$/;
+
+/**
+ * Formato de teléfono: solo números (se toleran espacios y guiones) y
+ * exactamente 10 dígitos. Si el campo viene vacío no valida nada, así
+ * cada formulario decide si el teléfono es obligatorio.
+ */
+export function validatePhone(value) {
+  const v = value?.trim() ?? "";
+  if (!v) return "";
+  if (!PHONE_ALLOWED_REGEX.test(v)) return "El teléfono solo debe contener números.";
+  if (v.replace(/\D/g, "").length !== 10) return "El teléfono debe tener 10 dígitos.";
+  return "";
+}
+
 export function validateConfirmPassword(password, confirmPassword) {
   if (!confirmPassword) return "Confirma tu contraseña.";
   if (password !== confirmPassword) return "Las contraseñas no coinciden.";

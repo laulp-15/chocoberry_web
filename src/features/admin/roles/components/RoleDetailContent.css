@@ -1,41 +1,9 @@
 /* src/features/admin/roles/components/RoleDetailContent.css */
 
-.role-detail-top {
+.role-detail-content {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 8px;
-  margin-bottom: 20px;
-}
-
-.role-detail-status {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-.role-detail-status i {
-  font-size: 8px;
-}
-.role-detail-status.active {
-  color: #24943c;
-}
-.role-detail-status.inactive {
-  color: var(--texto-suave);
-}
-
-.role-detail-date {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: var(--texto-muted);
-}
-.role-detail-date i {
-  color: var(--primario);
+  flex-direction: column;
+  gap: 16px;
 }
 
 /* --- Secciones tipo tarjeta (mismo patrón que OrderDetailContent) --- */
@@ -44,7 +12,6 @@
   border: 1px solid var(--borde);
   border-radius: 14px;
   padding: 18px 20px;
-  margin-bottom: 16px;
 }
 .detail-section-title {
   display: flex;
@@ -60,20 +27,89 @@
   font-size: 13px;
 }
 
-.role-detail-title {
+/* ================================
+   RESUMEN DEL ROL
+   ================================ */
+
+.role-detail-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.role-detail-summary-head {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--texto);
-  margin-bottom: 14px;
-}
-.role-detail-title i {
-  color: var(--primario);
-  font-size: 15px;
+  flex-wrap: wrap;
 }
 
+.role-detail-name {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--texto);
+  margin: 0;
+}
+
+.role-detail-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+.role-detail-status i {
+  font-size: 7px;
+}
+.role-detail-status.active {
+  color: var(--success-100, #24943c);
+  background: var(--success-20, #cee7d2);
+}
+.role-detail-status.inactive {
+  color: var(--texto-muted);
+  background: var(--secundario-2);
+}
+
+/* Stat: número + etiqueta */
+.role-detail-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.role-detail-stat {
+  flex: 1 1 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--blanco);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  padding: 12px 16px;
+}
+.role-detail-stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--primario);
+}
+.role-detail-stat-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--texto-muted);
+}
+.role-detail-stat-label i {
+  font-size: 11px;
+  color: var(--primario-claro);
+}
+
+/* Etiquetas/valores sueltos (también usados por PermissionEditModal) */
 .role-detail-label {
   font-size: 10px;
   font-weight: 700;
@@ -91,27 +127,140 @@
   color: var(--texto-muted);
 }
 
-.role-detail-permission-groups {
+/* ================================
+   MÓDULOS Y ACCIONES
+   ================================ */
+
+.role-detail-title {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.role-detail-permission-module {
-  font-size: 12px;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--texto);
-  margin-bottom: 6px;
+  margin-bottom: 14px;
 }
-.role-detail-permission-chips {
+.role-detail-title i {
+  color: var(--primario);
+  font-size: 15px;
+}
+
+.role-modules-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.role-module {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--blanco);
+  padding: 14px;
+}
+
+.role-module-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.role-module-icon {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--secundario-1);
+  color: var(--primario);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+}
+
+.role-module-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--texto);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.role-module-count {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--texto-muted);
+  background: var(--secundario-3);
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  padding: 2px 9px;
+}
+
+.role-module-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
-.role-detail-chip {
-  background: var(--secundario-1);
-  color: var(--texto);
-  font-size: 11px;
+
+.role-action-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
   font-weight: 600;
+  color: var(--texto);
+  background: var(--secundario-2);
+  border: 1px solid var(--borde);
   border-radius: 999px;
-  padding: 4px 12px;
+  padding: 3px 10px;
+}
+.role-action-chip i {
+  font-size: 9px;
+  color: var(--success-100, #24943c);
+}
+
+/* ================================
+   RESPONSIVE
+   ================================ */
+
+@media (max-width: 640px) {
+  .role-modules-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ================================
+   MODO OSCURO
+   Los verdes (--success-*) no se redefinen en oscuro, se ven brillantes/
+   con bajo contraste; aquí los ajustamos localmente.
+   ================================ */
+
+[data-theme="dark"] .role-module {
+  background: var(--bg-card);
+}
+[data-theme="dark"] .role-module-count {
+  background: var(--bg-main);
+}
+[data-theme="dark"] .role-module-icon {
+  color: var(--primario-claro);
+}
+[data-theme="dark"] .role-detail-stat {
+  background: var(--bg-card);
+}
+[data-theme="dark"] .role-detail-status.active {
+  color: #7ed68c;
+  background: rgba(75, 167, 88, 0.18);
+}
+[data-theme="dark"] .role-detail-status.inactive {
+  color: #c7b3bb;
+  background: var(--secundario-2);
+}
+[data-theme="dark"] .role-action-chip i {
+  color: #7ed68c;
 }

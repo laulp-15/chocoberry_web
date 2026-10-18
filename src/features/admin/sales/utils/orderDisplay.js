@@ -22,3 +22,14 @@ export function getProofUrl(comprobante) {
   if (typeof comprobante === "string") return comprobante;
   return URL.createObjectURL(comprobante);
 }
+
+/** Indica si un comprobante (File o string) es un PDF. */
+export function isPdfProof(comprobante) {
+  if (!comprobante) return false;
+  if (typeof comprobante === "string") {
+    return (
+      comprobante.startsWith("data:application/pdf") || /\.pdf($|\?)/i.test(comprobante)
+    );
+  }
+  return comprobante.type === "application/pdf";
+}

@@ -7,7 +7,8 @@ export default function OrderStatusSelector({
   status, 
   onChange, 
   disabled,
-  lockedReason 
+  lockedReason,
+  canReject = true
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -19,8 +20,10 @@ export default function OrderStatusSelector({
     ? sequence.slice(currentIndex + 1) 
     : [];
 
+  // "Rechazado" solo está disponible para pedidos que se pueden rechazar
+  // (ver regla de negocio en OrdersListPage).
   const options = !disabled 
-    ? validNext.filter(Boolean)
+    ? validNext.filter((value) => value !== "rechazado" || canReject)
     : [];
 
   useEffect(() => {

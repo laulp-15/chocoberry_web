@@ -2,7 +2,6 @@
 
 .categories-page {
   padding: 0;
-  background-color: var(--bg-main);
   color: var(--texto);
   min-height: 100vh;
   font-family: "Poppins", sans-serif;
@@ -52,7 +51,7 @@
 .table-actions {
   display: flex;
   gap: 12px;
-  justify-content: center;
+  justify-content: flex-end;
   align-items: center;
 }
 

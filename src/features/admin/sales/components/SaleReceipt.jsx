@@ -1,7 +1,7 @@
 // src/features/admin/sales/components/SaleReceipt.jsx
 import React, { useState } from "react";
 import { formatPrice } from "../../../../shared/utils/formatPrice";
-import { formatDisplayDate, getMunicipioLabel, getProofUrl } from "../../orders/utils/orderDisplay";
+import { formatDisplayDate, getMunicipioLabel, getProofUrl, isPdfProof } from "../../orders/utils/orderDisplay";
 import { PRODUCTS } from "../../../catalog/data/Products";
 import ImageLightbox from "../../../../shared/components/ImageLightbox";
 import "./SaleReceipt.css";
@@ -30,6 +30,7 @@ function getProductImage(productId) {
 export default function SaleReceipt({ sale }) {
   const municipioLabel = getMunicipioLabel(sale.municipio);
   const proofUrl = getProofUrl(sale.comprobante);
+  const proofIsPdf = isPdfProof(sale.comprobante);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
   return (
@@ -121,9 +122,16 @@ export default function SaleReceipt({ sale }) {
       <div className="sale-proof-card">
         <div className="sale-info-label">Comprobante de pago</div>
         {proofUrl ? (
-          <button type="button" className="sale-proof-link" onClick={() => setLightboxOpen(true)}>
-            <img src={proofUrl} alt="Comprobante de pago" className="sale-proof-thumb" />
-          </button>
+          proofIsPdf ? (
+            <a href={proofUrl} target="_blank" rel="noreferrer" className="sale-proof-pdf">
+              <i className="fa-solid fa-file-pdf" />
+              Ver comprobante PDF
+            </a>
+          ) : (
+            <button type="button" className="sale-proof-link" onClick={() => setLightboxOpen(true)}>
+              <img src={proofUrl} alt="Comprobante de pago" className="sale-proof-thumb" />
+            </button>
+          )
         ) : (
           <span className="sale-proof-empty">Sin comprobante adjunto</span>
         )}

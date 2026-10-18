@@ -1,9 +1,11 @@
 // src/features/cart/pages/CheckoutPage.jsx
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { IconButton } from "@mui/material";
 import { useAuth } from "../../login/hooks/useAuth";
 import { useCart } from "../hooks/UseCart";
+import useFormValidation from "../../../shared/hooks/useFormValidation";
+import { validatePhone } from "../../login/utils/validators";
 import ShippingForm from "../components/ShippingForm";
 import PaymentSection from "../components/PaymentSection";
 import OrderSummary from "../components/OrderSummary";
@@ -21,6 +23,7 @@ const INITIAL_FORM = {
   instructions: "",
   deliveryDate: "",
   cardMessage: "",
+  proofFile: null,
 };
 
 export default function CheckoutPage() {
@@ -28,59 +31,52 @@ export default function CheckoutPage() {
   const { user } = useAuth();
   const { items, cardMessage, clearCart } = useCart();
 
-  const [form, setForm] = useState(INITIAL_FORM);
-  const [proofFile, setProofFile] = useState(null);
-  const [errors, setErrors] = useState({});
+  const {
+    values: form,
+    errors,
+    setField,
+    setMany,
+    handleBlur,
+    validateAll,
+  } = useFormValidation({
+    initialValues: INITIAL_FORM,
+    validators: {
+      fullName: (v) => (v.fullName.trim() ? "" : "El nombre completo es obligatorio."),
+      deliveryDate: (v) => (v.deliveryDate ? "" : "Selecciona la fecha de entrega."),
+      municipio: (v) => (v.municipio ? "" : "Selecciona el municipio de entrega."),
+      address: (v) => (v.address.trim() ? "" : "Debe escribir una dirección para su entrega."),
+      neighborhood: (v) => (v.neighborhood.trim() ? "" : "Debe escribir un barrio para su entrega."),
+      recipientName: (v) => (v.recipientName.trim() ? "" : "El nombre de quien recibe es obligatorio."),
+      recipientPhone: (v) =>
+        v.recipientPhone.trim() ? validatePhone(v.recipientPhone) : "El teléfono de quien recibe es obligatorio.",
+      proofFile: (v) => (v.proofFile ? "" : "Debes adjuntar el comprobante de pago."),
+    },
+    immediate: ["deliveryDate", "municipio", "proofFile"],
+  });
 
   // Precarga el nombre y la dirección con los datos del perfil del usuario.
   // Solo rellena si el campo está vacío, para no sobrescribir lo que el
   // usuario ya haya escrito o modificado en esta pantalla.
   useEffect(() => {
     if (!user) return;
-    setForm((prev) => ({
-      ...prev,
-      fullName: prev.fullName || user.fullName || "",
-      address: prev.address || user.address || "",
-      neighborhood: prev.neighborhood || user.neighborhood || "",
-      recipientPhone: prev.recipientPhone || user.phone || "",
-    }));
+    setMany({
+      fullName: form.fullName || user.fullName || "",
+      address: form.address || user.address || "",
+      neighborhood: form.neighborhood || user.neighborhood || "",
+      recipientName: form.recipientName || user.fullName || "",
+      recipientPhone: form.recipientPhone || user.phone || "",
+    });
   }, [user]);
 
   const shippingCost = getShippingCost(form.municipio);
 
-  const handleFieldChange = (field, value) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const validate = () => {
-    const newErrors = {};
-    if (!form.fullName.trim()) newErrors.fullName = "El nombre completo es obligatorio.";
-    if (!form.deliveryDate) newErrors.deliveryDate = "Selecciona la fecha de entrega.";
-    if (!form.municipio) {
-      newErrors.municipio = "Selecciona el municipio de entrega.";
-    }
-    if (!form.address.trim()) {
-      newErrors.address = "Debe escribir una dirección para su entrega.";
-    }
-    if (!form.neighborhood.trim()) {
-      newErrors.neighborhood = "Debe escribir un barrio para su entrega.";
-    }
-    if (!form.recipientName.trim()) {
-      newErrors.recipientName = "El nombre de quien recibe es obligatorio.";
-    }
-    if (!form.recipientPhone.trim()) {
-      newErrors.recipientPhone = "El teléfono de quien recibe es obligatorio.";
-    }
-    if (!proofFile) newErrors.proofFile = "Debes adjuntar el comprobante de pago.";
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  const handleFieldChange = (field, value) => setField(field, value);
 
   const handleSubmit = () => {
-    if (!validate()) return;
+    if (!validateAll()) return;
 
-    // TODO: enviar `form` + `cardMessage` + `proofFile` + `items` al backend (crear pedido)
-    console.log("Pedido:", { ...form, cardMessage, proofFile, items, shippingCost });
+    // TODO: enviar `form` + `cardMessage` + `items` al backend (crear pedido)
+    console.log("Pedido:", { ...form, cardMessage, items, shippingCost });
 
     clearCart();
     navigate("/productos"); // TODO: navegar a una página de confirmación real
@@ -118,6 +114,7 @@ export default function CheckoutPage() {
             <ShippingForm
               values={form}
               onChange={handleFieldChange}
+              onBlurField={handleBlur}
               fullNameError={errors.fullName}
               deliveryDateError={errors.deliveryDate}
               municipioError={errors.municipio}
@@ -127,8 +124,8 @@ export default function CheckoutPage() {
               recipientPhoneError={errors.recipientPhone}
             />
             <PaymentSection
-              proofFile={proofFile}
-              onProofFileChange={setProofFile}
+              proofFile={form.proofFile}
+              onProofFileChange={(file) => setField("proofFile", file)}
               proofFileError={errors.proofFile}
             />
           </div>

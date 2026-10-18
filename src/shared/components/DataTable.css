@@ -24,7 +24,7 @@
 
 .data-table-toolbar {
   display: flex;
-  align-items: stretch;
+  align-items: center;
   gap: 12px;
   flex-wrap: wrap;
 }
@@ -52,8 +52,10 @@
 }
 
 .data-table-search {
-  flex: 1;
-  min-width: 220px;
+  flex: 0 1 480px;
+  max-width: 480px;
+  min-width: 200px;
+  margin-left: auto;
 }
 .data-table-search-input.MuiOutlinedInput-root {
   width: 100%;
@@ -121,11 +123,13 @@
   background: var(--secundario-3);
 }
 
-/* --- FormSelect en toolbar: forzar misma altura que botón e input --- */
+/* --- FormSelect en toolbar: misma altura que botón e input --- */
+.data-table-toolbar .form-field {
+  margin-bottom: 0;
+}
 .data-table-toolbar .form-select.MuiOutlinedInput-root {
   min-height: 42px !important;
   height: 42px !important;
-  border-radius: 999px !important;
 }
 .data-table-toolbar .form-select .MuiSelect-select {
   padding-top: 8px !important;

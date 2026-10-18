@@ -1,8 +1,11 @@
 // src/admin/products/components/ProductFormModal.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Modal from '../../../../shared/components/Modal';
 import FormTextField from '../../../../shared/components/FormTextField';
 import FormSelect from '../../../../shared/components/FormSelect';
+import ImageLightbox from '../../../../shared/components/ImageLightbox';
+import useFormValidation from '../../../../shared/hooks/useFormValidation';
+import { IMAGE_ACCEPT, validateFile } from '../../../../shared/utils/fileValidation';
 import './ProductFormModal.css';
 
 const CATEGORIA_OPTIONS = [
@@ -13,62 +16,68 @@ const CATEGORIA_OPTIONS = [
 ];
 
 export default function ProductFormModal({ isOpen, onClose, onSubmit, initialData, isReadOnly = false }) {
-  const [nombre, setNombre] = useState('');
-  const [descripcion, setDescripcion] = useState('');
-  const [categoria, setCategoria] = useState('');
-
-  const [imagen, setImagen] = useState('');
-  const [errors, setErrors] = useState({});
+  // Visor ampliado de la imagen (funciona en el detalle y en crear/editar).
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const { values, errors, setField, handleBlur, setFieldError, validateAll, reset } =
+    useFormValidation({
+      initialValues: { nombre: '', descripcion: '', categoria: '', imagen: '' },
+      validators: {
+        nombre: (v) => (v.nombre.trim() ? '' : 'El nombre es obligatorio.'),
+        descripcion: (v) => (v.descripcion.trim() ? '' : 'La descripción es obligatoria.'),
+        categoria: (v) => (v.categoria ? '' : 'Selecciona una categoría.'),
+        imagen: (v) => (v.imagen ? '' : 'La fotografía del producto es obligatoria.'),
+      },
+      immediate: ['categoria', 'imagen'],
+    });
 
   useEffect(() => {
-    if (initialData) {
-      setNombre(initialData.nombre || '');
-      setDescripcion(initialData.descripcion || '');
-      setCategoria(initialData.categoria || 'Fechas especiales');
-      setImagen(initialData.imagen || initialData.foto || initialData.url || '');
-    } else {
-      setNombre('');
-      setDescripcion('');
-      setCategoria('');
-      setImagen('');
-    }
-    setErrors({});
+    reset(
+      initialData
+        ? {
+            nombre: initialData.nombre || '',
+            descripcion: initialData.descripcion || '',
+            categoria: initialData.categoria || 'Fechas especiales',
+            imagen: initialData.imagen || initialData.foto || initialData.url || '',
+          }
+        : { nombre: '', descripcion: '', categoria: '', imagen: '' }
+    );
   }, [initialData, isOpen]);
 
   const handleImageChange = (e) => {
-    setErrors(prev => ({ ...prev, imagen: undefined }));
     const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagen(reader.result);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    const validationError = validateFile(file, { allowPdf: false });
+    if (validationError) {
+      setFieldError('imagen', validationError);
+      e.target.value = '';
+      return;
     }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setField('imagen', reader.result);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const newErrors = {};
-    if (!nombre.trim()) newErrors.nombre = "El nombre es obligatorio.";
-    if (!descripcion.trim()) newErrors.descripcion = "La descripción es obligatoria.";
-    if (!categoria) newErrors.categoria = "Selecciona una categoría.";
-    if (!imagen) newErrors.imagen = "La fotografía del producto es obligatoria.";
-    
-    setErrors(newErrors);
-    if (Object.keys(newErrors).length > 0) return;
-    
+    if (!validateAll()) return;
+
     onSubmit({
-      nombre,
-      descripcion,
-      categoria,
-      imagen
+      nombre: values.nombre,
+      descripcion: values.descripcion,
+      categoria: values.categoria,
+      imagen: values.imagen,
     });
     onClose();
   };
 
   const productImg = initialData?.imagen || initialData?.foto || initialData?.url;
   const title = isReadOnly ? 'Detalle del Producto' : initialData ? 'Editar Producto' : 'Crear Producto';
+  // Imagen visible según el modo: la cargada en el formulario o la del detalle.
+  const shownImage = isReadOnly ? productImg : values.imagen;
 
   return (
     <Modal
@@ -98,12 +107,22 @@ export default function ProductFormModal({ isOpen, onClose, onSubmit, initialDat
           <>
             <div className="product-detail-image-wrapper">
               {productImg ? (
-                <img
-                  src={productImg}
-                  alt={initialData?.nombre}
-                  className="product-detail-image-img"
-                  onError={(e) => { e.target.style.display = 'none'; }}
-                />
+                <button
+                  type="button"
+                  className="product-detail-image-thumb"
+                  onClick={() => setLightboxOpen(true)}
+                  title="Ver imagen ampliada"
+                >
+                  <img
+                    src={productImg}
+                    alt={initialData?.nombre}
+                    className="product-detail-image-img"
+                    onError={(e) => { e.target.style.display = 'none'; }}
+                  />
+                  <span className="product-detail-image-zoom">
+                    <i className="fa-solid fa-magnifying-glass-plus" />
+                  </span>
+                </button>
               ) : (
                 <div className="product-detail-image-placeholder">
                   <i className="fa-solid fa-image" style={{ fontSize: '2rem', marginBottom: '0.4rem' }}></i>
@@ -136,8 +155,9 @@ export default function ProductFormModal({ isOpen, onClose, onSubmit, initialDat
           <form onSubmit={handleSubmit}>
             <FormTextField
               label="Nombre del Producto"
-              value={nombre}
-              onChange={(v) => { setNombre(v); setErrors(prev => ({ ...prev, nombre: undefined })); }}
+              value={values.nombre}
+              onChange={(v) => setField('nombre', v)}
+              onBlur={() => handleBlur('nombre')}
               placeholder="Ej: Caja Corazón Rosas"
               required
               error={errors.nombre}
@@ -145,16 +165,26 @@ export default function ProductFormModal({ isOpen, onClose, onSubmit, initialDat
 
             <div className="form-field">
               <label className="form-label">Fotografía del Producto *</label>
-              {imagen ? (
+              {values.imagen ? (
                 <div className="image-preview">
-                  <img src={imagen} alt="Vista previa" className="image-preview-img" />
+                  <button
+                    type="button"
+                    className="image-preview-thumb"
+                    onClick={() => setLightboxOpen(true)}
+                    title="Ver imagen ampliada"
+                  >
+                    <img src={values.imagen} alt="Vista previa" className="image-preview-img" />
+                    <span className="image-preview-zoom">
+                      <i className="fa-solid fa-magnifying-glass-plus" />
+                    </span>
+                  </button>
                   <div className="image-preview-info">
                     <span className="image-preview-name">Imagen cargada con éxito</span>
                     <span className="image-preview-ready">Lista para guardar</span>
                   </div>
                   <button
                     type="button"
-                    onClick={() => setImagen('')}
+                    onClick={() => setField('imagen', '')}
                     className="image-preview-remove"
                     title="Cambiar imagen"
                   >
@@ -167,10 +197,10 @@ export default function ProductFormModal({ isOpen, onClose, onSubmit, initialDat
                     <i className="fa-solid fa-cloud-arrow-up"></i>
                   </div>
                   <span className="image-upload-text">Haz clic para elegir una foto</span>
-                  <span className="image-upload-hint">PNG, JPG o WEBP desde tus archivos</span>
+                  <span className="image-upload-hint">PNG, JPG o WEBP (máx. 5 MB)</span>
                   <input
                     type="file"
-                    accept="image/*"
+                    accept={IMAGE_ACCEPT}
                     onChange={handleImageChange}
                     style={{ display: 'none' }}
                   />
@@ -181,8 +211,9 @@ export default function ProductFormModal({ isOpen, onClose, onSubmit, initialDat
 
             <FormTextField
               label="Descripción"
-              value={descripcion}
-              onChange={(v) => { setDescripcion(v); setErrors(prev => ({ ...prev, descripcion: undefined })); }}
+              value={values.descripcion}
+              onChange={(v) => setField('descripcion', v)}
+              onBlur={() => handleBlur('descripcion')}
               placeholder="Breve descripción del producto..."
               multiline
               minRows={3}
@@ -192,13 +223,23 @@ export default function ProductFormModal({ isOpen, onClose, onSubmit, initialDat
 
             <FormSelect
               label="Categoría"
-              value={categoria}
-              onChange={(v) => { setCategoria(v); setErrors(prev => ({ ...prev, categoria: undefined })); }}
+              value={values.categoria}
+              onChange={(v) => setField('categoria', v)}
+              onBlur={() => handleBlur('categoria')}
               options={CATEGORIA_OPTIONS}
               required
               error={errors.categoria}
             />
           </form>
+        )}
+
+        {shownImage && (
+          <ImageLightbox
+            open={lightboxOpen}
+            onClose={() => setLightboxOpen(false)}
+            src={shownImage}
+            alt={initialData?.nombre || 'Vista previa'}
+          />
         )}
       </div>
     </Modal>

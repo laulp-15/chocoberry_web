@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import Modal from "../../../../shared/components/Modal";
 import FormTextField from "../../../../shared/components/FormTextField";
 import PermissionsChecklist from "./PermissionsChecklist";
+import useFormValidation from "../../../../shared/hooks/useFormValidation";
 import { useRolesContext } from "../context/RolesContext";
 import "../../../../shared/css/buttons.css";
 import "./RoleFormModal.css";
@@ -13,14 +14,22 @@ export default function RoleFormModal({ open, onClose, initialData, onSaved }) {
   const { activePermissions, createRole, updateRole } = useRolesContext();
   const isEditing = Boolean(initialData);
 
-  const [role, setRole] = useState(EMPTY_ROLE);
-  const [errors, setErrors] = useState({});
+  const { values: role, errors, setField, handleBlur, validateAll, reset } = useFormValidation({
+    initialValues: EMPTY_ROLE,
+    validators: {
+      name: (r) => (r.name.trim() ? "" : "El nombre del rol es obligatorio."),
+      permissionIds: (r) =>
+        r.permissionIds.length > 0 ? "" : "Debes asignar como mínimo un permiso.",
+    },
+    immediate: ["permissionIds"],
+  });
+
   const [saveError, setSaveError] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!open) return;
-    setRole(
+    reset(
       initialData
         ? {
             name: initialData.name,
@@ -28,23 +37,13 @@ export default function RoleFormModal({ open, onClose, initialData, onSaved }) {
           }
         : EMPTY_ROLE
     );
-    setErrors({});
     setSaveError("");
   }, [open, initialData]);
 
-  const update = (field, value) => setRole((prev) => ({ ...prev, [field]: value }));
-
-  const validate = () => {
-    const newErrors = {};
-    if (!role.name.trim()) newErrors.name = "El nombre del rol es obligatorio.";
-    if (role.permissionIds.length === 0)
-      newErrors.permissionIds = "Debes asignar como mínimo un permiso.";
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  const update = (field, value) => setField(field, value);
 
   const handleSave = async () => {
-    if (!validate()) return;
+    if (!validateAll()) return;
     setSaving(true);
     setSaveError("");
     try {
@@ -96,6 +95,7 @@ export default function RoleFormModal({ open, onClose, initialData, onSaved }) {
         required
         value={role.name}
         onChange={(v) => update("name", v)}
+        onBlur={() => handleBlur("name")}
         placeholder="Ej. Gestor de inventario"
         error={errors.name}
       />
