@@ -351,5 +351,5 @@ function defaultRouteForRole(role) {
     return "/admin/pedidos";
   }
 
-  return "/users/listdomicilios";
+  return "/users/orders";
 }

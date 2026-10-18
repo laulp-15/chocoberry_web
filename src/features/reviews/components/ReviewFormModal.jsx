@@ -12,9 +12,16 @@ const RATING_COPY = {
 };
 
 const MAX_COMMENT = 300;
-const EMPTY_FORM = { clientName: "", rating: 1, comment: "", highlights: [] };
+const EMPTY_FORM = { clientName: "", rating: 1, comment: "" };
 
 /**
+ * Modal para publicar una reseña.
+ * - Las estrellas empiezan con UNA sola rellena; el cliente debe elegir su calificación
+ *   (si intenta publicar sin elegir, se le avisa).
+ * - Al publicar muestra una pantalla de agradecimiento y se cierra sola.
+ * - Se renderiza en un portal sobre el <body>, así queda por encima de todo.
+ *
+ * onSubmit recibe: { clientName, rating, comment, date, tag }
  *
  * @param {object} props
  * @param {boolean} props.isOpen
@@ -23,7 +30,7 @@ const EMPTY_FORM = { clientName: "", rating: 1, comment: "", highlights: [] };
  */
 export default function ReviewFormModal({ isOpen, onClose, onSubmit }) {
   const [form, setForm] = useState(EMPTY_FORM);
-  const [touched, setTouched] = useState(false); 
+  const [touched, setTouched] = useState(false); // ¿ya eligió una calificación?
   const [errors, setErrors] = useState({});
   const [hoverRating, setHoverRating] = useState(0);
   const [selectTick, setSelectTick] = useState(0);
@@ -35,6 +42,7 @@ export default function ReviewFormModal({ isOpen, onClose, onSubmit }) {
     onCloseRef.current = onClose;
   });
 
+  // Al abrir: formulario limpio, foco en el modal, cierre con Escape y sin scroll de fondo.
   useEffect(() => {
     if (!isOpen) return undefined;
 
@@ -58,6 +66,7 @@ export default function ReviewFormModal({ isOpen, onClose, onSubmit }) {
     };
   }, [isOpen]);
 
+  // Tras publicar, la pantalla de agradecimiento se cierra sola.
   useEffect(() => {
     if (!sent) return undefined;
     const timer = setTimeout(() => onCloseRef.current(), 2600);
@@ -77,15 +86,6 @@ export default function ReviewFormModal({ isOpen, onClose, onSubmit }) {
     setSelectTick((t) => t + 1);
   };
 
-  const toggleHighlight = (id) => {
-    setForm((prev) => ({
-      ...prev,
-      highlights: prev.highlights.includes(id)
-        ? prev.highlights.filter((h) => h !== id)
-        : [...prev.highlights, id],
-    }));
-  };
-
   const validate = () => {
     const newErrors = {};
     if (!touched) newErrors.rating = "Elige cuántas estrellas le das a tu experiencia.";
@@ -103,7 +103,6 @@ export default function ReviewFormModal({ isOpen, onClose, onSubmit }) {
       clientName: form.clientName.trim(),
       rating: form.rating,
       comment: form.comment.trim(),
-      highlights: form.highlights,
       date: "Hoy",
       tag: "Cliente Satisfecho",
     });
@@ -132,165 +131,169 @@ export default function ReviewFormModal({ isOpen, onClose, onSubmit }) {
       >
         <div className="review-modal-inner">
           {sent ? (
+            /* ---------- PANTALLA DE AGRADECIMIENTO ---------- */
             <div className="review-success">
-            <div className="review-success-icon">
-              <i className="fa-solid fa-circle-check" aria-hidden="true" />
-            </div>
-            <h2 id="review-modal-title" className="review-success-title">
-              ¡Gracias{firstName ? `, ${firstName}` : ""}!
-            </h2>
-            <p className="review-success-text">
-              Tu reseña ya está publicada y nos ayuda a seguir endulzando momentos.
-            </p>
-            <button type="button" className="review-submit" onClick={onClose}>
-              Cerrar
-            </button>
-          </div>
-        ) : (
-          <>
-            {/* ---------- ENCABEZADO ---------- */}
-            <div className="review-modal-header">
-              <button
-                type="button"
-                className="review-modal-close"
-                onClick={onClose}
-                aria-label="Cerrar"
-              >
-                <i className="fa-solid fa-xmark" aria-hidden="true" />
-              </button>
-
-              <div className="review-modal-badge">
-                <i className="fa-solid fa-heart" aria-hidden="true" />
+              <div className="review-success-icon">
+                <i className="fa-solid fa-circle-check" aria-hidden="true" />
               </div>
-              <h2 id="review-modal-title" className="review-modal-title">
-                Tu opinión nos inspira
+              <h2 id="review-modal-title" className="review-success-title">
+                ¡Gracias{firstName ? `, ${firstName}` : ""}!
               </h2>
-              <p className="review-modal-subtitle">
-                Cuéntanos qué tal fue tu experiencia con ChocoBerry
+              <p className="review-success-text">
+                Tu reseña ya está publicada y nos ayuda a seguir endulzando momentos.
               </p>
+              <button type="button" className="review-submit" onClick={onClose}>
+                Cerrar
+              </button>
             </div>
-
-            {/* ---------- FORMULARIO ---------- */}
-            <form className="review-modal-body" onSubmit={handleSubmit} noValidate>
-              {/* Calificación */}
-              <div className="review-rating">
-                <div
-                  className="review-stars"
-                  role="radiogroup"
-                  aria-label="Calificación"
-                  onMouseLeave={() => setHoverRating(0)}
+          ) : (
+            <>
+              {/* ---------- ENCABEZADO ---------- */}
+              <div className="review-modal-header">
+                <button
+                  type="button"
+                  className="review-modal-close"
+                  onClick={onClose}
+                  aria-label="Cerrar"
                 >
-                  {[1, 2, 3, 4, 5].map((star) => {
-                    const active = shownRating >= star;
-                    const selected = touched && form.rating === star;
-                    return (
-                      <button
-                        type="button"
-                        key={star}
-                        role="radio"
-                        aria-checked={selected}
-                        aria-label={`${star} de 5 estrellas`}
-                        className={`review-star-btn ${selected ? "is-selected" : ""}`}
-                        onClick={() => selectRating(star)}
-                        onMouseEnter={() => setHoverRating(star)}
-                      >
-                        {/* El key cambia al elegir, para repetir la animación "pop" */}
-                        <i
-                          key={selected ? `sel-${selectTick}` : `star-${star}`}
-                          className={`${active ? "fa-solid" : "fa-regular"} fa-star ${
-                            active ? "is-on" : "is-off"
-                          }`}
-                          aria-hidden="true"
-                        />
-                      </button>
-                    );
-                  })}
+                  <i className="fa-solid fa-xmark" aria-hidden="true" />
+                </button>
+
+                <div className="review-modal-badge">
+                  <i className="fa-solid fa-heart" aria-hidden="true" />
+                </div>
+                <h2 id="review-modal-title" className="review-modal-title">
+                  Tu opinión nos inspira
+                </h2>
+                <p className="review-modal-subtitle">
+                  Cuéntanos qué tal fue tu experiencia con ChocoBerry
+                </p>
+              </div>
+
+              {/* ---------- FORMULARIO ---------- */}
+              <form className="review-modal-body" onSubmit={handleSubmit} noValidate>
+                {/* Calificación */}
+                <div className="review-rating">
+                  <div
+                    className="review-stars"
+                    role="radiogroup"
+                    aria-label="Calificación"
+                    onMouseLeave={() => setHoverRating(0)}
+                  >
+                    {[1, 2, 3, 4, 5].map((star) => {
+                      const active = shownRating >= star;
+                      const selected = touched && form.rating === star;
+                      return (
+                        <button
+                          type="button"
+                          key={star}
+                          role="radio"
+                          aria-checked={selected}
+                          aria-label={`${star} de 5 estrellas`}
+                          className={`review-star-btn ${selected ? "is-selected" : ""}`}
+                          onClick={() => selectRating(star)}
+                          onMouseEnter={() => setHoverRating(star)}
+                        >
+                          {/* El key cambia al elegir, para repetir la animación "pop" */}
+                          <i
+                            key={selected ? `sel-${selectTick}` : `star-${star}`}
+                            className={`${active ? "fa-solid" : "fa-regular"} fa-star ${
+                              active ? "is-on" : "is-off"
+                            }`}
+                            aria-hidden="true"
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <p
+                    className={`review-rating-label ${touched || hoverRating ? "is-set" : ""}`}
+                    aria-live="polite"
+                  >
+                    {copy.label}
+                  </p>
+                  <p className="review-rating-hint">{copy.hint}</p>
+
+                  {errors.rating && (
+                    <p className="review-error review-error--center">
+                      <i className="fa-solid fa-circle-exclamation" aria-hidden="true" />
+                      {errors.rating}
+                    </p>
+                  )}
                 </div>
 
-                <p className={`review-rating-label ${touched || hoverRating ? "is-set" : ""}`} aria-live="polite">
-                  {copy.label}
-                </p>
-                <p className="review-rating-hint">{copy.hint}</p>
-
-                {errors.rating && (
-                  <p className="review-error review-error--center">
-                    <i className="fa-solid fa-circle-exclamation" aria-hidden="true" />
-                    {errors.rating}
-                  </p>
-                )}
-              </div>
-
-              {/* Nombre */}
-              <div className="review-field">
-                <label className="review-label" htmlFor="review-name">
-                  Tu nombre
-                </label>
-                <input
-                  id="review-name"
-                  type="text"
-                  className={`review-input ${errors.clientName ? "has-error" : ""}`}
-                  placeholder="Ej. María Camila"
-                  value={form.clientName}
-                  onChange={(e) => update("clientName", e.target.value)}
-                  autoComplete="name"
-                />
-                {errors.clientName && (
-                  <p className="review-error">
-                    <i className="fa-solid fa-circle-exclamation" aria-hidden="true" />
-                    {errors.clientName}
-                  </p>
-                )}
-              </div>
-
-              {/* Comentario */}
-              <div className="review-field">
-                <label className="review-label" htmlFor="review-comment">
-                  Tu reseña
-                </label>
-                <textarea
-                  id="review-comment"
-                  rows={4}
-                  maxLength={MAX_COMMENT}
-                  className={`review-input review-textarea ${errors.comment ? "has-error" : ""}`}
-                  placeholder="¿Qué fue lo que más te gustó de tu pedido?"
-                  value={form.comment}
-                  onChange={(e) => update("comment", e.target.value)}
-                />
-                <div className="review-textarea-footer">
-                  {errors.comment ? (
+                {/* Nombre */}
+                <div className="review-field">
+                  <label className="review-label" htmlFor="review-name">
+                    Tu nombre
+                  </label>
+                  <input
+                    id="review-name"
+                    type="text"
+                    className={`review-input ${errors.clientName ? "has-error" : ""}`}
+                    placeholder="Ej. María Camila"
+                    value={form.clientName}
+                    onChange={(e) => update("clientName", e.target.value)}
+                    autoComplete="name"
+                  />
+                  {errors.clientName && (
                     <p className="review-error">
                       <i className="fa-solid fa-circle-exclamation" aria-hidden="true" />
-                      {errors.comment}
+                      {errors.clientName}
                     </p>
-                  ) : (
-                    <span />
                   )}
-                  <span
-                    className={`review-counter ${
-                      form.comment.length >= MAX_COMMENT - 20 ? "is-near" : ""
-                    }`}
-                  >
-                    {form.comment.length}/{MAX_COMMENT}
-                  </span>
                 </div>
-              </div>
 
-              {/* Acciones */}
-              <div className="review-actions">
-                <button type="button" className="review-cancel" onClick={onClose}>
-                  Cancelar
-                </button>
-                <button type="submit" className="review-submit">
-                  Publicar reseña
-                  <i className="fa-solid fa-paper-plane" aria-hidden="true" />
-                </button>
-              </div>
-            </form>
-          </>
-        )}
+                {/* Comentario */}
+                <div className="review-field">
+                  <label className="review-label" htmlFor="review-comment">
+                    Tu reseña
+                  </label>
+                  <textarea
+                    id="review-comment"
+                    rows={4}
+                    maxLength={MAX_COMMENT}
+                    className={`review-input review-textarea ${errors.comment ? "has-error" : ""}`}
+                    placeholder="¿Qué fue lo que más te gustó de tu pedido?"
+                    value={form.comment}
+                    onChange={(e) => update("comment", e.target.value)}
+                  />
+                  <div className="review-textarea-footer">
+                    {errors.comment ? (
+                      <p className="review-error">
+                        <i className="fa-solid fa-circle-exclamation" aria-hidden="true" />
+                        {errors.comment}
+                      </p>
+                    ) : (
+                      <span />
+                    )}
+                    <span
+                      className={`review-counter ${
+                        form.comment.length >= MAX_COMMENT - 20 ? "is-near" : ""
+                      }`}
+                    >
+                      {form.comment.length}/{MAX_COMMENT}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Acciones */}
+                <div className="review-actions">
+                  <button type="button" className="review-cancel" onClick={onClose}>
+                    Cancelar
+                  </button>
+                  <button type="submit" className="review-submit">
+                    Publicar reseña
+                    <i className="fa-solid fa-paper-plane" aria-hidden="true" />
+                  </button>
+                </div>
+              </form>
+            </>
+          )}
+        </div>
       </div>
     </div>
-  </div>
   );
 
   return ReactDOM.createPortal(modalContent, document.body);

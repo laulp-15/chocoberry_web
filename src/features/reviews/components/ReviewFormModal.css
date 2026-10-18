@@ -16,12 +16,14 @@
   animation: review-fade-in 0.2s ease-out;
 }
 
+/* La tarjeta mide lo que mide su contenido (formulario o agradecimiento).
+   Si no cabe en pantalla, el área interna hace scroll. */
 .review-modal {
   position: relative;
   width: 100%;
   max-width: 560px;
-  height: 92vh;
-  max-height: 760px;
+  height: auto;
+  max-height: min(92vh, 760px);
   min-height: 0;
   background: var(--bg-card);
   color: var(--texto);
@@ -38,7 +40,7 @@
 
 /* ---------- Área desplazable ---------- */
 .review-modal-inner {
-  flex: 1 1 0;
+  flex: 0 1 auto;
   min-height: 0;
   min-width: 0;
   overflow-x: hidden;
@@ -495,7 +497,7 @@
   }
 
   .review-modal {
-    height: 94vh;
+    height: auto;
     max-height: 94vh;
     border-radius: 20px;
   }
@@ -529,7 +531,6 @@
   }
 
   .review-star-btn,
-  .review-chip,
   .review-submit,
   .review-modal-close {
     transition: none;

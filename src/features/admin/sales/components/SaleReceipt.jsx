@@ -1,7 +1,7 @@
 // src/features/admin/sales/components/SaleReceipt.jsx
 import React, { useState } from "react";
 import { formatPrice } from "../../../../shared/utils/formatPrice";
-import { formatDisplayDate, getMunicipioLabel, getPaymentLabel, getProofUrl } from "../../orders/utils/orderDisplay";
+import { formatDisplayDate, getMunicipioLabel, getProofUrl } from "../../orders/utils/orderDisplay";
 import { PRODUCTS } from "../../../catalog/data/Products";
 import ImageLightbox from "../../../../shared/components/ImageLightbox";
 import "./SaleReceipt.css";
@@ -29,7 +29,6 @@ function getProductImage(productId) {
  */
 export default function SaleReceipt({ sale }) {
   const municipioLabel = getMunicipioLabel(sale.municipio);
-  const paymentLabel = getPaymentLabel(sale.medioPago);
   const proofUrl = getProofUrl(sale.comprobante);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
@@ -46,14 +45,6 @@ export default function SaleReceipt({ sale }) {
                 <div className="sale-client-name">{sale.cliente}</div>
                 <div className="sale-client-sub">{municipioLabel}</div>
               </div>
-            </div>
-          </div>
-
-          <div className="sale-info-col">
-            <div className="sale-info-label">Método de pago</div>
-            <div className="sale-info-with-icon">
-              <i className="fa-solid fa-credit-card" />
-              {paymentLabel}
             </div>
           </div>
 

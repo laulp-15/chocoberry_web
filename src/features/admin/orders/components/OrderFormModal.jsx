@@ -11,7 +11,6 @@ import OrderProductLineItem from "./OrderProductLineItem";
 import { MOCK_CLIENTS } from "../data/mockClients";
 import { ORDER_STATUSES } from "../data/orderStatus";
 import { MUNICIPIOS, getShippingCost } from "../../../cart/data/Shipping";
-import { PAYMENT_METHODS } from "../../../cart/data/PaymentMethods";
 import { formatPrice } from "../../../../shared/utils/formatPrice";
 import "./OrderFormModal.css";
 
@@ -25,7 +24,6 @@ const EMPTY_ORDER = {
   direccion: "",
   municipio: "",
   instrucciones: "",
-  medioPago: "",
   comprobante: null,
   cardMessage: "",
   products: [],
@@ -69,7 +67,6 @@ export default function OrderFormModal({ open, onClose, initialData, onSave }) {
     if (!order.fecha) newErrors.fecha = "La fecha es obligatoria.";
     if (!order.direccion.trim()) newErrors.direccion = "La dirección es obligatoria.";
     if (!order.municipio) newErrors.municipio = "El municipio es obligatorio.";
-    if (!order.medioPago) newErrors.medioPago = "Selecciona un medio de pago.";
     if (!order.estado) newErrors.estado = "Selecciona un estado.";
     if (!order.comprobante) newErrors.comprobante = "Debes adjuntar el comprobante de pago.";
     if (order.products.length === 0) newErrors.products = "Agrega al menos un producto.";
@@ -208,15 +205,6 @@ export default function OrderFormModal({ open, onClose, initialData, onSave }) {
         {/* SECCIÓN 3: PAGO Y COMPROBANTE */}
         <div className="order-form-block">
           <h3 className="order-block-title">3. Pago y Comprobante</h3>
-
-          <FormSelect
-            label="Medio de pago"
-            required
-            value={order.medioPago}
-            onChange={(v) => update("medioPago", v)}
-            options={PAYMENT_METHODS}
-            error={errors.medioPago}
-          />
 
           <div className="form-field">
             <label className="form-label">Comprobante de pago *</label>

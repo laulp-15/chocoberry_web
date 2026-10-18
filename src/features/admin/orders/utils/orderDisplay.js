@@ -2,7 +2,6 @@
 // Helpers de presentación compartidos entre OrderDetailContent (Pedidos)
 // y SaleReceipt (Ventas) — misma data, distintas vistas.
 import { MUNICIPIOS } from "../../../cart/data/Shipping";
-import { PAYMENT_METHODS } from "../../../cart/data/PaymentMethods";
 
 export function formatDisplayDate(iso) {
   if (!iso) return "—";
@@ -12,10 +11,6 @@ export function formatDisplayDate(iso) {
 
 export function getMunicipioLabel(municipio) {
   return MUNICIPIOS.find((m) => m.value === municipio)?.label ?? "Recojo en tienda";
-}
-
-export function getPaymentLabel(medioPago) {
-  return PAYMENT_METHODS.find((p) => p.value === medioPago)?.label ?? "—";
 }
 
 /**

@@ -1,10 +1,8 @@
 // src/features/admin/sales/pages/SalesListPage.jsx
-import React, { useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import DataTable from "../../../../shared/components/DataTable";
-import FormSelect from "../../../../shared/components/FormSelect";
 import { INITIAL_ORDERS } from "../../orders/data/MockOrders";
-import { PAYMENT_METHODS } from "../../../cart/data/PaymentMethods";
 import { formatPrice } from "../../../../shared/utils/formatPrice";
 
 // Ventas = pedidos ya confirmados (en preparación o despachados).
@@ -13,13 +11,8 @@ const SALE_STATUSES = ["en_preparacion", "despachado"];
 
 export default function SalesListPage() {
   const navigate = useNavigate();
-  const [paymentFilter, setPaymentFilter] = useState("");
 
-  const sales = INITIAL_ORDERS.filter((o) => {
-    const isSaleStatus = SALE_STATUSES.includes(o.estado);
-    const matchesPayment = !paymentFilter || o.medioPago === paymentFilter;
-    return isSaleStatus && matchesPayment;
-  });
+  const sales = INITIAL_ORDERS.filter((o) => SALE_STATUSES.includes(o.estado));
 
   const handleGenerateReceipt = (row) => {
     console.log("TODO: generar comprobante digital (PDF) para el pedido", row.id);
@@ -32,11 +25,6 @@ export default function SalesListPage() {
   const columns = [
     { key: "cliente", label: "Cliente" },
     { key: "fecha", label: "Fecha" },
-    {
-      key: "medioPago",
-      label: "Medio de pago",
-      render: (row) => PAYMENT_METHODS.find((p) => p.value === row.medioPago)?.label ?? "—",
-    },
     { key: "total", label: "Total", render: (row) => formatPrice(row.total) },
     {
       key: "actions",
@@ -73,19 +61,6 @@ export default function SalesListPage() {
       columns={columns}
       data={sales}
       searchPlaceholder="Buscar por cliente..."
-      extraFilter={
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: "220px" }}>
-          <i className="fa-solid fa-filter" style={{ color: "var(--texto-muted, #888)" }} title="Filtrar" />
-          <div style={{ flex: 1 }}>
-            <FormSelect
-              value={paymentFilter}
-              onChange={setPaymentFilter}
-              placeholder="Todos los medios de pago"
-              options={PAYMENT_METHODS}
-            />
-          </div>
-        </div>
-      }
     />
   );
 }

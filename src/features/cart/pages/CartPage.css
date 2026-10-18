@@ -1,7 +1,7 @@
 /* src/features/cart/pages/CartPage.css */
 
 .cart-page {
-  background: var(--bg-main);
+  background: var(--secundario-3);
   color: var(--texto);
   font-family: "Poppins", sans-serif;
   min-height: 100vh;

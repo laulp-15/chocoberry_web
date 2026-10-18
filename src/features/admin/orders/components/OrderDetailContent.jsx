@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import OrderStatusBadge from "./OrderStatusBadge";
 import ImageLightbox from "../../../../shared/components/ImageLightbox";
 import { formatPrice } from "../../../../shared/utils/formatPrice";
-import { formatDisplayDate, getMunicipioLabel, getPaymentLabel, getProofUrl } from "../utils/orderDisplay";
+import { formatDisplayDate, getMunicipioLabel, getProofUrl } from "../utils/orderDisplay";
 import "./OrderDetailContent.css";
 
 /**
@@ -15,7 +15,6 @@ import "./OrderDetailContent.css";
  */
 export default function OrderDetailContent({ order }) {
   const municipioLabel = getMunicipioLabel(order.municipio);
-  const paymentLabel = getPaymentLabel(order.medioPago);
   const proofUrl = getProofUrl(order.comprobante);
   
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -143,10 +142,6 @@ export default function OrderDetailContent({ order }) {
           Información de pago
         </div>
         <div className="order-detail-grid">
-          <div>
-            <div className="order-detail-label">Medio de pago</div>
-            <div className="order-detail-value">{paymentLabel}</div>
-          </div>
           <div>
             <div className="order-detail-label">Comprobante</div>
             {proofUrl ? (
