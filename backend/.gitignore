@@ -1,0 +1,16 @@
+# Dependencias
+node_modules/
+
+# Variables de entorno (NUNCA subir el .env)
+.env
+
+# Archivos subidos por los usuarios (imágenes/comprobantes/evidencias)
+uploads/*
+!uploads/.gitkeep
+
+# Cobertura de pruebas
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
