@@ -34,6 +34,11 @@ import UserDetailPage from "../features/admin/users/pages/UserDetailPage";
 
 import DeliveriesListPage from "../features/admin/deliveries/pages/DeliveriesListPage";
 
+// Configuraciones
+import PresentacionesListPage from "../features/admin/presentaciones/pages/PresentacionesListPage";
+import MunicipiosListPage from "../features/admin/municipios/pages/MunicipiosListPage";
+import GlaseadosListPage from "../features/admin/glaseados/pages/GlaseadosListPage";
+
 
 export default function AdminRoutes() {
   return (
@@ -74,6 +79,11 @@ export default function AdminRoutes() {
          <Route path="entregas" element={<DeliveriesListPage />} />
          <Route path="clientes" element={<CustomersListPage />} />
          <Route path="resenas" element={<ReviewsListPage />} />
+
+        {/* Configuraciones */}
+        <Route path="presentaciones" element={<PresentacionesListPage />} />
+        <Route path="municipios" element={<MunicipiosListPage />} />
+        <Route path="glaseados" element={<GlaseadosListPage />} />
 
       </Route>
       </Route>

@@ -1,0 +1,155 @@
+// src/features/admin/presentaciones/components/PresentacionFormModal.jsx
+import React, { useEffect } from 'react';
+import Modal from '../../../../shared/components/Modal';
+import FormTextField from '../../../../shared/components/FormTextField';
+import StatusToggle from '../../../../shared/components/StatusToggle';
+import useFormValidation from '../../../../shared/hooks/useFormValidation';
+import { formatPrice } from '../../../../shared/utils/formatPrice';
+import { labelCantidad } from '../utils/presentacionDisplay';
+
+export default function PresentacionFormModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  initialData,
+  isReadOnly = false,
+}) {
+  const { values, errors, setField, handleBlur, validateAll, reset } = useFormValidation({
+    initialValues: { cantidadFresas: '', precio: '', estado: 'Activo' },
+    validators: {
+      cantidadFresas: (v) => {
+        const raw = String(v.cantidadFresas ?? '').trim();
+        if (!raw) return 'La cantidad de fresas es obligatoria.';
+        const numero = Number(raw);
+        if (!Number.isInteger(numero) || numero <= 0) {
+          return 'Ingresa una cantidad entera mayor a 0.';
+        }
+        return '';
+      },
+      precio: (v) => {
+        const raw = String(v.precio ?? '').trim();
+        if (!raw) return 'El precio es obligatorio.';
+        const numero = Number(raw);
+        if (Number.isNaN(numero) || numero <= 0) {
+          return 'Ingresa un precio mayor a 0.';
+        }
+        return '';
+      },
+    },
+    immediate: ['estado'],
+  });
+
+  useEffect(() => {
+    reset({
+      cantidadFresas: initialData?.cantidadFresas ?? '',
+      precio: initialData?.precio ?? '',
+      estado: initialData?.estado || 'Activo',
+    });
+  }, [initialData, isOpen]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!validateAll()) return;
+
+    onSubmit({
+      cantidadFresas: Number(values.cantidadFresas),
+      precio: Number(values.precio),
+      estado: values.estado,
+    });
+    onClose();
+  };
+
+  const title = isReadOnly
+    ? 'Detalle de Presentación'
+    : initialData
+      ? 'Editar Presentación'
+      : 'Crear Presentación';
+
+  return (
+    <Modal
+      open={isOpen}
+      onClose={onClose}
+      title={title}
+      maxWidth="sm"
+      footer={
+        !isReadOnly ? (
+          <>
+            <button type="button" className="btn-cancel" onClick={onClose}>
+              Cancelar
+            </button>
+            <button type="submit" className="btn-save" onClick={handleSubmit}>
+              Guardar
+            </button>
+          </>
+        ) : (
+          <button type="button" className="btn-save" onClick={onClose}>
+            Cerrar
+          </button>
+        )
+      }
+    >
+      <div className="crud-form-modal">
+        {isReadOnly ? (
+          <div className="crud-detail-card">
+            <div className="crud-detail-header">
+              <h3 className="crud-detail-name">
+                {initialData ? labelCantidad(initialData.cantidadFresas) : '—'}
+              </h3>
+              <span
+                className={`crud-detail-status ${
+                  initialData?.estado === 'Activo' ? 'active' : 'inactive'
+                }`}
+              >
+                {initialData?.estado}
+              </span>
+            </div>
+
+            <div className="crud-detail-list">
+              <div className="crud-detail-row">
+                <span className="crud-detail-label">Precio</span>
+                <span className="crud-detail-value">
+                  {initialData ? formatPrice(initialData.precio) : '—'}
+                </span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            <FormTextField
+              label="Cantidad de fresas"
+              type="number"
+              value={values.cantidadFresas}
+              onChange={(v) => setField('cantidadFresas', v)}
+              onBlur={() => handleBlur('cantidadFresas')}
+              placeholder="Ej: 12"
+              required
+              error={errors.cantidadFresas}
+            />
+
+            <FormTextField
+              label="Precio"
+              type="number"
+              value={values.precio}
+              onChange={(v) => setField('precio', v)}
+              onBlur={() => handleBlur('precio')}
+              placeholder="Ej: 55000"
+              required
+              error={errors.precio}
+            />
+
+            <div className="form-field">
+              <label className="form-label">Estado</label>
+              <div className="crud-status-field">
+                <StatusToggle
+                  checked={values.estado === 'Activo'}
+                  onChange={(checked) => setField('estado', checked ? 'Activo' : 'Inactivo')}
+                />
+                <span className="crud-status-label">{values.estado}</span>
+              </div>
+            </div>
+          </form>
+        )}
+      </div>
+    </Modal>
+  );
+}
