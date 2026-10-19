@@ -1,0 +1,100 @@
+// src/features/admin/users/services/userMappers.js
+//
+// Traduce entre el contrato del backend (/api/usuarios) y la forma que usa
+// el panel de administración. Es el ÚNICO punto donde se traducen nombres:
+//
+//   backend -> frontend   correo -> email, rol.slug -> role,
+//                          estado -> active, fechaRegistro -> createdAt
+//   frontend -> backend   email -> correo, docType -> tipoDocumento, ...
+//
+// Mismo patrón que features/login/services/mappers.js.
+
+// -----------------------------------------------------------------------------
+// USUARIO DE LA API -> USUARIO DEL PANEL
+// -----------------------------------------------------------------------------
+
+export function mapUsuarioAdmin(usuario) {
+  if (!usuario) return null;
+
+  const nombres = usuario.nombres ?? "";
+  const apellidos = usuario.apellidos ?? "";
+
+  return {
+    id: usuario.id,
+    nombres,
+    apellidos,
+    fullName: usuario.nombreCompleto || `${nombres} ${apellidos}`.trim(),
+    docType: usuario.tipoDocumento ?? "",
+    idNumber: usuario.numeroDocumento ?? "",
+    email: usuario.correo ?? "",
+    phone: usuario.telefono ?? "",
+    address: usuario.direccion ?? "",
+    neighborhood: usuario.barrio ?? "",
+    // El slug del rol coincide con el que usa el front:
+    // administrador / repartidor / cliente.
+    role: usuario.rol?.slug ?? "",
+    active: usuario.estado !== false,
+    createdAt: usuario.fechaRegistro ?? null,
+  };
+}
+
+export function mapUsuariosAdmin(usuarios) {
+  return Array.isArray(usuarios) ? usuarios.map(mapUsuarioAdmin) : [];
+}
+
+// -----------------------------------------------------------------------------
+// FORMULARIO DEL PANEL -> CUERPO DE LA API
+// -----------------------------------------------------------------------------
+
+/** Campos comunes a crear y editar (los que el backend acepta siempre). */
+function camposBase(datos = {}) {
+  return {
+    nombres: String(datos.nombres ?? "").trim(),
+    apellidos: String(datos.apellidos ?? "").trim(),
+    tipoDocumento: datos.docType,
+    numeroDocumento: String(datos.idNumber ?? "").trim(),
+    correo: String(datos.email ?? "").trim().toLowerCase(),
+    telefono: String(datos.phone ?? "").trim(),
+    direccion: String(datos.address ?? "").trim(),
+    barrio: String(datos.neighborhood ?? "").trim(),
+    rol: datos.role,
+    estado: datos.active !== false,
+  };
+}
+
+/** POST /usuarios: la contraseña es obligatoria. */
+export function toCrearUsuarioPayload(datos = {}) {
+  return {
+    ...camposBase(datos),
+    contrasena: datos.password,
+  };
+}
+
+/**
+ * PUT /usuarios/:id. Si la contraseña viene vacía NO se envía, para que el
+ * backend conserve la actual (la regla de edición del formulario).
+ */
+export function toActualizarUsuarioPayload(datos = {}) {
+  const payload = camposBase(datos);
+  if (datos.password) payload.contrasena = datos.password;
+  return payload;
+}
+
+// -----------------------------------------------------------------------------
+// ERRORES DE LA API -> ERRORES DEL PANEL
+// -----------------------------------------------------------------------------
+
+/**
+ * En crear/editar, un 409 significa que el correo ya está en uso.
+ * Se marca como EMAIL_TAKEN para que el modal lo muestre bajo el campo correo.
+ */
+export function mapGuardarError(error) {
+  if (error?.status === 409) {
+    const mapped = new Error(
+      error.message || "Ya existe otro usuario registrado con ese correo."
+    );
+    mapped.code = "EMAIL_TAKEN";
+    return mapped;
+  }
+  return error;
+}

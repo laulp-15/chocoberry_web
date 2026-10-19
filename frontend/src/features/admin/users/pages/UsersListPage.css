@@ -71,3 +71,20 @@
   font-size: 13px;
   margin: 0;
 }
+
+.users-error-hint {
+  background: var(--error-20, #fbcdcd);
+  color: var(--error-100, #dd322d);
+}
+
+.users-retry {
+  margin-left: auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}

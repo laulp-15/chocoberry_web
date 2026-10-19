@@ -24,3 +24,35 @@ export function serializarUsuario(row) {
       : { id: row.id_rol },
   };
 }
+
+/** Convierte una fila de `rol` (con conteos) al objeto público. */
+export function serializarRol(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    nombre: row.nombre_rol,
+    permisos: Number(row.total_permisos ?? 0),
+    usuarios: Number(row.total_usuarios ?? 0),
+  };
+}
+
+export function serializarModulo(row) {
+  if (!row) return null;
+  return { id: row.id, nombre: row.nombre };
+}
+
+export function serializarAccion(row) {
+  if (!row) return null;
+  return { id: row.id, nombre: row.nombre };
+}
+
+/** Convierte una fila de `permiso` (con módulo y acción) al objeto público. */
+export function serializarPermiso(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    nombre: row.nombre,
+    modulo: row.modulo ? { id: row.id_modulo, nombre: row.modulo } : { id: row.id_modulo },
+    accion: row.accion ? { id: row.id_accion, nombre: row.accion } : { id: row.id_accion },
+  };
+}

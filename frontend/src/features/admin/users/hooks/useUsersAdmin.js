@@ -1,469 +1,101 @@
-
 // src/features/admin/users/hooks/useUsersAdmin.js
+//
+// Gestión de usuarios del panel administrador contra el API real
+// (/api/usuarios). El estado vive aquí; las llamadas HTTP, en
+// features/admin/users/services/userService.js, y la traducción de
+// nombres/errores, en features/admin/users/services/userMappers.js.
+//
+// Regla de negocio: no se puede eliminar un usuario con pedidos asociados.
+// Eso lo valida el BACKEND (409 con el conteo real de pedidos); el hook solo
+// propaga el mensaje. Ya no se cruza contra pedidos mock.
 
-import {
-  useCallback,
-  useState,
-} from "react";
+import { useEffect, useState } from "react";
 
-import {
-  getUsersStore,
-  setUsersStore,
-} from "../../../login/hooks/useAuth";
+import * as userService from "../services/userService";
 
-import {
-  INITIAL_ORDERS,
-} from "../../orders/data/MockOrders";
+export default function useUsersAdmin({ autoLoad = true } = {}) {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(autoLoad);
+  const [error, setError] = useState("");
 
-/**
- * Subproceso de gestión de usuarios
- * (panel administrador).
- *
- * Lee y escribe la MISMA lista de usuarios
- * que utiliza el login.
- *
- * getUsersStore()
- * setUsersStore()
- *
- * vienen desde:
- *
- * features/login/hooks/useAuth.jsx
- *
- * Regla de negocio:
- *
- * No se puede eliminar un usuario que tenga
- * pedidos asociados.
- *
- * Como todavía no existe backend con relaciones
- * reales, se cruza el nombre del usuario contra
- * los pedidos mock.
- *
- * Cuando exista usuarioId real en pedidos,
- * reemplazar hasAssociatedOrders() por esa
- * consulta.
- */
+  // Token que fuerza volver a consultar el API (lo usa el botón "Reintentar").
+  const [reloadToken, setReloadToken] = useState(0);
 
-// -----------------------------------------------------------------------------
-// DELAY
-// -----------------------------------------------------------------------------
+  useEffect(() => {
+    // Si no se pide autoload, se salta la primera carga; tras un reload()
+    // (token > 0) siempre se consulta el API.
+    if (!autoLoad && reloadToken === 0) return undefined;
 
-function delay(ms = 500) {
-  return new Promise((resolve) =>
-    setTimeout(resolve, ms)
-  );
-}
+    let activo = true;
 
-// -----------------------------------------------------------------------------
-// PEDIDOS ASOCIADOS
-// -----------------------------------------------------------------------------
+    userService
+      .listar()
+      .then((lista) => {
+        if (!activo) return;
+        setUsers(lista);
+        setError("");
+      })
+      .catch((err) => {
+        if (!activo) return;
+        setError(err?.message || "No se pudieron cargar los usuarios.");
+      })
+      .finally(() => {
+        if (activo) setLoading(false);
+      });
 
-export function hasAssociatedOrders(user) {
-  if (
-    !user ||
-    user.role !== "cliente"
-  ) {
-    return false;
+    return () => {
+      activo = false;
+    };
+  }, [autoLoad, reloadToken]);
+
+  /** Vuelve a pedir la lista al API (mantiene el estado de carga visible). */
+  function reload() {
+    setLoading(true);
+    setError("");
+    setReloadToken((valor) => valor + 1);
   }
 
-  const name =
-    user.fullName
-      ?.trim()
-      .toLowerCase();
-
-  if (!name) {
-    return false;
+  function getUserById(id) {
+    return users.find((user) => String(user.id) === String(id)) ?? null;
   }
 
-  return INITIAL_ORDERS.some(
-    (order) =>
-      order.cliente
-        ?.trim()
-        .toLowerCase() === name
-  );
-}
-
-// -----------------------------------------------------------------------------
-// HOOK
-// -----------------------------------------------------------------------------
-
-export default function useUsersAdmin() {
   // ---------------------------------------------------------------------------
-  // ESTADO
+  // MUTACIONES
+  // Los cambios se reflejan en el estado con la respuesta del backend, que es
+  // la fuente de verdad (no se "adivina" el resultado en el front).
   // ---------------------------------------------------------------------------
 
-  const [users, setUsers] =
-    useState(() =>
-      getUsersStore()
+  async function createUser(payload) {
+    const nuevo = await userService.crear(payload);
+    setUsers((prev) => [nuevo, ...prev]);
+    return nuevo;
+  }
+
+  async function updateUser(id, payload) {
+    const actualizado = await userService.actualizar(id, payload);
+    setUsers((prev) =>
+      prev.map((user) => (String(user.id) === String(id) ? actualizado : user))
     );
+    return actualizado;
+  }
 
-  const [loading, setLoading] =
-    useState(false);
-
-  // ---------------------------------------------------------------------------
-  // RECARGAR USUARIOS
-  // ---------------------------------------------------------------------------
-
-  const reload = useCallback(
-    () => {
-      setUsers(
-        getUsersStore()
-      );
-    },
-    []
-  );
-
-  // ---------------------------------------------------------------------------
-  // CREAR USUARIO
-  // ---------------------------------------------------------------------------
-
-  const createUser =
-    useCallback(
-      async ({
-        docType = "",
-        idNumber = "",
-        nombres = "",
-        apellidos = "",
-        fullName,
-        email,
-        password,
-        role,
-        active = true,
-        address = "",
-        neighborhood = "",
-        phone = "",
-      }) => {
-        setLoading(true);
-
-        try {
-          await delay();
-
-          const current =
-            getUsersStore();
-
-          const normalizedEmail =
-            email
-              .trim()
-              .toLowerCase();
-
-          // Verificar correo duplicado
-          if (
-            current.some(
-              (user) =>
-                user.email
-                  .toLowerCase() ===
-                normalizedEmail
-            )
-          ) {
-            const err = new Error(
-              "Ya existe un usuario registrado con ese correo."
-            );
-
-            err.code =
-              "EMAIL_TAKEN";
-
-            throw err;
-          }
-
-          const finalFullName = (
-            fullName ||
-            [nombres, apellidos].filter(Boolean).join(" ")
-          ).trim();
-
-          // Crear usuario
-          const newUser = {
-            id: `u-${Date.now()}`,
-
-            fullName: finalFullName,
-
-            nombres: nombres.trim(),
-
-            apellidos: apellidos.trim(),
-
-            docType,
-
-            idNumber: idNumber.trim(),
-
-            email:
-              normalizedEmail,
-
-            password,
-
-            role,
-
-            address:
-              address?.trim() || "",
-
-            neighborhood:
-              neighborhood?.trim() || "",
-
-            phone:
-              phone?.trim() || "",
-
-            active,
-
-            createdAt:
-              new Date().toISOString(),
-          };
-
-          // Nueva lista
-          const next = [
-            newUser,
-            ...current,
-          ];
-
-          // Guardar en localStorage
-          setUsersStore(next);
-
-          // Actualizar estado del hook
-          setUsers(next);
-
-          return newUser;
-        } finally {
-          setLoading(false);
-        }
-      },
-      []
+  async function setActive(id, active) {
+    const actualizado = await userService.cambiarEstado(id, active);
+    setUsers((prev) =>
+      prev.map((user) => (String(user.id) === String(id) ? actualizado : user))
     );
+    return actualizado;
+  }
 
-  // ---------------------------------------------------------------------------
-  // EDITAR USUARIO
-  // ---------------------------------------------------------------------------
-
-  const updateUser =
-    useCallback(
-      async (
-        id,
-        {
-          docType = "",
-          idNumber = "",
-          nombres = "",
-          apellidos = "",
-          fullName,
-          email,
-          password,
-          role,
-          active,
-          address = "",
-          neighborhood = "",
-          phone = "",
-        }
-      ) => {
-        setLoading(true);
-
-        try {
-          await delay();
-
-          const current =
-            getUsersStore();
-
-          const normalizedEmail =
-            email
-              .trim()
-              .toLowerCase();
-
-          // Verificar correo duplicado
-          if (
-            current.some(
-              (user) =>
-                user.id !== id &&
-                user.email
-                  .toLowerCase() ===
-                  normalizedEmail
-            )
-          ) {
-            const err = new Error(
-              "Ya existe otro usuario registrado con ese correo."
-            );
-
-            err.code =
-              "EMAIL_TAKEN";
-
-            throw err;
-          }
-
-          // Actualizar usuario
-          const next =
-            current.map(
-              (user) =>
-                user.id === id
-                  ? {
-                      ...user,
-
-                      fullName: (
-                        fullName ||
-                        [nombres, apellidos].filter(Boolean).join(" ")
-                      ).trim(),
-
-                      nombres: nombres.trim(),
-
-                      apellidos: apellidos.trim(),
-
-                      docType,
-
-                      idNumber: idNumber.trim(),
-
-                      email:
-                        normalizedEmail,
-
-                      role,
-
-                      active,
-
-                      address:
-                        address?.trim() ||
-                        "",
-
-                      neighborhood:
-                        neighborhood?.trim() ||
-                        "",
-
-                      phone:
-                        phone?.trim() ||
-                        "",
-
-                      /*
-                       * Si password viene vacío,
-                       * conservamos la actual.
-                       */
-                      ...(password
-                        ? { password }
-                        : {}),
-                    }
-                  : user
-            );
-
-          // Guardar
-          setUsersStore(next);
-
-          // Actualizar estado
-          setUsers(next);
-
-          return next.find(
-            (user) =>
-              user.id === id
-          );
-        } finally {
-          setLoading(false);
-        }
-      },
-      []
-    );
-
-  // ---------------------------------------------------------------------------
-  // ACTIVAR / DESACTIVAR USUARIO
-  // ---------------------------------------------------------------------------
-
-  const setActive =
-    useCallback(
-      async (id, active) => {
-        const current =
-          getUsersStore();
-
-        const next =
-          current.map(
-            (user) =>
-              user.id === id
-                ? {
-                    ...user,
-                    active,
-                  }
-                : user
-          );
-
-        setUsersStore(next);
-
-        setUsers(next);
-      },
-      []
-    );
-
-  // ---------------------------------------------------------------------------
-  // ELIMINAR USUARIO
-  // ---------------------------------------------------------------------------
-
-  const removeUser =
-    useCallback(
-      async (id) => {
-        const current =
-          getUsersStore();
-
-        const target =
-          current.find(
-            (user) =>
-              user.id === id
-          );
-
-        // No existe
-        if (!target) {
-          return;
-        }
-
-        // No permitir eliminar
-        // si tiene pedidos
-        if (
-          hasAssociatedOrders(
-            target
-          )
-        ) {
-          const err = new Error(
-            "No se puede eliminar: este usuario tiene pedidos asociados en el sistema."
-          );
-
-          err.code =
-            "HAS_ORDERS";
-
-          throw err;
-        }
-
-        // Eliminar
-        const next =
-          current.filter(
-            (user) =>
-              user.id !== id
-          );
-
-        setUsersStore(next);
-
-        setUsers(next);
-      },
-      []
-    );
-
-  // ---------------------------------------------------------------------------
-  // BUSCAR USUARIO POR ID
-  // ---------------------------------------------------------------------------
-
-  const getUserById =
-    useCallback(
-      (id) => {
-        // Primero buscamos en el estado
-        const localUser =
-          users.find(
-            (user) =>
-              user.id === id
-          );
-
-        if (localUser) {
-          return localUser;
-        }
-
-        // Si no está, buscamos
-        // directamente en localStorage
-        return getUsersStore().find(
-          (user) =>
-            user.id === id
-        );
-      },
-      [users]
-    );
-
-  // ---------------------------------------------------------------------------
-  // RETURN
-  // ---------------------------------------------------------------------------
+  async function removeUser(id) {
+    await userService.eliminar(id);
+    setUsers((prev) => prev.filter((user) => String(user.id) !== String(id)));
+  }
 
   return {
     users,
     loading,
+    error,
 
     reload,
 
@@ -474,4 +106,3 @@ export default function useUsersAdmin() {
     getUserById,
   };
 }
-

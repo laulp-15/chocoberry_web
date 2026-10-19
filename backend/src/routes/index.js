@@ -5,6 +5,10 @@ import { Router } from 'express';
 import { sendSuccess } from '../utils/response.js';
 import authRoutes from './auth.routes.js';
 import usuarioRoutes from './usuario.routes.js';
+import rolRoutes from './rol.routes.js';
+import moduloRoutes from './modulo.routes.js';
+import accionRoutes from './accion.routes.js';
+import permisoRoutes from './permiso.routes.js';
 
 const router = Router();
 
@@ -18,10 +22,13 @@ router.get('/health', (req, res) =>
 // ---------------------------------------------------------------------------
 router.use('/auth', authRoutes);
 router.use('/usuarios', usuarioRoutes);
+router.use('/roles', rolRoutes);
+router.use('/modulos', moduloRoutes);
+router.use('/acciones', accionRoutes);
+router.use('/permisos', permisoRoutes);
 
 // ---------------------------------------------------------------------------
 // Módulos pendientes:
-//   router.use('/roles', rolRoutes);
 //   router.use('/productos', productoRoutes);
 //   router.use('/pedidos', pedidoRoutes);
 //   router.use('/entregas', entregaRoutes);
