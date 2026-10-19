@@ -1,15 +1,24 @@
 // src/features/admin/categories/hooks/useCategories.jsx
-import { useState, useCallback } from 'react';
+//
+// Gestión de categorías del panel contra el API real (/api/categorias).
+// El estado vive aquí; las llamadas HTTP, en services/categoryService.js.
 
-function delay(ms = 350) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+import { useEffect, useState } from 'react';
 
-export const useCategories = () => {
+import * as categoryService from '../services/categoryService';
+
+export const useCategories = ({ autoLoad = true } = {}) => {
+  const [categorias, setCategorias] = useState([]);
+
+  const [loading, setLoading] = useState(autoLoad);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [reloadToken, setReloadToken] = useState(0);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
 
-  // Modales y Estados de Selección
+  // Modales y estados de selección
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -17,74 +26,131 @@ export const useCategories = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [categoryToEdit, setCategoryToEdit] = useState(null);
 
-  const [categorias, setCategorias] = useState([
-    { id: 1, nombre: 'Fechas especiales', descripcion: 'Detalles especiales para fechas importantes como Día de la Madre, Día del Padre, Día de la Mujer.', iconName: 'Heart', estado: 'Activo' },
-    { id: 2, nombre: 'Cumpleaños', descripcion: 'Cajas personalizadas con números y mensajes de cumpleaños.', iconName: 'Cake', estado: 'Activo' },
-    { id: 3, nombre: 'Aniversarios', descripcion: 'Cajas románticas para parejas y fechas especiales.', iconName: 'Calendar', estado: 'Activo' },
-    { id: 4, nombre: 'Regalos', descripcion: 'Detalles generales ideales para cualquier ocasión.', iconName: 'Gift', estado: 'Activo' },
-  ]);
+  useEffect(() => {
+    if (!autoLoad && reloadToken === 0) return undefined;
 
-  // Filtrado
-  const filteredCategorias = categorias.filter(cat => {
-    const matchesSearch = cat.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          cat.descripcion.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'todos' || cat.estado.toLowerCase() === statusFilter.toLowerCase();
+    let activo = true;
+
+    categoryService
+      .listar()
+      .then((lista) => {
+        if (!activo) return;
+        setCategorias(lista);
+        setError('');
+      })
+      .catch((err) => {
+        if (!activo) return;
+        setError(err?.message || 'No se pudieron cargar las categorías.');
+      })
+      .finally(() => {
+        if (activo) setLoading(false);
+      });
+
+    return () => {
+      activo = false;
+    };
+  }, [autoLoad, reloadToken]);
+
+  function reload() {
+    setLoading(true);
+    setError('');
+    setReloadToken((valor) => valor + 1);
+  }
+
+  // Filtrado local (búsqueda por nombre + estado).
+  const query = searchTerm.trim().toLowerCase();
+  const filteredCategorias = categorias.filter((categoria) => {
+    const matchesSearch =
+      !query || categoria.nombre.toLowerCase().includes(query);
+    const matchesStatus =
+      statusFilter === 'todos' ||
+      categoria.estado.toLowerCase() === statusFilter.toLowerCase();
     return matchesSearch && matchesStatus;
   });
 
-  // Toggle de Estado
-  const handleToggleStatus = useCallback((id) => {
-    setCategorias(prev =>
-      prev.map(cat =>
-        cat.id === id ? { ...cat, estado: cat.estado === 'Activo' ? 'Inactivo' : 'Activo' } : cat
-      )
-    );
-  }, []);
+  /** Activa/desactiva una categoría contra el API y refleja la respuesta. */
+  async function handleToggleStatus(id) {
+    const actual = categorias.find((categoria) => categoria.id === id);
+    if (!actual) return;
 
-  // Guardar (Crear o Editar)
-  const handleSaveCategory = useCallback(async (data) => {
-    await delay();
-    if (categoryToEdit) {
-      setCategorias(prev =>
-        prev.map(cat => (cat.id === categoryToEdit.id ? { ...cat, ...data } : cat))
+    try {
+      const actualizada = await categoryService.cambiarEstado(
+        id,
+        actual.estado !== 'Activo'
       );
-    } else {
-      setCategorias(prev => [
-        { id: Date.now(), ...data, iconName: 'Gift', estado: 'Activo' },
-        ...prev,
-      ]);
+      setCategorias((prev) =>
+        prev.map((categoria) =>
+          categoria.id === id ? actualizada : categoria
+        )
+      );
+      setError('');
+    } catch (err) {
+      setError(err?.message || 'No se pudo cambiar el estado de la categoría.');
     }
-    setCategoryToEdit(null);
-  }, [categoryToEdit]);
+  }
 
-  // Eliminar
-  const handleConfirmDelete = useCallback(async () => {
-    await delay();
-    if (selectedCategory) {
-      setCategorias(prev => prev.filter(cat => cat.id !== selectedCategory.id));
+  /**
+   * Crea o edita. Devuelve la categoría guardada y relanza los errores para
+   * que el modal los muestre sin cerrarse.
+   */
+  async function handleSaveCategory(datos) {
+    setSubmitting(true);
+    try {
+      if (categoryToEdit) {
+        const actualizada = await categoryService.actualizar(
+          categoryToEdit.id,
+          datos
+        );
+        setCategorias((prev) =>
+          prev.map((categoria) =>
+            categoria.id === actualizada.id ? actualizada : categoria
+          )
+        );
+        setCategoryToEdit(null);
+        return actualizada;
+      }
+
+      const creada = await categoryService.crear(datos);
+      setCategorias((prev) => [creada, ...prev]);
+      return creada;
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  /** Elimina; si el backend responde 409, el error se propaga a la página. */
+  async function handleConfirmDelete() {
+    if (!selectedCategory) return;
+
+    try {
+      await categoryService.eliminar(selectedCategory.id);
+      setCategorias((prev) =>
+        prev.filter((categoria) => categoria.id !== selectedCategory.id)
+      );
+    } finally {
       setIsDeleteOpen(false);
       setSelectedCategory(null);
     }
-  }, [selectedCategory]);
+  }
 
-  // Abrir Modales
+  // Abrir modales
   const handleOpenCreate = () => {
     setCategoryToEdit(null);
     setIsModalOpen(true);
   };
 
-  const handleOpenEdit = (cat) => {
-    setCategoryToEdit(cat);
+  const handleOpenEdit = (categoria) => {
+    setCategoryToEdit(categoria);
     setIsModalOpen(true);
   };
 
-  const handleOpenDetail = (cat) => {
-    setSelectedCategory(cat);
+  const handleOpenDetail = (categoria) => {
+    setSelectedCategory(categoria);
     setIsDetailOpen(true);
   };
 
-  const handleOpenDelete = (cat) => {
-    setSelectedCategory(cat);
+  const handleOpenDelete = (categoria) => {
+    setSelectedCategory(categoria);
     setIsDeleteOpen(true);
   };
 
@@ -93,21 +159,29 @@ export const useCategories = () => {
     setSearchTerm,
     statusFilter,
     setStatusFilter,
+
     isModalOpen,
     setIsModalOpen,
     isDetailOpen,
     setIsDetailOpen,
     isDeleteOpen,
     setIsDeleteOpen,
+
     selectedCategory,
     categoryToEdit,
     filteredCategorias,
+
+    loading,
+    submitting,
+    error,
+    reload,
+
     handleToggleStatus,
     handleSaveCategory,
     handleConfirmDelete,
     handleOpenCreate,
     handleOpenEdit,
     handleOpenDetail,
-    handleOpenDelete
+    handleOpenDelete,
   };
 };

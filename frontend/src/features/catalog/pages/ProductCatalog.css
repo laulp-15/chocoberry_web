@@ -170,3 +170,19 @@
     transform: translateY(0);
   }
 }
+
+/* Botón para reintentar la carga del catálogo */
+.catalog-retry {
+  margin-top: 12px;
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  border-radius: 8px;
+  padding: 6px 16px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.catalog-retry:hover {
+  background: rgba(0, 0, 0, 0.05);
+}

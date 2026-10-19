@@ -1,23 +1,30 @@
-// src/admin/products/components/ProductFormModal.jsx
-import React, { useEffect, useState } from 'react';
+// src/features/admin/products/components/ProductFormModal.jsx
+import { useEffect, useRef, useState } from 'react';
 import Modal from '../../../../shared/components/Modal';
 import FormTextField from '../../../../shared/components/FormTextField';
 import FormSelect from '../../../../shared/components/FormSelect';
 import ImageLightbox from '../../../../shared/components/ImageLightbox';
 import useFormValidation from '../../../../shared/hooks/useFormValidation';
 import { IMAGE_ACCEPT, validateFile } from '../../../../shared/utils/fileValidation';
+import { imageUrl } from '../../../../shared/utils/imageUrl';
 import './ProductFormModal.css';
 
-const CATEGORIA_OPTIONS = [
-  { value: 'Fechas especiales', label: 'Fechas especiales' },
-  { value: 'Cumpleaños', label: 'Cumpleaños' },
-  { value: 'Aniversarios', label: 'Aniversarios' },
-  { value: 'Regalos', label: 'Regalos' },
-];
-
-export default function ProductFormModal({ isOpen, onClose, onSubmit, initialData, isReadOnly = false }) {
+export default function ProductFormModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  initialData,
+  isReadOnly = false,
+  categorias = [],
+  submitting = false,
+}) {
   // Visor ampliado de la imagen (funciona en el detalle y en crear/editar).
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [imagenFile, setImagenFile] = useState(null);
+  const [formError, setFormError] = useState('');
+  // URL temporal (blob:) de la foto recién elegida, para poder liberarla.
+  const objectUrlRef = useRef(null);
+
   const { values, errors, setField, handleBlur, setFieldError, validateAll, reset } =
     useFormValidation({
       initialValues: { nombre: '', descripcion: '', categoria: '', imagen: '' },
@@ -31,17 +38,43 @@ export default function ProductFormModal({ isOpen, onClose, onSubmit, initialDat
     });
 
   useEffect(() => {
+    if (!isOpen) return;
+
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+    }
+
     reset(
       initialData
         ? {
             nombre: initialData.nombre || '',
             descripcion: initialData.descripcion || '',
-            categoria: initialData.categoria || 'Fechas especiales',
-            imagen: initialData.imagen || initialData.foto || initialData.url || '',
+            categoria: initialData.categoriaId ? String(initialData.categoriaId) : '',
+            imagen: imageUrl(initialData.imagen),
           }
         : { nombre: '', descripcion: '', categoria: '', imagen: '' }
     );
   }, [initialData, isOpen]);
+
+  // Libera la última vista previa temporal al desmontar el modal.
+  useEffect(
+    () => () => {
+      if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
+    },
+    []
+  );
+
+  const handleClose = () => {
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+    }
+    setImagenFile(null);
+    setFormError('');
+    setLightboxOpen(false);
+    onClose();
+  };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -54,49 +87,84 @@ export default function ProductFormModal({ isOpen, onClose, onSubmit, initialDat
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setField('imagen', reader.result);
-    };
-    reader.readAsDataURL(file);
+    if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
+    const objectUrl = URL.createObjectURL(file);
+    objectUrlRef.current = objectUrl;
+
+    setImagenFile(file);
+    setField('imagen', objectUrl);
   };
 
-  const handleSubmit = (e) => {
+  const handleRemoveImage = () => {
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+    }
+    setImagenFile(null);
+    setField('imagen', '');
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setFormError('');
     if (!validateAll()) return;
 
-    onSubmit({
-      nombre: values.nombre,
-      descripcion: values.descripcion,
-      categoria: values.categoria,
-      imagen: values.imagen,
-    });
-    onClose();
+    try {
+      // El backend recibe la foto como archivo (multipart) y guarda su ruta.
+      await onSubmit({
+        nombre: values.nombre.trim(),
+        descripcion: values.descripcion.trim(),
+        categoriaId: Number(values.categoria),
+        imagenFile,
+      });
+      handleClose();
+    } catch (err) {
+      // Nombre repetido: el backend responde 409 y se marca bajo el campo.
+      if (err?.code === 'NAME_TAKEN') {
+        setFieldError('nombre', err.message);
+      } else {
+        setFormError(err?.message || 'No fue posible guardar el producto.');
+      }
+    }
   };
 
-  const productImg = initialData?.imagen || initialData?.foto || initialData?.url;
-  const title = isReadOnly ? 'Detalle del Producto' : initialData ? 'Editar Producto' : 'Crear Producto';
+  const productImg = imageUrl(initialData?.imagen);
+  const title = isReadOnly
+    ? 'Detalle del Producto'
+    : initialData
+      ? 'Editar Producto'
+      : 'Crear Producto';
   // Imagen visible según el modo: la cargada en el formulario o la del detalle.
   const shownImage = isReadOnly ? productImg : values.imagen;
+
+  const categoriaOptions = categorias.map((categoria) => ({
+    value: String(categoria.id),
+    label: categoria.nombre,
+  }));
 
   return (
     <Modal
       open={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title={title}
       maxWidth="sm"
       footer={
         !isReadOnly ? (
           <>
-            <button type="button" className="btn-cancel" onClick={onClose}>
+            <button type="button" className="btn-cancel" onClick={handleClose}>
               Cancelar
             </button>
-            <button type="submit" className="btn-save" onClick={handleSubmit}>
-              Guardar
+            <button
+              type="submit"
+              form="product-form"
+              className="btn-save"
+              disabled={submitting}
+            >
+              {submitting ? 'Guardando...' : 'Guardar'}
             </button>
           </>
         ) : (
-          <button type="button" className="product-detail-close" onClick={onClose}>
+          <button type="button" className="product-detail-close" onClick={handleClose}>
             Cerrar
           </button>
         )
@@ -140,7 +208,7 @@ export default function ProductFormModal({ isOpen, onClose, onSubmit, initialDat
               </div>
               <div className="product-detail-meta">
                 <span className="product-detail-category">
-                  <i className="fa-solid fa-tag" /> {initialData?.categoria}
+                  <i className="fa-solid fa-tag" /> {initialData?.categoriaNombre}
                 </span>
               </div>
             </div>
@@ -149,10 +217,15 @@ export default function ProductFormModal({ isOpen, onClose, onSubmit, initialDat
               <h3 className="product-detail-section-title">Descripción</h3>
               <p className="product-detail-value">{initialData?.descripcion || 'Sin descripción disponible'}</p>
             </div>
-
-            </>
+          </>
         ) : (
-          <form onSubmit={handleSubmit}>
+          <form id="product-form" onSubmit={handleSubmit}>
+            {formError && (
+              <div className="form-error form-error-block" role="alert">
+                {formError}
+              </div>
+            )}
+
             <FormTextField
               label="Nombre del Producto"
               value={values.nombre}
@@ -184,7 +257,7 @@ export default function ProductFormModal({ isOpen, onClose, onSubmit, initialDat
                   </div>
                   <button
                     type="button"
-                    onClick={() => setField('imagen', '')}
+                    onClick={handleRemoveImage}
                     className="image-preview-remove"
                     title="Cambiar imagen"
                   >
@@ -226,7 +299,7 @@ export default function ProductFormModal({ isOpen, onClose, onSubmit, initialDat
               value={values.categoria}
               onChange={(v) => setField('categoria', v)}
               onBlur={() => handleBlur('categoria')}
-              options={CATEGORIA_OPTIONS}
+              options={categoriaOptions}
               required
               error={errors.categoria}
             />

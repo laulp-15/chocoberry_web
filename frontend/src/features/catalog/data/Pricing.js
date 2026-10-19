@@ -1,4 +1,7 @@
 // src/features/catalog/data/pricing.js
+// LEGADO: tabla de precios usada por los módulos todavía simulados (carrito,
+// pedidos, perfil y ventas). El catálogo real toma las presentaciones
+// (cantidad -> precio) de /api/catalogo/presentaciones.
 // El precio depende de la cantidad de fresas, no del producto.
 // Esta tabla aplica igual para todos los productos.
 

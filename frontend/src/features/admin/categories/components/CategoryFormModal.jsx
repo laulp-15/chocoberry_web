@@ -1,72 +1,89 @@
 // src/features/admin/categories/components/CategoryFormModal.jsx
-import React, { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Modal from '../../../../shared/components/Modal';
 import FormTextField from '../../../../shared/components/FormTextField';
 import useFormValidation from '../../../../shared/hooks/useFormValidation';
 import './CategoryFormModal.css';
 
-const renderIcon = (name) => {
-  const iconStyle = { fontSize: '1.5rem', color: '#C2435A' };
-  switch (name) {
-    case 'Heart':
-      return <i className="fa-solid fa-heart" style={iconStyle} aria-hidden="true" />;
-    case 'User':
-      return <i className="fa-solid fa-user" style={{ ...iconStyle, color: 'var(--texto)' }} aria-hidden="true" />;
-    case 'Sparkles':
-      return <i className="fa-solid fa-wand-magic-sparkles" style={{ ...iconStyle, color: '#F49B05' }} aria-hidden="true" />;
-    case 'Cake':
-      return <i className="fa-solid fa-cake-candles" style={iconStyle} aria-hidden="true" />;
-    case 'Calendar':
-      return <i className="fa-solid fa-calendar-days" style={iconStyle} aria-hidden="true" />;
-    default:
-      return <i className="fa-solid fa-gift" style={{ ...iconStyle, color: '#F49B05' }} aria-hidden="true" />;
-  }
-};
+export default function CategoryFormModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  initialData,
+  isReadOnly = false,
+  submitting = false,
+}) {
+  const [formError, setFormError] = useState('');
 
-export default function CategoryFormModal({ isOpen, onClose, onSubmit, initialData, isReadOnly = false }) {
-  const { values, errors, setField, handleBlur, validateAll, reset } = useFormValidation({
-    initialValues: { nombre: '', estado: 'Activo' },
-    validators: {
-      nombre: (v) => (v.nombre.trim() ? '' : 'El nombre es obligatorio.'),
-    },
-    immediate: ['estado'],
-  });
+  const { values, errors, setField, handleBlur, setFieldError, validateAll, reset } =
+    useFormValidation({
+      initialValues: { nombre: '', estado: 'Activo' },
+      validators: {
+        nombre: (v) => (v.nombre.trim() ? '' : 'El nombre es obligatorio.'),
+      },
+      immediate: ['estado'],
+    });
 
   useEffect(() => {
+    if (!isOpen) return;
+
     reset({
       nombre: initialData?.nombre || '',
       estado: initialData?.estado || 'Activo',
     });
   }, [initialData, isOpen]);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!validateAll()) return;
-
-    onSubmit({ nombre: values.nombre, estado: values.estado });
+  const handleClose = () => {
+    setFormError('');
     onClose();
   };
 
-  const title = isReadOnly ? 'Detalle de Categoría' : initialData ? 'Editar Categoría' : 'Crear Categoría';
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setFormError('');
+    if (!validateAll()) return;
+
+    try {
+      await onSubmit({ nombre: values.nombre.trim(), estado: values.estado });
+      handleClose();
+    } catch (err) {
+      if (err?.code === 'NAME_TAKEN') {
+        setFieldError('nombre', err.message);
+      } else {
+        setFormError(err?.message || 'No fue posible guardar la categoría.');
+      }
+    }
+  };
+
+  const title = isReadOnly
+    ? 'Detalle de Categoría'
+    : initialData
+      ? 'Editar Categoría'
+      : 'Crear Categoría';
 
   return (
     <Modal
       open={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title={title}
       maxWidth="sm"
       footer={
         !isReadOnly ? (
           <>
-            <button type="button" className="btn-cancel" onClick={onClose}>
+            <button type="button" className="btn-cancel" onClick={handleClose}>
               Cancelar
             </button>
-            <button type="submit" className="btn-save" onClick={handleSubmit}>
-              Guardar
+            <button
+              type="submit"
+              form="category-form"
+              className="btn-save"
+              disabled={submitting}
+            >
+              {submitting ? 'Guardando...' : 'Guardar'}
             </button>
           </>
         ) : (
-          <button type="button" className="btn-save" onClick={onClose}>
+          <button type="button" className="btn-save" onClick={handleClose}>
             Cerrar
           </button>
         )
@@ -74,19 +91,23 @@ export default function CategoryFormModal({ isOpen, onClose, onSubmit, initialDa
     >
       <div className="category-form-modal">
         {isReadOnly ? (
-          <>
-            <div className="category-detail-card">
-              {renderIcon(initialData?.iconName)}
-              <div>
-                <h3 className="category-detail-name">{initialData?.nombre}</h3>
-                <span className={`category-detail-status ${initialData?.estado === 'Activo' ? 'active' : 'inactive'}`}>
-                  {initialData?.estado}
-                </span>
-              </div>
+          <div className="category-detail-card">
+            <i className="fa-solid fa-tag" style={{ fontSize: '1.5rem', color: '#C2435A' }} aria-hidden="true" />
+            <div>
+              <h3 className="category-detail-name">{initialData?.nombre}</h3>
+              <span className={`category-detail-status ${initialData?.estado === 'Activo' ? 'active' : 'inactive'}`}>
+                {initialData?.estado}
+              </span>
             </div>
-          </>
+          </div>
         ) : (
-          <form onSubmit={handleSubmit}>
+          <form id="category-form" onSubmit={handleSubmit}>
+            {formError && (
+              <div className="form-error form-error-block" role="alert">
+                {formError}
+              </div>
+            )}
+
             <FormTextField
               label="Nombre"
               value={values.nombre}

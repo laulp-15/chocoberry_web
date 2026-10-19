@@ -59,11 +59,11 @@ export default function AppRoutes() {
           }
         />
         
-        {/* Panel de administración protegido con RequireAuth */}
+        {/* Panel de administración: solo el rol administrador */}
         <Route
           path="/admin/*"
           element={
-            <RequireAuth>
+            <RequireAuth allowedRoles={["administrador"]}>
               <AdminRoutes />
             </RequireAuth>
           }

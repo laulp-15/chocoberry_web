@@ -44,7 +44,11 @@ async function request(path, { method = "GET", body, auth = true, headers } = {}
   const finalHeaders = { Accept: "application/json", ...headers };
   let payload;
 
-  if (body !== undefined) {
+  if (body instanceof FormData) {
+    // Con FormData NO se fija Content-Type: el navegador lo completa con el
+    // boundary del multipart. Fijarlo a mano rompería la subida de archivos.
+    payload = body;
+  } else if (body !== undefined) {
     finalHeaders["Content-Type"] = "application/json";
     payload = JSON.stringify(body);
   }

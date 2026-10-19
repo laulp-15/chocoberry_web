@@ -1,42 +1,26 @@
 // src/features/admin/presentations/hooks/usePresentations.jsx
 //
-// CRUD de presentaciones (cantidad de fresas y precio).
-//
-// Datos simulados: el estado parte de la tabla de precios por cantidad de
-// `features/catalog/data/Pricing` y se persiste en localStorage. Cuando exista
-// backend, solo hay que reemplazar los handlers por llamadas al servicio.
-import { useState, useEffect } from 'react';
-import { PRICE_BY_QUANTITY } from '../../../catalog/data/Pricing';
+// Gestión de presentaciones (cantidad de fresas y precio) contra el API real
+// (/api/presentaciones). El estado vive aquí; las llamadas HTTP, en
+// services/presentationService.js.
 
-const STORAGE_KEY = 'chocoberry_presentations_v1';
+import { useEffect, useState } from 'react';
 
-function delay(ms = 350) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+import * as presentationService from '../services/presentationService';
+
+/** El backend lista por cantidad de fresas ascendente; se mantiene ese orden. */
+function ordenarPorCantidad(lista) {
+  return [...lista].sort((a, b) => a.cantidadFresas - b.cantidadFresas);
 }
 
-function buildSeed() {
-  return Object.entries(PRICE_BY_QUANTITY).map(([cantidad, precio], index) => ({
-    id: index + 1,
-    cantidadFresas: Number(cantidad),
-    precio,
-    estado: 'Activo',
-  }));
-}
+export const usePresentations = ({ autoLoad = true } = {}) => {
+  const [presentations, setPresentations] = useState([]);
 
-function loadPresentations() {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    }
-  } catch (error) {
-    console.error('Error al leer las presentaciones guardadas', error);
-  }
-  return buildSeed();
-}
+  const [loading, setLoading] = useState(autoLoad);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [reloadToken, setReloadToken] = useState(0);
 
-export const usePresentations = () => {
   const [statusFilter, setStatusFilter] = useState('todos');
 
   // Modales y estados de selección
@@ -47,12 +31,36 @@ export const usePresentations = () => {
   const [selectedPresentation, setSelectedPresentation] = useState(null);
   const [presentationToEdit, setPresentationToEdit] = useState(null);
 
-  const [presentations, setPresentations] = useState(loadPresentations);
-
-  // Persistencia simulada
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(presentations));
-  }, [presentations]);
+    if (!autoLoad && reloadToken === 0) return undefined;
+
+    let activo = true;
+
+    presentationService
+      .listar()
+      .then((lista) => {
+        if (!activo) return;
+        setPresentations(ordenarPorCantidad(lista));
+        setError('');
+      })
+      .catch((err) => {
+        if (!activo) return;
+        setError(err?.message || 'No se pudieron cargar las presentaciones.');
+      })
+      .finally(() => {
+        if (activo) setLoading(false);
+      });
+
+    return () => {
+      activo = false;
+    };
+  }, [autoLoad, reloadToken]);
+
+  function reload() {
+    setLoading(true);
+    setError('');
+    setReloadToken((valor) => valor + 1);
+  }
 
   // Filtrado por estado (la búsqueda de texto la maneja DataTable)
   const filteredPresentations = presentations.filter(
@@ -61,47 +69,78 @@ export const usePresentations = () => {
       presentation.estado.toLowerCase() === statusFilter.toLowerCase()
   );
 
-  // Activar / desactivar
-  const handleToggleStatus = (id) => {
-    setPresentations((prev) =>
-      prev.map((presentation) =>
-        presentation.id === id
-          ? {
-              ...presentation,
-              estado: presentation.estado === 'Activo' ? 'Inactivo' : 'Activo',
-            }
-          : presentation
-      )
+  /** Activa/desactiva una presentación contra el API y refleja la respuesta. */
+  async function handleToggleStatus(id) {
+    const actual = presentations.find(
+      (presentation) => presentation.id === id
     );
-  };
+    if (!actual) return;
 
-  // Guardar (crear o editar)
-  const handleSavePresentation = async (data) => {
-    await delay();
-    if (presentationToEdit) {
+    try {
+      const actualizada = await presentationService.cambiarEstado(
+        id,
+        actual.estado !== 'Activo'
+      );
       setPresentations((prev) =>
         prev.map((presentation) =>
-          presentation.id === presentationToEdit.id
-            ? { ...presentation, ...data }
-            : presentation
+          presentation.id === id ? actualizada : presentation
         )
       );
-    } else {
-      setPresentations((prev) => [{ id: Date.now(), ...data }, ...prev]);
+      setError('');
+    } catch (err) {
+      setError(
+        err?.message || 'No se pudo cambiar el estado de la presentación.'
+      );
     }
-    setPresentationToEdit(null);
-  };
+  }
 
-  // Eliminar
-  const handleConfirmDelete = async () => {
-    await delay();
+  /**
+   * Crea o edita. Devuelve la presentación guardada y relanza los errores para
+   * que el modal los muestre sin cerrarse.
+   */
+  async function handleSavePresentation(datos) {
+    setSubmitting(true);
+    try {
+      if (presentationToEdit) {
+        const actualizada = await presentationService.actualizar(
+          presentationToEdit.id,
+          datos
+        );
+        setPresentations((prev) =>
+          ordenarPorCantidad(
+            prev.map((presentation) =>
+              presentation.id === actualizada.id ? actualizada : presentation
+            )
+          )
+        );
+        setPresentationToEdit(null);
+        return actualizada;
+      }
+
+      const creada = await presentationService.crear(datos);
+      setPresentations((prev) => ordenarPorCantidad([creada, ...prev]));
+      return creada;
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  /** Elimina; si el backend responde 409, el error se propaga a la página. */
+  async function handleConfirmDelete() {
     if (!selectedPresentation) return;
-    setPresentations((prev) =>
-      prev.filter((presentation) => presentation.id !== selectedPresentation.id)
-    );
-    setIsDeleteOpen(false);
-    setSelectedPresentation(null);
-  };
+
+    try {
+      await presentationService.eliminar(selectedPresentation.id);
+      setPresentations((prev) =>
+        prev.filter(
+          (presentation) => presentation.id !== selectedPresentation.id
+        )
+      );
+    } finally {
+      setIsDeleteOpen(false);
+      setSelectedPresentation(null);
+    }
+  }
 
   // Apertura de modales
   const handleOpenCreate = () => {
@@ -127,15 +166,23 @@ export const usePresentations = () => {
   return {
     statusFilter,
     setStatusFilter,
+
     isModalOpen,
     setIsModalOpen,
     isDetailOpen,
     setIsDetailOpen,
     isDeleteOpen,
     setIsDeleteOpen,
+
     selectedPresentation,
     presentationToEdit,
     filteredPresentations,
+
+    loading,
+    submitting,
+    error,
+    reload,
+
     handleToggleStatus,
     handleSavePresentation,
     handleConfirmDelete,

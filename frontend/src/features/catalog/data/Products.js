@@ -1,5 +1,7 @@
 // src/features/catalog/data/products.js
-// TODO: reemplazar por fetch a la API real (features/catalog/services)
+// LEGADO: datos de ejemplo para los módulos que todavía están simulados
+// (carrito, pedidos, perfil y ventas). El catálogo real ya se consulta al API
+// desde features/catalog/services/catalogService.js.
 // Nota: el precio ya no vive aquí, depende de la cantidad (ver pricing.js)
 
 export const CATEGORIES = [

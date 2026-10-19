@@ -1,5 +1,4 @@
 // src/features/catalog/components/RelatedProducts.jsx
-import React from "react";
 import ProductCard from "./ProductCard";
 import "./RelatedProducts.css";
 
@@ -8,10 +7,11 @@ import "./RelatedProducts.css";
  *
  * @param {object} props
  * @param {object[]} props.products
+ * @param {number} [props.minPrice]
  * @param {() => void} [props.onViewAll]
  * @param {(product: object) => void} [props.onViewDetail]
  */
-export default function RelatedProducts({ products, onViewAll, onViewDetail }) {
+export default function RelatedProducts({ products, minPrice = 0, onViewAll, onViewDetail }) {
   return (
     <div className="related-products">
       <div className="related-header">
@@ -23,7 +23,7 @@ export default function RelatedProducts({ products, onViewAll, onViewDetail }) {
       <div className="row">
         {products.map((product) => (
           <div key={product.id} className="col-12 col-sm-6 col-lg-3 product-col">
-            <ProductCard product={product} onViewDetail={onViewDetail} />
+            <ProductCard product={product} minPrice={minPrice} onViewDetail={onViewDetail} />
           </div>
         ))}
       </div>
