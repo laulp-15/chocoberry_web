@@ -1,4 +1,4 @@
-// src/features/admin/municipios/hooks/useMunicipios.jsx
+// src/features/admin/municipalities/hooks/useMunicipalities.jsx
 //
 // CRUD de municipios (nombre, identificador y costo de envío).
 //
@@ -8,7 +8,7 @@
 import { useState, useEffect } from 'react';
 import { MUNICIPIOS, getShippingCost } from '../../../cart/data/Shipping';
 
-const STORAGE_KEY = 'chocoberry_municipios_v1';
+const STORAGE_KEY = 'chocoberry_municipalities_v1';
 
 function delay(ms = 350) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -38,7 +38,7 @@ function buildSeed() {
   }));
 }
 
-function loadMunicipios() {
+function loadMunicipalities() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
@@ -52,9 +52,9 @@ function loadMunicipios() {
 }
 
 /** Devuelve un slug único dentro del listado (agrega -2, -3... si se repite). */
-function uniqueSlug(base, municipios, ignoreId = null) {
+function uniqueSlug(base, municipalities, ignoreId = null) {
   const taken = new Set(
-    municipios.filter((m) => m.id !== ignoreId).map((m) => m.slug)
+    municipalities.filter((m) => m.id !== ignoreId).map((m) => m.slug)
   );
   if (!base) return '';
   if (!taken.has(base)) return base;
@@ -64,7 +64,7 @@ function uniqueSlug(base, municipios, ignoreId = null) {
   return `${base}-${suffix}`;
 }
 
-export const useMunicipios = () => {
+export const useMunicipalities = () => {
   const [statusFilter, setStatusFilter] = useState('todos');
 
   // Modales y estados de selección
@@ -72,51 +72,51 @@ export const useMunicipios = () => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
-  const [selectedMunicipio, setSelectedMunicipio] = useState(null);
-  const [municipioToEdit, setMunicipioToEdit] = useState(null);
+  const [selectedMunicipality, setSelectedMunicipality] = useState(null);
+  const [municipalityToEdit, setMunicipalityToEdit] = useState(null);
 
-  const [municipios, setMunicipios] = useState(loadMunicipios);
+  const [municipalities, setMunicipalities] = useState(loadMunicipalities);
 
   // Persistencia simulada
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(municipios));
-  }, [municipios]);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(municipalities));
+  }, [municipalities]);
 
   // Filtrado por estado (la búsqueda de texto la maneja DataTable)
-  const filteredMunicipios = municipios.filter(
-    (municipio) =>
+  const filteredMunicipalities = municipalities.filter(
+    (municipality) =>
       statusFilter === 'todos' ||
-      municipio.estado.toLowerCase() === statusFilter.toLowerCase()
+      municipality.estado.toLowerCase() === statusFilter.toLowerCase()
   );
 
   // Activar / desactivar
   const handleToggleStatus = (id) => {
-    setMunicipios((prev) =>
-      prev.map((municipio) =>
-        municipio.id === id
+    setMunicipalities((prev) =>
+      prev.map((municipality) =>
+        municipality.id === id
           ? {
-              ...municipio,
-              estado: municipio.estado === 'Activo' ? 'Inactivo' : 'Activo',
+              ...municipality,
+              estado: municipality.estado === 'Activo' ? 'Inactivo' : 'Activo',
             }
-          : municipio
+          : municipality
       )
     );
   };
 
   // Guardar (crear o editar)
-  const handleSaveMunicipio = async (data) => {
+  const handleSaveMunicipality = async (data) => {
     await delay();
-    if (municipioToEdit) {
+    if (municipalityToEdit) {
       // El slug no se regenera: es la referencia que usan los pedidos.
-      setMunicipios((prev) =>
-        prev.map((municipio) =>
-          municipio.id === municipioToEdit.id
-            ? { ...municipio, nombre: data.nombre, costoEnvio: data.costoEnvio, estado: data.estado }
-            : municipio
+      setMunicipalities((prev) =>
+        prev.map((municipality) =>
+          municipality.id === municipalityToEdit.id
+            ? { ...municipality, nombre: data.nombre, costoEnvio: data.costoEnvio, estado: data.estado }
+            : municipality
         )
       );
     } else {
-      setMunicipios((prev) => [
+      setMunicipalities((prev) => [
         {
           id: Date.now(),
           nombre: data.nombre,
@@ -127,36 +127,38 @@ export const useMunicipios = () => {
         ...prev,
       ]);
     }
-    setMunicipioToEdit(null);
+    setMunicipalityToEdit(null);
   };
 
   // Eliminar
   const handleConfirmDelete = async () => {
     await delay();
-    if (!selectedMunicipio) return;
-    setMunicipios((prev) => prev.filter((municipio) => municipio.id !== selectedMunicipio.id));
+    if (!selectedMunicipality) return;
+    setMunicipalities((prev) =>
+      prev.filter((municipality) => municipality.id !== selectedMunicipality.id)
+    );
     setIsDeleteOpen(false);
-    setSelectedMunicipio(null);
+    setSelectedMunicipality(null);
   };
 
   // Apertura de modales
   const handleOpenCreate = () => {
-    setMunicipioToEdit(null);
+    setMunicipalityToEdit(null);
     setIsModalOpen(true);
   };
 
-  const handleOpenEdit = (municipio) => {
-    setMunicipioToEdit(municipio);
+  const handleOpenEdit = (municipality) => {
+    setMunicipalityToEdit(municipality);
     setIsModalOpen(true);
   };
 
-  const handleOpenDetail = (municipio) => {
-    setSelectedMunicipio(municipio);
+  const handleOpenDetail = (municipality) => {
+    setSelectedMunicipality(municipality);
     setIsDetailOpen(true);
   };
 
-  const handleOpenDelete = (municipio) => {
-    setSelectedMunicipio(municipio);
+  const handleOpenDelete = (municipality) => {
+    setSelectedMunicipality(municipality);
     setIsDeleteOpen(true);
   };
 
@@ -169,11 +171,11 @@ export const useMunicipios = () => {
     setIsDetailOpen,
     isDeleteOpen,
     setIsDeleteOpen,
-    selectedMunicipio,
-    municipioToEdit,
-    filteredMunicipios,
+    selectedMunicipality,
+    municipalityToEdit,
+    filteredMunicipalities,
     handleToggleStatus,
-    handleSaveMunicipio,
+    handleSaveMunicipality,
     handleConfirmDelete,
     handleOpenCreate,
     handleOpenEdit,

@@ -1,13 +1,13 @@
-// src/features/admin/presentaciones/components/PresentacionFormModal.jsx
+// src/features/admin/presentations/components/PresentationFormModal.jsx
 import React, { useEffect } from 'react';
 import Modal from '../../../../shared/components/Modal';
 import FormTextField from '../../../../shared/components/FormTextField';
 import StatusToggle from '../../../../shared/components/StatusToggle';
 import useFormValidation from '../../../../shared/hooks/useFormValidation';
 import { formatPrice } from '../../../../shared/utils/formatPrice';
-import { labelCantidad } from '../utils/presentacionDisplay';
+import { quantityLabel } from '../utils/presentationDisplay';
 
-export default function PresentacionFormModal({
+export default function PresentationFormModal({
   isOpen,
   onClose,
   onSubmit,
@@ -93,7 +93,7 @@ export default function PresentacionFormModal({
           <div className="crud-detail-card">
             <div className="crud-detail-header">
               <h3 className="crud-detail-name">
-                {initialData ? labelCantidad(initialData.cantidadFresas) : '—'}
+                {initialData ? quantityLabel(initialData.cantidadFresas) : '—'}
               </h3>
               <span
                 className={`crud-detail-status ${

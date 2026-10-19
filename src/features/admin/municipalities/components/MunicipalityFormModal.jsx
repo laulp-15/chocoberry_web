@@ -1,4 +1,4 @@
-// src/features/admin/municipios/components/MunicipioFormModal.jsx
+// src/features/admin/municipalities/components/MunicipalityFormModal.jsx
 import React, { useEffect } from 'react';
 import Modal from '../../../../shared/components/Modal';
 import FormTextField from '../../../../shared/components/FormTextField';
@@ -6,7 +6,7 @@ import StatusToggle from '../../../../shared/components/StatusToggle';
 import useFormValidation from '../../../../shared/hooks/useFormValidation';
 import { formatPrice } from '../../../../shared/utils/formatPrice';
 
-export default function MunicipioFormModal({
+export default function MunicipalityFormModal({
   isOpen,
   onClose,
   onSubmit,

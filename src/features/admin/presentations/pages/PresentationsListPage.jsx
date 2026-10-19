@@ -1,17 +1,17 @@
-// src/features/admin/presentaciones/pages/PresentacionesListPage.jsx
+// src/features/admin/presentations/pages/PresentationsListPage.jsx
 import React, { useState } from 'react';
-import { usePresentaciones } from '../hooks/usePresentaciones';
-import PresentacionFormModal from '../components/PresentacionFormModal';
+import { usePresentations } from '../hooks/usePresentations';
+import PresentationFormModal from '../components/PresentationFormModal';
 import DataTable from '../../../../shared/components/DataTable';
 import ConfirmModal from '../../../../shared/components/ConfirmModal';
 import FormSelect from '../../../../shared/components/FormSelect';
 import StatusToggle from '../../../../shared/components/StatusToggle';
 import OrderNotification from '../../orders/components/OrderNotification';
 import { formatPrice } from '../../../../shared/utils/formatPrice';
-import { labelCantidad } from '../utils/presentacionDisplay';
+import { quantityLabel } from '../utils/presentationDisplay';
 import '../../../../shared/css/adminCrud.css';
 
-export default function PresentacionesListPage() {
+export default function PresentationsListPage() {
   const [notification, setNotification] = useState(null);
   const {
     statusFilter,
@@ -22,32 +22,32 @@ export default function PresentacionesListPage() {
     setIsDetailOpen,
     isDeleteOpen,
     setIsDeleteOpen,
-    selectedPresentacion,
-    presentacionToEdit,
-    filteredPresentaciones,
+    selectedPresentation,
+    presentationToEdit,
+    filteredPresentations,
     handleToggleStatus,
-    handleSavePresentacion,
+    handleSavePresentation,
     handleConfirmDelete,
     handleOpenCreate,
     handleOpenEdit,
     handleOpenDetail,
     handleOpenDelete,
-  } = usePresentaciones();
+  } = usePresentations();
 
   const handleSave = (data) => {
-    handleSavePresentacion(data);
+    handleSavePresentation(data);
     setNotification({
-      message: presentacionToEdit
-        ? `Se actualizó la presentación de ${labelCantidad(data.cantidadFresas)}.`
-        : `Se creó la presentación de ${labelCantidad(data.cantidadFresas)}.`,
+      message: presentationToEdit
+        ? `Se actualizó la presentación de ${quantityLabel(data.cantidadFresas)}.`
+        : `Se creó la presentación de ${quantityLabel(data.cantidadFresas)}.`,
     });
   };
 
   const handleDelete = () => {
-    const cantidad = selectedPresentacion?.cantidadFresas;
+    const cantidad = selectedPresentation?.cantidadFresas;
     handleConfirmDelete();
     setNotification({
-      message: `Se eliminó la presentación de ${labelCantidad(cantidad)}.`,
+      message: `Se eliminó la presentación de ${quantityLabel(cantidad)}.`,
     });
   };
 
@@ -56,9 +56,9 @@ export default function PresentacionesListPage() {
       key: 'cantidadFresas',
       label: 'CANTIDAD DE FRESAS',
       style: { width: '45%', textAlign: 'left', paddingLeft: '1.5rem' },
-      render: (presentacion) => (
+      render: (presentation) => (
         <span style={{ fontWeight: '600', color: 'var(--texto)' }}>
-          {labelCantidad(presentacion.cantidadFresas)}
+          {quantityLabel(presentation.cantidadFresas)}
         </span>
       ),
     },
@@ -66,9 +66,9 @@ export default function PresentacionesListPage() {
       key: 'precio',
       label: 'PRECIO',
       style: { width: '20%', textAlign: 'center' },
-      render: (presentacion) => (
+      render: (presentation) => (
         <span style={{ fontWeight: '600', color: 'var(--texto)' }}>
-          {formatPrice(presentacion.precio)}
+          {formatPrice(presentation.precio)}
         </span>
       ),
     },
@@ -76,10 +76,10 @@ export default function PresentacionesListPage() {
       key: 'estado',
       label: 'ESTADO',
       style: { width: '120px', textAlign: 'center' },
-      render: (presentacion) => (
+      render: (presentation) => (
         <StatusToggle
-          checked={presentacion.estado === 'Activo'}
-          onChange={() => handleToggleStatus(presentacion.id)}
+          checked={presentation.estado === 'Activo'}
+          onChange={() => handleToggleStatus(presentation.id)}
         />
       ),
     },
@@ -87,11 +87,11 @@ export default function PresentacionesListPage() {
       key: 'actions',
       label: 'ACCIONES',
       style: { width: '150px', textAlign: 'right', paddingRight: '2rem' },
-      render: (presentacion) => (
+      render: (presentation) => (
         <div className="table-actions">
           <button
             type="button"
-            onClick={() => handleOpenDetail(presentacion)}
+            onClick={() => handleOpenDetail(presentation)}
             className="table-action-btn"
             title="Ver detalle"
           >
@@ -100,7 +100,7 @@ export default function PresentacionesListPage() {
 
           <button
             type="button"
-            onClick={() => handleOpenEdit(presentacion)}
+            onClick={() => handleOpenEdit(presentation)}
             className="table-action-btn"
             title="Editar"
           >
@@ -109,7 +109,7 @@ export default function PresentacionesListPage() {
 
           <button
             type="button"
-            onClick={() => handleOpenDelete(presentacion)}
+            onClick={() => handleOpenDelete(presentation)}
             className="table-action-btn danger"
             title="Eliminar"
           >
@@ -128,7 +128,7 @@ export default function PresentacionesListPage() {
         createLabel="Crear presentación"
         onCreate={handleOpenCreate}
         columns={columns}
-        data={filteredPresentaciones}
+        data={filteredPresentations}
         searchPlaceholder="Buscar presentación..."
         emptyMessage="No hay presentaciones para mostrar."
         extraFilter={
@@ -146,18 +146,18 @@ export default function PresentacionesListPage() {
       />
 
       {/* Modal crear / editar */}
-      <PresentacionFormModal
+      <PresentationFormModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleSave}
-        initialData={presentacionToEdit}
+        initialData={presentationToEdit}
       />
 
       {/* Modal ver detalle */}
-      <PresentacionFormModal
+      <PresentationFormModal
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
-        initialData={selectedPresentacion}
+        initialData={selectedPresentation}
         isReadOnly
       />
 
@@ -168,8 +168,8 @@ export default function PresentacionesListPage() {
         onConfirm={handleDelete}
         variant="danger"
         title="Eliminar presentación"
-        description={`¿Estás seguro de que deseas eliminar la presentación de ${labelCantidad(
-          selectedPresentacion?.cantidadFresas
+        description={`¿Estás seguro de que deseas eliminar la presentación de ${quantityLabel(
+          selectedPresentation?.cantidadFresas
         )}?`}
         confirmLabel="Eliminar"
         cancelLabel="Cancelar"

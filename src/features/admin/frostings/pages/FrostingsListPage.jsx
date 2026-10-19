@@ -1,7 +1,7 @@
-// src/features/admin/glaseados/pages/GlaseadosListPage.jsx
+// src/features/admin/frostings/pages/FrostingsListPage.jsx
 import React, { useState } from 'react';
-import { useGlaseados } from '../hooks/useGlaseados';
-import GlaseadoFormModal from '../components/GlaseadoFormModal';
+import { useFrostings } from '../hooks/useFrostings';
+import FrostingFormModal from '../components/FrostingFormModal';
 import DataTable from '../../../../shared/components/DataTable';
 import ConfirmModal from '../../../../shared/components/ConfirmModal';
 import FormSelect from '../../../../shared/components/FormSelect';
@@ -9,7 +9,7 @@ import StatusToggle from '../../../../shared/components/StatusToggle';
 import OrderNotification from '../../orders/components/OrderNotification';
 import '../../../../shared/css/adminCrud.css';
 
-export default function GlaseadosListPage() {
+export default function FrostingsListPage() {
   const [notification, setNotification] = useState(null);
   const {
     statusFilter,
@@ -20,29 +20,29 @@ export default function GlaseadosListPage() {
     setIsDetailOpen,
     isDeleteOpen,
     setIsDeleteOpen,
-    selectedGlaseado,
-    glaseadoToEdit,
-    filteredGlaseados,
+    selectedFrosting,
+    frostingToEdit,
+    filteredFrostings,
     handleToggleStatus,
-    handleSaveGlaseado,
+    handleSaveFrosting,
     handleConfirmDelete,
     handleOpenCreate,
     handleOpenEdit,
     handleOpenDetail,
     handleOpenDelete,
-  } = useGlaseados();
+  } = useFrostings();
 
   const handleSave = (data) => {
-    handleSaveGlaseado(data);
+    handleSaveFrosting(data);
     setNotification({
-      message: glaseadoToEdit
+      message: frostingToEdit
         ? `"${data.nombre}" se actualizó correctamente.`
         : `"${data.nombre}" se creó correctamente.`,
     });
   };
 
   const handleDelete = () => {
-    const nombre = selectedGlaseado?.nombre;
+    const nombre = selectedFrosting?.nombre;
     handleConfirmDelete();
     setNotification({
       message: `"${nombre}" se eliminó correctamente.`,
@@ -54,10 +54,10 @@ export default function GlaseadosListPage() {
       key: 'nombre',
       label: 'GLASEADO',
       style: { width: '45%', textAlign: 'left', paddingLeft: '1.5rem' },
-      render: (glaseado) => (
+      render: (frosting) => (
         <span className="crud-color-cell">
-          <span className="crud-swatch" style={{ backgroundColor: glaseado.hex }} />
-          <span style={{ fontWeight: '600', color: 'var(--texto)' }}>{glaseado.nombre}</span>
+          <span className="crud-swatch" style={{ backgroundColor: frosting.hex }} />
+          <span style={{ fontWeight: '600', color: 'var(--texto)' }}>{frosting.nombre}</span>
         </span>
       ),
     },
@@ -65,18 +65,18 @@ export default function GlaseadosListPage() {
       key: 'hex',
       label: 'CÓDIGO',
       style: { width: '20%', textAlign: 'left' },
-      render: (glaseado) => (
-        <span style={{ color: 'var(--texto-muted)' }}>{glaseado.hex}</span>
+      render: (frosting) => (
+        <span style={{ color: 'var(--texto-muted)' }}>{frosting.hex}</span>
       ),
     },
     {
       key: 'estado',
       label: 'ESTADO',
       style: { width: '120px', textAlign: 'center' },
-      render: (glaseado) => (
+      render: (frosting) => (
         <StatusToggle
-          checked={glaseado.estado === 'Activo'}
-          onChange={() => handleToggleStatus(glaseado.id)}
+          checked={frosting.estado === 'Activo'}
+          onChange={() => handleToggleStatus(frosting.id)}
         />
       ),
     },
@@ -84,11 +84,11 @@ export default function GlaseadosListPage() {
       key: 'actions',
       label: 'ACCIONES',
       style: { width: '150px', textAlign: 'right', paddingRight: '2rem' },
-      render: (glaseado) => (
+      render: (frosting) => (
         <div className="table-actions">
           <button
             type="button"
-            onClick={() => handleOpenDetail(glaseado)}
+            onClick={() => handleOpenDetail(frosting)}
             className="table-action-btn"
             title="Ver detalle"
           >
@@ -97,7 +97,7 @@ export default function GlaseadosListPage() {
 
           <button
             type="button"
-            onClick={() => handleOpenEdit(glaseado)}
+            onClick={() => handleOpenEdit(frosting)}
             className="table-action-btn"
             title="Editar"
           >
@@ -106,7 +106,7 @@ export default function GlaseadosListPage() {
 
           <button
             type="button"
-            onClick={() => handleOpenDelete(glaseado)}
+            onClick={() => handleOpenDelete(frosting)}
             className="table-action-btn danger"
             title="Eliminar"
           >
@@ -125,7 +125,7 @@ export default function GlaseadosListPage() {
         createLabel="Crear glaseado"
         onCreate={handleOpenCreate}
         columns={columns}
-        data={filteredGlaseados}
+        data={filteredFrostings}
         searchPlaceholder="Buscar glaseado..."
         emptyMessage="No hay glaseados para mostrar."
         extraFilter={
@@ -143,18 +143,18 @@ export default function GlaseadosListPage() {
       />
 
       {/* Modal crear / editar */}
-      <GlaseadoFormModal
+      <FrostingFormModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleSave}
-        initialData={glaseadoToEdit}
+        initialData={frostingToEdit}
       />
 
       {/* Modal ver detalle */}
-      <GlaseadoFormModal
+      <FrostingFormModal
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
-        initialData={selectedGlaseado}
+        initialData={selectedFrosting}
         isReadOnly
       />
 
@@ -165,7 +165,7 @@ export default function GlaseadosListPage() {
         onConfirm={handleDelete}
         variant="danger"
         title="Eliminar glaseado"
-        description={`¿Estás seguro de que deseas eliminar el glaseado "${selectedGlaseado?.nombre}"?`}
+        description={`¿Estás seguro de que deseas eliminar el glaseado "${selectedFrosting?.nombre}"?`}
         confirmLabel="Eliminar"
         cancelLabel="Cancelar"
       />

@@ -1,4 +1,4 @@
-// src/features/admin/glaseados/components/GlaseadoFormModal.jsx
+// src/features/admin/frostings/components/FrostingFormModal.jsx
 import React, { useEffect } from 'react';
 import Modal from '../../../../shared/components/Modal';
 import FormTextField from '../../../../shared/components/FormTextField';
@@ -7,7 +7,7 @@ import useFormValidation from '../../../../shared/hooks/useFormValidation';
 
 const HEX_PATTERN = /^#[0-9A-Fa-f]{6}$/;
 
-export default function GlaseadoFormModal({
+export default function FrostingFormModal({
   isOpen,
   onClose,
   onSubmit,

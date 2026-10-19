@@ -1,4 +1,4 @@
-// src/features/admin/glaseados/hooks/useGlaseados.jsx
+// src/features/admin/frostings/hooks/useFrostings.jsx
 //
 // CRUD de glaseados (nombre y color).
 //
@@ -8,7 +8,7 @@
 import { useState, useEffect } from 'react';
 import { COLOR_OPTIONS } from '../../../catalog/data/Colors';
 
-const STORAGE_KEY = 'chocoberry_glaseados_v1';
+const STORAGE_KEY = 'chocoberry_frostings_v1';
 
 function delay(ms = 350) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -23,7 +23,7 @@ function buildSeed() {
   }));
 }
 
-function loadGlaseados() {
+function loadFrostings() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
@@ -36,7 +36,7 @@ function loadGlaseados() {
   return buildSeed();
 }
 
-export const useGlaseados = () => {
+export const useFrostings = () => {
   const [statusFilter, setStatusFilter] = useState('todos');
 
   // Modales y estados de selección
@@ -44,76 +44,76 @@ export const useGlaseados = () => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
-  const [selectedGlaseado, setSelectedGlaseado] = useState(null);
-  const [glaseadoToEdit, setGlaseadoToEdit] = useState(null);
+  const [selectedFrosting, setSelectedFrosting] = useState(null);
+  const [frostingToEdit, setFrostingToEdit] = useState(null);
 
-  const [glaseados, setGlaseados] = useState(loadGlaseados);
+  const [frostings, setFrostings] = useState(loadFrostings);
 
   // Persistencia simulada
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(glaseados));
-  }, [glaseados]);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(frostings));
+  }, [frostings]);
 
   // Filtrado por estado (la búsqueda de texto la maneja DataTable)
-  const filteredGlaseados = glaseados.filter(
-    (glaseado) =>
+  const filteredFrostings = frostings.filter(
+    (frosting) =>
       statusFilter === 'todos' ||
-      glaseado.estado.toLowerCase() === statusFilter.toLowerCase()
+      frosting.estado.toLowerCase() === statusFilter.toLowerCase()
   );
 
   // Activar / desactivar
   const handleToggleStatus = (id) => {
-    setGlaseados((prev) =>
-      prev.map((glaseado) =>
-        glaseado.id === id
-          ? { ...glaseado, estado: glaseado.estado === 'Activo' ? 'Inactivo' : 'Activo' }
-          : glaseado
+    setFrostings((prev) =>
+      prev.map((frosting) =>
+        frosting.id === id
+          ? { ...frosting, estado: frosting.estado === 'Activo' ? 'Inactivo' : 'Activo' }
+          : frosting
       )
     );
   };
 
   // Guardar (crear o editar)
-  const handleSaveGlaseado = async (data) => {
+  const handleSaveFrosting = async (data) => {
     await delay();
-    if (glaseadoToEdit) {
-      setGlaseados((prev) =>
-        prev.map((glaseado) =>
-          glaseado.id === glaseadoToEdit.id ? { ...glaseado, ...data } : glaseado
+    if (frostingToEdit) {
+      setFrostings((prev) =>
+        prev.map((frosting) =>
+          frosting.id === frostingToEdit.id ? { ...frosting, ...data } : frosting
         )
       );
     } else {
-      setGlaseados((prev) => [{ id: Date.now(), ...data }, ...prev]);
+      setFrostings((prev) => [{ id: Date.now(), ...data }, ...prev]);
     }
-    setGlaseadoToEdit(null);
+    setFrostingToEdit(null);
   };
 
   // Eliminar
   const handleConfirmDelete = async () => {
     await delay();
-    if (!selectedGlaseado) return;
-    setGlaseados((prev) => prev.filter((glaseado) => glaseado.id !== selectedGlaseado.id));
+    if (!selectedFrosting) return;
+    setFrostings((prev) => prev.filter((frosting) => frosting.id !== selectedFrosting.id));
     setIsDeleteOpen(false);
-    setSelectedGlaseado(null);
+    setSelectedFrosting(null);
   };
 
   // Apertura de modales
   const handleOpenCreate = () => {
-    setGlaseadoToEdit(null);
+    setFrostingToEdit(null);
     setIsModalOpen(true);
   };
 
-  const handleOpenEdit = (glaseado) => {
-    setGlaseadoToEdit(glaseado);
+  const handleOpenEdit = (frosting) => {
+    setFrostingToEdit(frosting);
     setIsModalOpen(true);
   };
 
-  const handleOpenDetail = (glaseado) => {
-    setSelectedGlaseado(glaseado);
+  const handleOpenDetail = (frosting) => {
+    setSelectedFrosting(frosting);
     setIsDetailOpen(true);
   };
 
-  const handleOpenDelete = (glaseado) => {
-    setSelectedGlaseado(glaseado);
+  const handleOpenDelete = (frosting) => {
+    setSelectedFrosting(frosting);
     setIsDeleteOpen(true);
   };
 
@@ -126,11 +126,11 @@ export const useGlaseados = () => {
     setIsDetailOpen,
     isDeleteOpen,
     setIsDeleteOpen,
-    selectedGlaseado,
-    glaseadoToEdit,
-    filteredGlaseados,
+    selectedFrosting,
+    frostingToEdit,
+    filteredFrostings,
     handleToggleStatus,
-    handleSaveGlaseado,
+    handleSaveFrosting,
     handleConfirmDelete,
     handleOpenCreate,
     handleOpenEdit,

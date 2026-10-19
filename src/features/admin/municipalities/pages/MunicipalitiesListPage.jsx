@@ -1,7 +1,7 @@
-// src/features/admin/municipios/pages/MunicipiosListPage.jsx
+// src/features/admin/municipalities/pages/MunicipalitiesListPage.jsx
 import React, { useState } from 'react';
-import { useMunicipios } from '../hooks/useMunicipios';
-import MunicipioFormModal from '../components/MunicipioFormModal';
+import { useMunicipalities } from '../hooks/useMunicipalities';
+import MunicipalityFormModal from '../components/MunicipalityFormModal';
 import DataTable from '../../../../shared/components/DataTable';
 import ConfirmModal from '../../../../shared/components/ConfirmModal';
 import FormSelect from '../../../../shared/components/FormSelect';
@@ -10,7 +10,7 @@ import OrderNotification from '../../orders/components/OrderNotification';
 import { formatPrice } from '../../../../shared/utils/formatPrice';
 import '../../../../shared/css/adminCrud.css';
 
-export default function MunicipiosListPage() {
+export default function MunicipalitiesListPage() {
   const [notification, setNotification] = useState(null);
   const {
     statusFilter,
@@ -21,29 +21,29 @@ export default function MunicipiosListPage() {
     setIsDetailOpen,
     isDeleteOpen,
     setIsDeleteOpen,
-    selectedMunicipio,
-    municipioToEdit,
-    filteredMunicipios,
+    selectedMunicipality,
+    municipalityToEdit,
+    filteredMunicipalities,
     handleToggleStatus,
-    handleSaveMunicipio,
+    handleSaveMunicipality,
     handleConfirmDelete,
     handleOpenCreate,
     handleOpenEdit,
     handleOpenDetail,
     handleOpenDelete,
-  } = useMunicipios();
+  } = useMunicipalities();
 
   const handleSave = (data) => {
-    handleSaveMunicipio(data);
+    handleSaveMunicipality(data);
     setNotification({
-      message: municipioToEdit
+      message: municipalityToEdit
         ? `"${data.nombre}" se actualizó correctamente.`
         : `"${data.nombre}" se creó correctamente.`,
     });
   };
 
   const handleDelete = () => {
-    const nombre = selectedMunicipio?.nombre;
+    const nombre = selectedMunicipality?.nombre;
     handleConfirmDelete();
     setNotification({
       message: `"${nombre}" se eliminó correctamente.`,
@@ -55,17 +55,17 @@ export default function MunicipiosListPage() {
       key: 'nombre',
       label: 'MUNICIPIO',
       style: { width: '45%', textAlign: 'left', paddingLeft: '1.5rem' },
-      render: (municipio) => (
-        <span style={{ fontWeight: '600', color: 'var(--texto)' }}>{municipio.nombre}</span>
+      render: (municipality) => (
+        <span style={{ fontWeight: '600', color: 'var(--texto)' }}>{municipality.nombre}</span>
       ),
     },
     {
       key: 'costoEnvio',
       label: 'COSTO DE ENVÍO',
       style: { width: '20%', textAlign: 'center' },
-      render: (municipio) => (
+      render: (municipality) => (
         <span style={{ fontWeight: '600', color: 'var(--texto)' }}>
-          {formatPrice(municipio.costoEnvio)}
+          {formatPrice(municipality.costoEnvio)}
         </span>
       ),
     },
@@ -73,10 +73,10 @@ export default function MunicipiosListPage() {
       key: 'estado',
       label: 'ESTADO',
       style: { width: '120px', textAlign: 'center' },
-      render: (municipio) => (
+      render: (municipality) => (
         <StatusToggle
-          checked={municipio.estado === 'Activo'}
-          onChange={() => handleToggleStatus(municipio.id)}
+          checked={municipality.estado === 'Activo'}
+          onChange={() => handleToggleStatus(municipality.id)}
         />
       ),
     },
@@ -84,11 +84,11 @@ export default function MunicipiosListPage() {
       key: 'actions',
       label: 'ACCIONES',
       style: { width: '150px', textAlign: 'right', paddingRight: '2rem' },
-      render: (municipio) => (
+      render: (municipality) => (
         <div className="table-actions">
           <button
             type="button"
-            onClick={() => handleOpenDetail(municipio)}
+            onClick={() => handleOpenDetail(municipality)}
             className="table-action-btn"
             title="Ver detalle"
           >
@@ -97,7 +97,7 @@ export default function MunicipiosListPage() {
 
           <button
             type="button"
-            onClick={() => handleOpenEdit(municipio)}
+            onClick={() => handleOpenEdit(municipality)}
             className="table-action-btn"
             title="Editar"
           >
@@ -106,7 +106,7 @@ export default function MunicipiosListPage() {
 
           <button
             type="button"
-            onClick={() => handleOpenDelete(municipio)}
+            onClick={() => handleOpenDelete(municipality)}
             className="table-action-btn danger"
             title="Eliminar"
           >
@@ -125,7 +125,7 @@ export default function MunicipiosListPage() {
         createLabel="Crear municipio"
         onCreate={handleOpenCreate}
         columns={columns}
-        data={filteredMunicipios}
+        data={filteredMunicipalities}
         searchPlaceholder="Buscar municipio..."
         emptyMessage="No hay municipios para mostrar."
         extraFilter={
@@ -143,18 +143,18 @@ export default function MunicipiosListPage() {
       />
 
       {/* Modal crear / editar */}
-      <MunicipioFormModal
+      <MunicipalityFormModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleSave}
-        initialData={municipioToEdit}
+        initialData={municipalityToEdit}
       />
 
       {/* Modal ver detalle */}
-      <MunicipioFormModal
+      <MunicipalityFormModal
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
-        initialData={selectedMunicipio}
+        initialData={selectedMunicipality}
         isReadOnly
       />
 
@@ -165,7 +165,7 @@ export default function MunicipiosListPage() {
         onConfirm={handleDelete}
         variant="danger"
         title="Eliminar municipio"
-        description={`¿Estás seguro de que deseas eliminar el municipio "${selectedMunicipio?.nombre}"?`}
+        description={`¿Estás seguro de que deseas eliminar el municipio "${selectedMunicipality?.nombre}"?`}
         confirmLabel="Eliminar"
         cancelLabel="Cancelar"
       />
