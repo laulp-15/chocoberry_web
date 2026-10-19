@@ -7,7 +7,7 @@ import FormSelect from "../../../../shared/components/FormSelect";
 import ConfirmModal from "../../../../shared/components/ConfirmModal";
 import OrderNotification from "../../orders/components/OrderNotification";
 import { useAuth } from "../../../login/hooks/useAuth";
-import useUsersAdmin, { hasAssociatedOrders } from "../hooks/useUsersAdmin";
+import useUsersAdmin from "../hooks/useUsersAdmin";
 import UserFormModal from "../components/UserFormModal";
 import RoleBadge from "../components/RoleBadge";
 import { ROLE_OPTIONS, roleLabel } from "../utils/roles";
@@ -19,7 +19,8 @@ const STATUS_OPTIONS = [
 ];
 
 export default function UsersListPage() {
-  const { users, createUser, updateUser, setActive, removeUser } = useUsersAdmin();
+  const { users, loading, error, reload, createUser, updateUser, setActive, removeUser } =
+    useUsersAdmin();
   const { role: currentRole } = useAuth();
   const navigate = useNavigate();
 
@@ -87,21 +88,23 @@ export default function UsersListPage() {
   }
 
   async function handleToggleActive(user, value) {
-    await setActive(user.id, value);
-    setNotification({
-      message: value
-        ? `${user.fullName} ya puede acceder al sistema.`
-        : `${user.fullName} no podrá iniciar sesión hasta que se vuelva a habilitar.`,
-    });
+    try {
+      await setActive(user.id, value);
+      setNotification({
+        message: value
+          ? `${user.fullName} ya puede acceder al sistema.`
+          : `${user.fullName} no podrá iniciar sesión hasta que se vuelva a habilitar.`,
+      });
+    } catch (err) {
+      setNotification({
+        message: err.message || "No se pudo cambiar el estado del usuario.",
+      });
+    }
   }
 
+  // La regla "no eliminar con pedidos asociados" la valida el backend: si
+  // rechaza el borrado, confirmDelete() muestra su mensaje.
   function askDelete(user) {
-    if (hasAssociatedOrders(user)) {
-      setNotification({
-        message: `${user.fullName} tiene pedidos asociados. Elimínalo solo si ya no debe conservarse la trazabilidad.`,
-      });
-      return;
-    }
     setConfirmTarget(user);
   }
 
@@ -185,7 +188,11 @@ export default function UsersListPage() {
           columns={columns}
           data={filtered}
           searchPlaceholder="Buscar usuario por nombre o correo..."
-          emptyMessage="No se encontraron usuarios con esos criterios."
+          emptyMessage={
+            loading
+              ? "Cargando usuarios..."
+              : "No se encontraron usuarios con esos criterios."
+          }
           extraFilter={
             <div className="users-extra-filters">
               <FormSelect
@@ -203,6 +210,15 @@ export default function UsersListPage() {
             </div>
           }
         />
+
+        {error && (
+          <p className="users-readonly-hint users-error-hint">
+            <i className="fa-solid fa-triangle-exclamation" /> {error}
+            <button type="button" className="users-retry" onClick={reload}>
+              Reintentar
+            </button>
+          </p>
+        )}
 
         {!canManage && (
           <p className="users-readonly-hint">

@@ -135,14 +135,65 @@ Base: `/api`
 > La gestión de clientes se hace desde este mismo módulo filtrando por rol:
 > `GET /api/usuarios?rol=cliente`.
 
-> Los módulos de roles/permisos, categorías/productos, pedidos, entregas,
-> ventas, reseñas y dashboard se agregan progresivamente en `src/routes/index.js`.
+> Los módulos de categorías/productos, pedidos, entregas, ventas, reseñas y
+> dashboard se agregan progresivamente en `src/routes/index.js`.
+
+### Roles (`/api/roles`)
+
+| Método | Ruta | Descripción | Permiso |
+| --- | --- | --- | --- |
+| GET | `/roles` | Lista de roles con conteo de permisos y usuarios (filtro `nombre`) | Roles · Ver |
+| GET | `/roles/:id` | Detalle de un rol | Roles · Ver |
+| POST | `/roles` | Crea un rol (cuerpo `{ nombre, permisos: [ids] }`) | Roles · Crear |
+| PUT | `/roles/:id` | Actualiza un rol (`permisos` opcional: si no viene, se conservan) | Roles · Editar |
+| DELETE | `/roles/:id` | Elimina un rol (bloqueado con `409` si tiene usuarios) | Roles · Eliminar |
+| GET | `/roles/:id/permisos` | Permisos asignados al rol | Roles · Ver |
+| PUT | `/roles/:id/permisos` | Reemplaza la asignación (`{ permisos: [ids] }`) | Roles · Editar |
+
+### Módulos (`/api/modulos`)
+
+| Método | Ruta | Descripción | Permiso |
+| --- | --- | --- | --- |
+| GET | `/modulos` | Catálogo de módulos (filtro `nombre`) | Roles · Ver |
+| GET | `/modulos/:id` | Detalle de un módulo | Roles · Ver |
+| POST | `/modulos` | Crea un módulo | Roles · Crear |
+| PUT | `/modulos/:id` | Actualiza un módulo | Roles · Editar |
+| DELETE | `/modulos/:id` | Elimina (bloqueado con `409` si tiene permisos) | Roles · Eliminar |
+
+### Acciones (`/api/acciones`)
+
+| Método | Ruta | Descripción | Permiso |
+| --- | --- | --- | --- |
+| GET | `/acciones` | Catálogo de acciones (filtro `nombre`) | Roles · Ver |
+| GET | `/acciones/:id` | Detalle de una acción | Roles · Ver |
+| POST | `/acciones` | Crea una acción | Roles · Crear |
+| PUT | `/acciones/:id` | Actualiza una acción | Roles · Editar |
+| DELETE | `/acciones/:id` | Elimina (bloqueado con `409` si tiene permisos) | Roles · Eliminar |
+
+### Permisos (`/api/permisos`)
+
+| Método | Ruta | Descripción | Permiso |
+| --- | --- | --- | --- |
+| GET | `/permisos` | Lista de permisos (filtros `modulo`, `accion`) | Roles · Ver |
+| GET | `/permisos/:id` | Detalle de un permiso | Roles · Ver |
+| POST | `/permisos` | Crea permiso (`{ id_modulo, id_accion, nombre? }`) | Roles · Crear |
+| PUT | `/permisos/:id` | Actualiza un permiso | Roles · Editar |
+| DELETE | `/permisos/:id` | Elimina (bloqueado con `409` si está en uso) | Roles · Eliminar |
+
+> **Reglas de negocio del módulo:**
+> - Un rol debe tener nombre único y al menos un permiso.
+> - No se elimina un rol con usuarios asignados (`409`).
+> - No se modifica ni elimina un permiso asignado a un rol **con usuarios** (`409`);
+>   si el rol no tiene usuarios, sí se permite.
+> - No se elimina un módulo o acción con permisos asociados (`409`).
+> - Cualquier cambio en roles/permisos **invalida la caché** de autorización, por lo
+>   que aplica de inmediato sin reiniciar el servidor.
 
 ## Estado del proyecto
 
 - [x] Esqueleto, conexión a BD y manejo de errores
 - [x] Acceso y usuarios
-- [ ] Roles y permisos
+- [x] Roles y permisos
 - [ ] Categorías y productos
 - [ ] Pedidos
 - [ ] Entregas

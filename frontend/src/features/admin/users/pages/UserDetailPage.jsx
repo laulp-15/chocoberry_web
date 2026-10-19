@@ -18,8 +18,24 @@ function formatDate(iso) {
 export default function UserDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getUserById } = useUsersAdmin();
+  const { loading, error, getUserById } = useUsersAdmin();
   const user = getUserById(id);
+
+  // La lista se carga al entrar a la página (también por enlace directo),
+  // así que esperamos a que termine antes de decidir que no existe.
+  if (loading) {
+    return (
+      <div className="user-detail-page">
+        <button type="button" className="user-detail-back" onClick={() => navigate(-1)}>
+          <i className="fa-solid fa-arrow-left-long" /> Regresar al listado
+        </button>
+        <div className="user-detail-empty">
+          <i className="fa-solid fa-spinner" />
+          <p>Cargando el usuario...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
@@ -29,7 +45,9 @@ export default function UserDetailPage() {
         </button>
         <div className="user-detail-empty">
           <i className="fa-solid fa-circle-exclamation" />
-          <p>No encontramos ese usuario. Puede que ya haya sido eliminado.</p>
+          <p>
+            {error || "No encontramos ese usuario. Puede que ya haya sido eliminado."}
+          </p>
           <Link to="/admin/usuarios" className="btn-save" style={{ textDecoration: "none" }}>
             Ir al listado de usuarios
           </Link>
