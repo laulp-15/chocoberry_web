@@ -1,15 +1,16 @@
-// src/features/admin/glaseados/pages/GlaseadosListPage.jsx
+// src/features/admin/municipalities/pages/MunicipalitiesListPage.jsx
 import React, { useState } from 'react';
-import { useGlaseados } from '../hooks/useGlaseados';
-import GlaseadoFormModal from '../components/GlaseadoFormModal';
+import { useMunicipalities } from '../hooks/useMunicipalities';
+import MunicipalityFormModal from '../components/MunicipalityFormModal';
 import DataTable from '../../../../shared/components/DataTable';
 import ConfirmModal from '../../../../shared/components/ConfirmModal';
 import FormSelect from '../../../../shared/components/FormSelect';
 import StatusToggle from '../../../../shared/components/StatusToggle';
 import OrderNotification from '../../orders/components/OrderNotification';
+import { formatPrice } from '../../../../shared/utils/formatPrice';
 import '../../../../shared/css/adminCrud.css';
 
-export default function GlaseadosListPage() {
+export default function MunicipalitiesListPage() {
   const [notification, setNotification] = useState(null);
   const {
     statusFilter,
@@ -20,29 +21,29 @@ export default function GlaseadosListPage() {
     setIsDetailOpen,
     isDeleteOpen,
     setIsDeleteOpen,
-    selectedGlaseado,
-    glaseadoToEdit,
-    filteredGlaseados,
+    selectedMunicipality,
+    municipalityToEdit,
+    filteredMunicipalities,
     handleToggleStatus,
-    handleSaveGlaseado,
+    handleSaveMunicipality,
     handleConfirmDelete,
     handleOpenCreate,
     handleOpenEdit,
     handleOpenDetail,
     handleOpenDelete,
-  } = useGlaseados();
+  } = useMunicipalities();
 
   const handleSave = (data) => {
-    handleSaveGlaseado(data);
+    handleSaveMunicipality(data);
     setNotification({
-      message: glaseadoToEdit
+      message: municipalityToEdit
         ? `"${data.nombre}" se actualizó correctamente.`
         : `"${data.nombre}" se creó correctamente.`,
     });
   };
 
   const handleDelete = () => {
-    const nombre = selectedGlaseado?.nombre;
+    const nombre = selectedMunicipality?.nombre;
     handleConfirmDelete();
     setNotification({
       message: `"${nombre}" se eliminó correctamente.`,
@@ -52,31 +53,30 @@ export default function GlaseadosListPage() {
   const columns = [
     {
       key: 'nombre',
-      label: 'GLASEADO',
+      label: 'MUNICIPIO',
       style: { width: '45%', textAlign: 'left', paddingLeft: '1.5rem' },
-      render: (glaseado) => (
-        <span className="crud-color-cell">
-          <span className="crud-swatch" style={{ backgroundColor: glaseado.hex }} />
-          <span style={{ fontWeight: '600', color: 'var(--texto)' }}>{glaseado.nombre}</span>
-        </span>
+      render: (municipality) => (
+        <span style={{ fontWeight: '600', color: 'var(--texto)' }}>{municipality.nombre}</span>
       ),
     },
     {
-      key: 'hex',
-      label: 'CÓDIGO',
-      style: { width: '20%', textAlign: 'left' },
-      render: (glaseado) => (
-        <span style={{ color: 'var(--texto-muted)' }}>{glaseado.hex}</span>
+      key: 'costoEnvio',
+      label: 'COSTO DE ENVÍO',
+      style: { width: '20%', textAlign: 'center' },
+      render: (municipality) => (
+        <span style={{ fontWeight: '600', color: 'var(--texto)' }}>
+          {formatPrice(municipality.costoEnvio)}
+        </span>
       ),
     },
     {
       key: 'estado',
       label: 'ESTADO',
       style: { width: '120px', textAlign: 'center' },
-      render: (glaseado) => (
+      render: (municipality) => (
         <StatusToggle
-          checked={glaseado.estado === 'Activo'}
-          onChange={() => handleToggleStatus(glaseado.id)}
+          checked={municipality.estado === 'Activo'}
+          onChange={() => handleToggleStatus(municipality.id)}
         />
       ),
     },
@@ -84,11 +84,11 @@ export default function GlaseadosListPage() {
       key: 'actions',
       label: 'ACCIONES',
       style: { width: '150px', textAlign: 'right', paddingRight: '2rem' },
-      render: (glaseado) => (
+      render: (municipality) => (
         <div className="table-actions">
           <button
             type="button"
-            onClick={() => handleOpenDetail(glaseado)}
+            onClick={() => handleOpenDetail(municipality)}
             className="table-action-btn"
             title="Ver detalle"
           >
@@ -97,7 +97,7 @@ export default function GlaseadosListPage() {
 
           <button
             type="button"
-            onClick={() => handleOpenEdit(glaseado)}
+            onClick={() => handleOpenEdit(municipality)}
             className="table-action-btn"
             title="Editar"
           >
@@ -106,7 +106,7 @@ export default function GlaseadosListPage() {
 
           <button
             type="button"
-            onClick={() => handleOpenDelete(glaseado)}
+            onClick={() => handleOpenDelete(municipality)}
             className="table-action-btn danger"
             title="Eliminar"
           >
@@ -120,14 +120,14 @@ export default function GlaseadosListPage() {
   return (
     <div className="crud-page">
       <DataTable
-        title="Glaseados"
-        description="Administra los colores de glaseado disponibles para los productos."
-        createLabel="Crear glaseado"
+        title="Municipios"
+        description="Administra los municipios de entrega y el costo de envío de cada uno."
+        createLabel="Crear municipio"
         onCreate={handleOpenCreate}
         columns={columns}
-        data={filteredGlaseados}
-        searchPlaceholder="Buscar glaseado..."
-        emptyMessage="No hay glaseados para mostrar."
+        data={filteredMunicipalities}
+        searchPlaceholder="Buscar municipio..."
+        emptyMessage="No hay municipios para mostrar."
         extraFilter={
           <FormSelect
             value={statusFilter}
@@ -143,18 +143,18 @@ export default function GlaseadosListPage() {
       />
 
       {/* Modal crear / editar */}
-      <GlaseadoFormModal
+      <MunicipalityFormModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleSave}
-        initialData={glaseadoToEdit}
+        initialData={municipalityToEdit}
       />
 
       {/* Modal ver detalle */}
-      <GlaseadoFormModal
+      <MunicipalityFormModal
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
-        initialData={selectedGlaseado}
+        initialData={selectedMunicipality}
         isReadOnly
       />
 
@@ -164,8 +164,8 @@ export default function GlaseadosListPage() {
         onClose={() => setIsDeleteOpen(false)}
         onConfirm={handleDelete}
         variant="danger"
-        title="Eliminar glaseado"
-        description={`¿Estás seguro de que deseas eliminar el glaseado "${selectedGlaseado?.nombre}"?`}
+        title="Eliminar municipio"
+        description={`¿Estás seguro de que deseas eliminar el municipio "${selectedMunicipality?.nombre}"?`}
         confirmLabel="Eliminar"
         cancelLabel="Cancelar"
       />

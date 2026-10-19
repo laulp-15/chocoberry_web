@@ -35,9 +35,9 @@ import UserDetailPage from "../features/admin/users/pages/UserDetailPage";
 import DeliveriesListPage from "../features/admin/deliveries/pages/DeliveriesListPage";
 
 // Configuraciones
-import PresentacionesListPage from "../features/admin/presentaciones/pages/PresentacionesListPage";
-import MunicipiosListPage from "../features/admin/municipios/pages/MunicipiosListPage";
-import GlaseadosListPage from "../features/admin/glaseados/pages/GlaseadosListPage";
+import PresentationsListPage from "../features/admin/presentations/pages/PresentationsListPage";
+import MunicipalitiesListPage from "../features/admin/municipalities/pages/MunicipalitiesListPage";
+import FrostingsListPage from "../features/admin/frostings/pages/FrostingsListPage";
 
 
 export default function AdminRoutes() {
@@ -81,9 +81,9 @@ export default function AdminRoutes() {
          <Route path="resenas" element={<ReviewsListPage />} />
 
         {/* Configuraciones */}
-        <Route path="presentaciones" element={<PresentacionesListPage />} />
-        <Route path="municipios" element={<MunicipiosListPage />} />
-        <Route path="glaseados" element={<GlaseadosListPage />} />
+        <Route path="presentaciones" element={<PresentationsListPage />} />
+        <Route path="municipios" element={<MunicipalitiesListPage />} />
+        <Route path="glaseados" element={<FrostingsListPage />} />
 
       </Route>
       </Route>

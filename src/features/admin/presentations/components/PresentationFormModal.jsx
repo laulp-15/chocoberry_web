@@ -1,12 +1,13 @@
-// src/features/admin/municipios/components/MunicipioFormModal.jsx
+// src/features/admin/presentations/components/PresentationFormModal.jsx
 import React, { useEffect } from 'react';
 import Modal from '../../../../shared/components/Modal';
 import FormTextField from '../../../../shared/components/FormTextField';
 import StatusToggle from '../../../../shared/components/StatusToggle';
 import useFormValidation from '../../../../shared/hooks/useFormValidation';
 import { formatPrice } from '../../../../shared/utils/formatPrice';
+import { quantityLabel } from '../utils/presentationDisplay';
 
-export default function MunicipioFormModal({
+export default function PresentationFormModal({
   isOpen,
   onClose,
   onSubmit,
@@ -14,15 +15,23 @@ export default function MunicipioFormModal({
   isReadOnly = false,
 }) {
   const { values, errors, setField, handleBlur, validateAll, reset } = useFormValidation({
-    initialValues: { nombre: '', costoEnvio: '', estado: 'Activo' },
+    initialValues: { cantidadFresas: '', precio: '', estado: 'Activo' },
     validators: {
-      nombre: (v) => (v.nombre.trim() ? '' : 'El nombre es obligatorio.'),
-      costoEnvio: (v) => {
-        const raw = String(v.costoEnvio ?? '').trim();
-        if (!raw) return 'El costo de envío es obligatorio.';
+      cantidadFresas: (v) => {
+        const raw = String(v.cantidadFresas ?? '').trim();
+        if (!raw) return 'La cantidad de fresas es obligatoria.';
         const numero = Number(raw);
-        if (Number.isNaN(numero) || numero < 0) {
-          return 'Ingresa un costo válido (mayor o igual a 0).';
+        if (!Number.isInteger(numero) || numero <= 0) {
+          return 'Ingresa una cantidad entera mayor a 0.';
+        }
+        return '';
+      },
+      precio: (v) => {
+        const raw = String(v.precio ?? '').trim();
+        if (!raw) return 'El precio es obligatorio.';
+        const numero = Number(raw);
+        if (Number.isNaN(numero) || numero <= 0) {
+          return 'Ingresa un precio mayor a 0.';
         }
         return '';
       },
@@ -32,8 +41,8 @@ export default function MunicipioFormModal({
 
   useEffect(() => {
     reset({
-      nombre: initialData?.nombre || '',
-      costoEnvio: initialData?.costoEnvio ?? '',
+      cantidadFresas: initialData?.cantidadFresas ?? '',
+      precio: initialData?.precio ?? '',
       estado: initialData?.estado || 'Activo',
     });
   }, [initialData, isOpen]);
@@ -43,18 +52,18 @@ export default function MunicipioFormModal({
     if (!validateAll()) return;
 
     onSubmit({
-      nombre: values.nombre.trim(),
-      costoEnvio: Number(values.costoEnvio),
+      cantidadFresas: Number(values.cantidadFresas),
+      precio: Number(values.precio),
       estado: values.estado,
     });
     onClose();
   };
 
   const title = isReadOnly
-    ? 'Detalle de Municipio'
+    ? 'Detalle de Presentación'
     : initialData
-      ? 'Editar Municipio'
-      : 'Crear Municipio';
+      ? 'Editar Presentación'
+      : 'Crear Presentación';
 
   return (
     <Modal
@@ -83,7 +92,9 @@ export default function MunicipioFormModal({
         {isReadOnly ? (
           <div className="crud-detail-card">
             <div className="crud-detail-header">
-              <h3 className="crud-detail-name">{initialData?.nombre}</h3>
+              <h3 className="crud-detail-name">
+                {initialData ? quantityLabel(initialData.cantidadFresas) : '—'}
+              </h3>
               <span
                 className={`crud-detail-status ${
                   initialData?.estado === 'Activo' ? 'active' : 'inactive'
@@ -95,9 +106,9 @@ export default function MunicipioFormModal({
 
             <div className="crud-detail-list">
               <div className="crud-detail-row">
-                <span className="crud-detail-label">Costo de envío</span>
+                <span className="crud-detail-label">Precio</span>
                 <span className="crud-detail-value">
-                  {initialData ? formatPrice(initialData.costoEnvio) : '—'}
+                  {initialData ? formatPrice(initialData.precio) : '—'}
                 </span>
               </div>
             </div>
@@ -105,24 +116,25 @@ export default function MunicipioFormModal({
         ) : (
           <form onSubmit={handleSubmit}>
             <FormTextField
-              label="Nombre"
-              value={values.nombre}
-              onChange={(v) => setField('nombre', v)}
-              onBlur={() => handleBlur('nombre')}
-              placeholder="Ej: Medellín"
+              label="Cantidad de fresas"
+              type="number"
+              value={values.cantidadFresas}
+              onChange={(v) => setField('cantidadFresas', v)}
+              onBlur={() => handleBlur('cantidadFresas')}
+              placeholder="Ej: 12"
               required
-              error={errors.nombre}
+              error={errors.cantidadFresas}
             />
 
             <FormTextField
-              label="Costo de envío"
+              label="Precio"
               type="number"
-              value={values.costoEnvio}
-              onChange={(v) => setField('costoEnvio', v)}
-              onBlur={() => handleBlur('costoEnvio')}
-              placeholder="Ej: 10000"
+              value={values.precio}
+              onChange={(v) => setField('precio', v)}
+              onBlur={() => handleBlur('precio')}
+              placeholder="Ej: 55000"
               required
-              error={errors.costoEnvio}
+              error={errors.precio}
             />
 
             <div className="form-field">

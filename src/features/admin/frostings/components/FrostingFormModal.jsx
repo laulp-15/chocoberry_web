@@ -1,13 +1,13 @@
-// src/features/admin/presentaciones/components/PresentacionFormModal.jsx
+// src/features/admin/frostings/components/FrostingFormModal.jsx
 import React, { useEffect } from 'react';
 import Modal from '../../../../shared/components/Modal';
 import FormTextField from '../../../../shared/components/FormTextField';
 import StatusToggle from '../../../../shared/components/StatusToggle';
 import useFormValidation from '../../../../shared/hooks/useFormValidation';
-import { formatPrice } from '../../../../shared/utils/formatPrice';
-import { labelCantidad } from '../utils/presentacionDisplay';
 
-export default function PresentacionFormModal({
+const HEX_PATTERN = /^#[0-9A-Fa-f]{6}$/;
+
+export default function FrostingFormModal({
   isOpen,
   onClose,
   onSubmit,
@@ -15,34 +15,18 @@ export default function PresentacionFormModal({
   isReadOnly = false,
 }) {
   const { values, errors, setField, handleBlur, validateAll, reset } = useFormValidation({
-    initialValues: { cantidadFresas: '', precio: '', estado: 'Activo' },
+    initialValues: { nombre: '', hex: '', estado: 'Activo' },
     validators: {
-      cantidadFresas: (v) => {
-        const raw = String(v.cantidadFresas ?? '').trim();
-        if (!raw) return 'La cantidad de fresas es obligatoria.';
-        const numero = Number(raw);
-        if (!Number.isInteger(numero) || numero <= 0) {
-          return 'Ingresa una cantidad entera mayor a 0.';
-        }
-        return '';
-      },
-      precio: (v) => {
-        const raw = String(v.precio ?? '').trim();
-        if (!raw) return 'El precio es obligatorio.';
-        const numero = Number(raw);
-        if (Number.isNaN(numero) || numero <= 0) {
-          return 'Ingresa un precio mayor a 0.';
-        }
-        return '';
-      },
+      nombre: (v) => (v.nombre.trim() ? '' : 'El nombre es obligatorio.'),
+      hex: (v) => (HEX_PATTERN.test(v.hex.trim()) ? '' : 'Usa un color hexadecimal válido (ej: #EF818A).'),
     },
     immediate: ['estado'],
   });
 
   useEffect(() => {
     reset({
-      cantidadFresas: initialData?.cantidadFresas ?? '',
-      precio: initialData?.precio ?? '',
+      nombre: initialData?.nombre || '',
+      hex: initialData?.hex || '',
       estado: initialData?.estado || 'Activo',
     });
   }, [initialData, isOpen]);
@@ -52,18 +36,21 @@ export default function PresentacionFormModal({
     if (!validateAll()) return;
 
     onSubmit({
-      cantidadFresas: Number(values.cantidadFresas),
-      precio: Number(values.precio),
+      nombre: values.nombre.trim(),
+      hex: values.hex.trim().toUpperCase(),
       estado: values.estado,
     });
     onClose();
   };
 
+  const isHexValid = HEX_PATTERN.test(values.hex.trim());
+  const swatchColor = isHexValid ? values.hex.trim() : 'transparent';
+
   const title = isReadOnly
-    ? 'Detalle de Presentación'
+    ? 'Detalle de Glaseado'
     : initialData
-      ? 'Editar Presentación'
-      : 'Crear Presentación';
+      ? 'Editar Glaseado'
+      : 'Crear Glaseado';
 
   return (
     <Modal
@@ -92,9 +79,10 @@ export default function PresentacionFormModal({
         {isReadOnly ? (
           <div className="crud-detail-card">
             <div className="crud-detail-header">
-              <h3 className="crud-detail-name">
-                {initialData ? labelCantidad(initialData.cantidadFresas) : '—'}
-              </h3>
+              <span className="crud-color-cell">
+                <span className="crud-swatch" style={{ backgroundColor: initialData?.hex }} />
+                <h3 className="crud-detail-name">{initialData?.nombre}</h3>
+              </span>
               <span
                 className={`crud-detail-status ${
                   initialData?.estado === 'Activo' ? 'active' : 'inactive'
@@ -106,36 +94,51 @@ export default function PresentacionFormModal({
 
             <div className="crud-detail-list">
               <div className="crud-detail-row">
-                <span className="crud-detail-label">Precio</span>
-                <span className="crud-detail-value">
-                  {initialData ? formatPrice(initialData.precio) : '—'}
-                </span>
+                <span className="crud-detail-label">Código hexadecimal</span>
+                <span className="crud-detail-value">{initialData?.hex || '—'}</span>
               </div>
             </div>
           </div>
         ) : (
           <form onSubmit={handleSubmit}>
             <FormTextField
-              label="Cantidad de fresas"
-              type="number"
-              value={values.cantidadFresas}
-              onChange={(v) => setField('cantidadFresas', v)}
-              onBlur={() => handleBlur('cantidadFresas')}
-              placeholder="Ej: 12"
+              label="Nombre"
+              value={values.nombre}
+              onChange={(v) => setField('nombre', v)}
+              onBlur={() => handleBlur('nombre')}
+              placeholder="Ej: Rosa"
               required
-              error={errors.cantidadFresas}
+              error={errors.nombre}
             />
 
             <FormTextField
-              label="Precio"
-              type="number"
-              value={values.precio}
-              onChange={(v) => setField('precio', v)}
-              onBlur={() => handleBlur('precio')}
-              placeholder="Ej: 55000"
+              label="Color"
+              value={values.hex}
+              onChange={(v) => setField('hex', v.toUpperCase())}
+              onBlur={() => handleBlur('hex')}
+              placeholder="#EF818A"
               required
-              error={errors.precio}
+              error={errors.hex}
+              endAdornment={
+                <input
+                  type="color"
+                  className="crud-color-input"
+                  value={isHexValid ? values.hex.trim() : '#000000'}
+                  onChange={(e) => setField('hex', e.target.value.toUpperCase())}
+                  title="Elegir color"
+                  aria-label="Elegir color"
+                />
+              }
             />
+
+            <div className="form-field">
+              <div className="crud-color-cell">
+                <span className="crud-swatch" style={{ backgroundColor: swatchColor }} />
+                <span className="crud-status-label">
+                  {values.nombre.trim() || 'Vista previa'}
+                </span>
+              </div>
+            </div>
 
             <div className="form-field">
               <label className="form-label">Estado</label>

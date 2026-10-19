@@ -1,16 +1,17 @@
-// src/features/admin/municipios/pages/MunicipiosListPage.jsx
+// src/features/admin/presentations/pages/PresentationsListPage.jsx
 import React, { useState } from 'react';
-import { useMunicipios } from '../hooks/useMunicipios';
-import MunicipioFormModal from '../components/MunicipioFormModal';
+import { usePresentations } from '../hooks/usePresentations';
+import PresentationFormModal from '../components/PresentationFormModal';
 import DataTable from '../../../../shared/components/DataTable';
 import ConfirmModal from '../../../../shared/components/ConfirmModal';
 import FormSelect from '../../../../shared/components/FormSelect';
 import StatusToggle from '../../../../shared/components/StatusToggle';
 import OrderNotification from '../../orders/components/OrderNotification';
 import { formatPrice } from '../../../../shared/utils/formatPrice';
+import { quantityLabel } from '../utils/presentationDisplay';
 import '../../../../shared/css/adminCrud.css';
 
-export default function MunicipiosListPage() {
+export default function PresentationsListPage() {
   const [notification, setNotification] = useState(null);
   const {
     statusFilter,
@@ -21,51 +22,53 @@ export default function MunicipiosListPage() {
     setIsDetailOpen,
     isDeleteOpen,
     setIsDeleteOpen,
-    selectedMunicipio,
-    municipioToEdit,
-    filteredMunicipios,
+    selectedPresentation,
+    presentationToEdit,
+    filteredPresentations,
     handleToggleStatus,
-    handleSaveMunicipio,
+    handleSavePresentation,
     handleConfirmDelete,
     handleOpenCreate,
     handleOpenEdit,
     handleOpenDetail,
     handleOpenDelete,
-  } = useMunicipios();
+  } = usePresentations();
 
   const handleSave = (data) => {
-    handleSaveMunicipio(data);
+    handleSavePresentation(data);
     setNotification({
-      message: municipioToEdit
-        ? `"${data.nombre}" se actualizó correctamente.`
-        : `"${data.nombre}" se creó correctamente.`,
+      message: presentationToEdit
+        ? `Se actualizó la presentación de ${quantityLabel(data.cantidadFresas)}.`
+        : `Se creó la presentación de ${quantityLabel(data.cantidadFresas)}.`,
     });
   };
 
   const handleDelete = () => {
-    const nombre = selectedMunicipio?.nombre;
+    const cantidad = selectedPresentation?.cantidadFresas;
     handleConfirmDelete();
     setNotification({
-      message: `"${nombre}" se eliminó correctamente.`,
+      message: `Se eliminó la presentación de ${quantityLabel(cantidad)}.`,
     });
   };
 
   const columns = [
     {
-      key: 'nombre',
-      label: 'MUNICIPIO',
+      key: 'cantidadFresas',
+      label: 'CANTIDAD DE FRESAS',
       style: { width: '45%', textAlign: 'left', paddingLeft: '1.5rem' },
-      render: (municipio) => (
-        <span style={{ fontWeight: '600', color: 'var(--texto)' }}>{municipio.nombre}</span>
+      render: (presentation) => (
+        <span style={{ fontWeight: '600', color: 'var(--texto)' }}>
+          {quantityLabel(presentation.cantidadFresas)}
+        </span>
       ),
     },
     {
-      key: 'costoEnvio',
-      label: 'COSTO DE ENVÍO',
+      key: 'precio',
+      label: 'PRECIO',
       style: { width: '20%', textAlign: 'center' },
-      render: (municipio) => (
+      render: (presentation) => (
         <span style={{ fontWeight: '600', color: 'var(--texto)' }}>
-          {formatPrice(municipio.costoEnvio)}
+          {formatPrice(presentation.precio)}
         </span>
       ),
     },
@@ -73,10 +76,10 @@ export default function MunicipiosListPage() {
       key: 'estado',
       label: 'ESTADO',
       style: { width: '120px', textAlign: 'center' },
-      render: (municipio) => (
+      render: (presentation) => (
         <StatusToggle
-          checked={municipio.estado === 'Activo'}
-          onChange={() => handleToggleStatus(municipio.id)}
+          checked={presentation.estado === 'Activo'}
+          onChange={() => handleToggleStatus(presentation.id)}
         />
       ),
     },
@@ -84,11 +87,11 @@ export default function MunicipiosListPage() {
       key: 'actions',
       label: 'ACCIONES',
       style: { width: '150px', textAlign: 'right', paddingRight: '2rem' },
-      render: (municipio) => (
+      render: (presentation) => (
         <div className="table-actions">
           <button
             type="button"
-            onClick={() => handleOpenDetail(municipio)}
+            onClick={() => handleOpenDetail(presentation)}
             className="table-action-btn"
             title="Ver detalle"
           >
@@ -97,7 +100,7 @@ export default function MunicipiosListPage() {
 
           <button
             type="button"
-            onClick={() => handleOpenEdit(municipio)}
+            onClick={() => handleOpenEdit(presentation)}
             className="table-action-btn"
             title="Editar"
           >
@@ -106,7 +109,7 @@ export default function MunicipiosListPage() {
 
           <button
             type="button"
-            onClick={() => handleOpenDelete(municipio)}
+            onClick={() => handleOpenDelete(presentation)}
             className="table-action-btn danger"
             title="Eliminar"
           >
@@ -120,14 +123,14 @@ export default function MunicipiosListPage() {
   return (
     <div className="crud-page">
       <DataTable
-        title="Municipios"
-        description="Administra los municipios de entrega y el costo de envío de cada uno."
-        createLabel="Crear municipio"
+        title="Presentaciones"
+        description="Administra las cantidades de fresas y el precio de cada presentación."
+        createLabel="Crear presentación"
         onCreate={handleOpenCreate}
         columns={columns}
-        data={filteredMunicipios}
-        searchPlaceholder="Buscar municipio..."
-        emptyMessage="No hay municipios para mostrar."
+        data={filteredPresentations}
+        searchPlaceholder="Buscar presentación..."
+        emptyMessage="No hay presentaciones para mostrar."
         extraFilter={
           <FormSelect
             value={statusFilter}
@@ -143,18 +146,18 @@ export default function MunicipiosListPage() {
       />
 
       {/* Modal crear / editar */}
-      <MunicipioFormModal
+      <PresentationFormModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleSave}
-        initialData={municipioToEdit}
+        initialData={presentationToEdit}
       />
 
       {/* Modal ver detalle */}
-      <MunicipioFormModal
+      <PresentationFormModal
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
-        initialData={selectedMunicipio}
+        initialData={selectedPresentation}
         isReadOnly
       />
 
@@ -164,8 +167,10 @@ export default function MunicipiosListPage() {
         onClose={() => setIsDeleteOpen(false)}
         onConfirm={handleDelete}
         variant="danger"
-        title="Eliminar municipio"
-        description={`¿Estás seguro de que deseas eliminar el municipio "${selectedMunicipio?.nombre}"?`}
+        title="Eliminar presentación"
+        description={`¿Estás seguro de que deseas eliminar la presentación de ${quantityLabel(
+          selectedPresentation?.cantidadFresas
+        )}?`}
         confirmLabel="Eliminar"
         cancelLabel="Cancelar"
       />

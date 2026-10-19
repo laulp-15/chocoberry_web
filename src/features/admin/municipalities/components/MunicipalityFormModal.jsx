@@ -1,13 +1,12 @@
-// src/features/admin/glaseados/components/GlaseadoFormModal.jsx
+// src/features/admin/municipalities/components/MunicipalityFormModal.jsx
 import React, { useEffect } from 'react';
 import Modal from '../../../../shared/components/Modal';
 import FormTextField from '../../../../shared/components/FormTextField';
 import StatusToggle from '../../../../shared/components/StatusToggle';
 import useFormValidation from '../../../../shared/hooks/useFormValidation';
+import { formatPrice } from '../../../../shared/utils/formatPrice';
 
-const HEX_PATTERN = /^#[0-9A-Fa-f]{6}$/;
-
-export default function GlaseadoFormModal({
+export default function MunicipalityFormModal({
   isOpen,
   onClose,
   onSubmit,
@@ -15,10 +14,18 @@ export default function GlaseadoFormModal({
   isReadOnly = false,
 }) {
   const { values, errors, setField, handleBlur, validateAll, reset } = useFormValidation({
-    initialValues: { nombre: '', hex: '', estado: 'Activo' },
+    initialValues: { nombre: '', costoEnvio: '', estado: 'Activo' },
     validators: {
       nombre: (v) => (v.nombre.trim() ? '' : 'El nombre es obligatorio.'),
-      hex: (v) => (HEX_PATTERN.test(v.hex.trim()) ? '' : 'Usa un color hexadecimal válido (ej: #EF818A).'),
+      costoEnvio: (v) => {
+        const raw = String(v.costoEnvio ?? '').trim();
+        if (!raw) return 'El costo de envío es obligatorio.';
+        const numero = Number(raw);
+        if (Number.isNaN(numero) || numero < 0) {
+          return 'Ingresa un costo válido (mayor o igual a 0).';
+        }
+        return '';
+      },
     },
     immediate: ['estado'],
   });
@@ -26,7 +33,7 @@ export default function GlaseadoFormModal({
   useEffect(() => {
     reset({
       nombre: initialData?.nombre || '',
-      hex: initialData?.hex || '',
+      costoEnvio: initialData?.costoEnvio ?? '',
       estado: initialData?.estado || 'Activo',
     });
   }, [initialData, isOpen]);
@@ -37,20 +44,17 @@ export default function GlaseadoFormModal({
 
     onSubmit({
       nombre: values.nombre.trim(),
-      hex: values.hex.trim().toUpperCase(),
+      costoEnvio: Number(values.costoEnvio),
       estado: values.estado,
     });
     onClose();
   };
 
-  const isHexValid = HEX_PATTERN.test(values.hex.trim());
-  const swatchColor = isHexValid ? values.hex.trim() : 'transparent';
-
   const title = isReadOnly
-    ? 'Detalle de Glaseado'
+    ? 'Detalle de Municipio'
     : initialData
-      ? 'Editar Glaseado'
-      : 'Crear Glaseado';
+      ? 'Editar Municipio'
+      : 'Crear Municipio';
 
   return (
     <Modal
@@ -79,10 +83,7 @@ export default function GlaseadoFormModal({
         {isReadOnly ? (
           <div className="crud-detail-card">
             <div className="crud-detail-header">
-              <span className="crud-color-cell">
-                <span className="crud-swatch" style={{ backgroundColor: initialData?.hex }} />
-                <h3 className="crud-detail-name">{initialData?.nombre}</h3>
-              </span>
+              <h3 className="crud-detail-name">{initialData?.nombre}</h3>
               <span
                 className={`crud-detail-status ${
                   initialData?.estado === 'Activo' ? 'active' : 'inactive'
@@ -94,8 +95,10 @@ export default function GlaseadoFormModal({
 
             <div className="crud-detail-list">
               <div className="crud-detail-row">
-                <span className="crud-detail-label">Código hexadecimal</span>
-                <span className="crud-detail-value">{initialData?.hex || '—'}</span>
+                <span className="crud-detail-label">Costo de envío</span>
+                <span className="crud-detail-value">
+                  {initialData ? formatPrice(initialData.costoEnvio) : '—'}
+                </span>
               </div>
             </div>
           </div>
@@ -106,39 +109,21 @@ export default function GlaseadoFormModal({
               value={values.nombre}
               onChange={(v) => setField('nombre', v)}
               onBlur={() => handleBlur('nombre')}
-              placeholder="Ej: Rosa"
+              placeholder="Ej: Medellín"
               required
               error={errors.nombre}
             />
 
             <FormTextField
-              label="Color"
-              value={values.hex}
-              onChange={(v) => setField('hex', v.toUpperCase())}
-              onBlur={() => handleBlur('hex')}
-              placeholder="#EF818A"
+              label="Costo de envío"
+              type="number"
+              value={values.costoEnvio}
+              onChange={(v) => setField('costoEnvio', v)}
+              onBlur={() => handleBlur('costoEnvio')}
+              placeholder="Ej: 10000"
               required
-              error={errors.hex}
-              endAdornment={
-                <input
-                  type="color"
-                  className="crud-color-input"
-                  value={isHexValid ? values.hex.trim() : '#000000'}
-                  onChange={(e) => setField('hex', e.target.value.toUpperCase())}
-                  title="Elegir color"
-                  aria-label="Elegir color"
-                />
-              }
+              error={errors.costoEnvio}
             />
-
-            <div className="form-field">
-              <div className="crud-color-cell">
-                <span className="crud-swatch" style={{ backgroundColor: swatchColor }} />
-                <span className="crud-status-label">
-                  {values.nombre.trim() || 'Vista previa'}
-                </span>
-              </div>
-            </div>
 
             <div className="form-field">
               <label className="form-label">Estado</label>

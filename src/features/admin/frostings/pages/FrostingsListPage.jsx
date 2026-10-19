@@ -1,17 +1,15 @@
-// src/features/admin/presentaciones/pages/PresentacionesListPage.jsx
+// src/features/admin/frostings/pages/FrostingsListPage.jsx
 import React, { useState } from 'react';
-import { usePresentaciones } from '../hooks/usePresentaciones';
-import PresentacionFormModal from '../components/PresentacionFormModal';
+import { useFrostings } from '../hooks/useFrostings';
+import FrostingFormModal from '../components/FrostingFormModal';
 import DataTable from '../../../../shared/components/DataTable';
 import ConfirmModal from '../../../../shared/components/ConfirmModal';
 import FormSelect from '../../../../shared/components/FormSelect';
 import StatusToggle from '../../../../shared/components/StatusToggle';
 import OrderNotification from '../../orders/components/OrderNotification';
-import { formatPrice } from '../../../../shared/utils/formatPrice';
-import { labelCantidad } from '../utils/presentacionDisplay';
 import '../../../../shared/css/adminCrud.css';
 
-export default function PresentacionesListPage() {
+export default function FrostingsListPage() {
   const [notification, setNotification] = useState(null);
   const {
     statusFilter,
@@ -22,64 +20,63 @@ export default function PresentacionesListPage() {
     setIsDetailOpen,
     isDeleteOpen,
     setIsDeleteOpen,
-    selectedPresentacion,
-    presentacionToEdit,
-    filteredPresentaciones,
+    selectedFrosting,
+    frostingToEdit,
+    filteredFrostings,
     handleToggleStatus,
-    handleSavePresentacion,
+    handleSaveFrosting,
     handleConfirmDelete,
     handleOpenCreate,
     handleOpenEdit,
     handleOpenDetail,
     handleOpenDelete,
-  } = usePresentaciones();
+  } = useFrostings();
 
   const handleSave = (data) => {
-    handleSavePresentacion(data);
+    handleSaveFrosting(data);
     setNotification({
-      message: presentacionToEdit
-        ? `Se actualizó la presentación de ${labelCantidad(data.cantidadFresas)}.`
-        : `Se creó la presentación de ${labelCantidad(data.cantidadFresas)}.`,
+      message: frostingToEdit
+        ? `"${data.nombre}" se actualizó correctamente.`
+        : `"${data.nombre}" se creó correctamente.`,
     });
   };
 
   const handleDelete = () => {
-    const cantidad = selectedPresentacion?.cantidadFresas;
+    const nombre = selectedFrosting?.nombre;
     handleConfirmDelete();
     setNotification({
-      message: `Se eliminó la presentación de ${labelCantidad(cantidad)}.`,
+      message: `"${nombre}" se eliminó correctamente.`,
     });
   };
 
   const columns = [
     {
-      key: 'cantidadFresas',
-      label: 'CANTIDAD DE FRESAS',
+      key: 'nombre',
+      label: 'GLASEADO',
       style: { width: '45%', textAlign: 'left', paddingLeft: '1.5rem' },
-      render: (presentacion) => (
-        <span style={{ fontWeight: '600', color: 'var(--texto)' }}>
-          {labelCantidad(presentacion.cantidadFresas)}
+      render: (frosting) => (
+        <span className="crud-color-cell">
+          <span className="crud-swatch" style={{ backgroundColor: frosting.hex }} />
+          <span style={{ fontWeight: '600', color: 'var(--texto)' }}>{frosting.nombre}</span>
         </span>
       ),
     },
     {
-      key: 'precio',
-      label: 'PRECIO',
-      style: { width: '20%', textAlign: 'center' },
-      render: (presentacion) => (
-        <span style={{ fontWeight: '600', color: 'var(--texto)' }}>
-          {formatPrice(presentacion.precio)}
-        </span>
+      key: 'hex',
+      label: 'CÓDIGO',
+      style: { width: '20%', textAlign: 'left' },
+      render: (frosting) => (
+        <span style={{ color: 'var(--texto-muted)' }}>{frosting.hex}</span>
       ),
     },
     {
       key: 'estado',
       label: 'ESTADO',
       style: { width: '120px', textAlign: 'center' },
-      render: (presentacion) => (
+      render: (frosting) => (
         <StatusToggle
-          checked={presentacion.estado === 'Activo'}
-          onChange={() => handleToggleStatus(presentacion.id)}
+          checked={frosting.estado === 'Activo'}
+          onChange={() => handleToggleStatus(frosting.id)}
         />
       ),
     },
@@ -87,11 +84,11 @@ export default function PresentacionesListPage() {
       key: 'actions',
       label: 'ACCIONES',
       style: { width: '150px', textAlign: 'right', paddingRight: '2rem' },
-      render: (presentacion) => (
+      render: (frosting) => (
         <div className="table-actions">
           <button
             type="button"
-            onClick={() => handleOpenDetail(presentacion)}
+            onClick={() => handleOpenDetail(frosting)}
             className="table-action-btn"
             title="Ver detalle"
           >
@@ -100,7 +97,7 @@ export default function PresentacionesListPage() {
 
           <button
             type="button"
-            onClick={() => handleOpenEdit(presentacion)}
+            onClick={() => handleOpenEdit(frosting)}
             className="table-action-btn"
             title="Editar"
           >
@@ -109,7 +106,7 @@ export default function PresentacionesListPage() {
 
           <button
             type="button"
-            onClick={() => handleOpenDelete(presentacion)}
+            onClick={() => handleOpenDelete(frosting)}
             className="table-action-btn danger"
             title="Eliminar"
           >
@@ -123,14 +120,14 @@ export default function PresentacionesListPage() {
   return (
     <div className="crud-page">
       <DataTable
-        title="Presentaciones"
-        description="Administra las cantidades de fresas y el precio de cada presentación."
-        createLabel="Crear presentación"
+        title="Glaseados"
+        description="Administra los colores de glaseado disponibles para los productos."
+        createLabel="Crear glaseado"
         onCreate={handleOpenCreate}
         columns={columns}
-        data={filteredPresentaciones}
-        searchPlaceholder="Buscar presentación..."
-        emptyMessage="No hay presentaciones para mostrar."
+        data={filteredFrostings}
+        searchPlaceholder="Buscar glaseado..."
+        emptyMessage="No hay glaseados para mostrar."
         extraFilter={
           <FormSelect
             value={statusFilter}
@@ -146,18 +143,18 @@ export default function PresentacionesListPage() {
       />
 
       {/* Modal crear / editar */}
-      <PresentacionFormModal
+      <FrostingFormModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleSave}
-        initialData={presentacionToEdit}
+        initialData={frostingToEdit}
       />
 
       {/* Modal ver detalle */}
-      <PresentacionFormModal
+      <FrostingFormModal
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
-        initialData={selectedPresentacion}
+        initialData={selectedFrosting}
         isReadOnly
       />
 
@@ -167,10 +164,8 @@ export default function PresentacionesListPage() {
         onClose={() => setIsDeleteOpen(false)}
         onConfirm={handleDelete}
         variant="danger"
-        title="Eliminar presentación"
-        description={`¿Estás seguro de que deseas eliminar la presentación de ${labelCantidad(
-          selectedPresentacion?.cantidadFresas
-        )}?`}
+        title="Eliminar glaseado"
+        description={`¿Estás seguro de que deseas eliminar el glaseado "${selectedFrosting?.nombre}"?`}
         confirmLabel="Eliminar"
         cancelLabel="Cancelar"
       />

@@ -1,4 +1,4 @@
-// src/features/admin/presentaciones/hooks/usePresentaciones.jsx
+// src/features/admin/presentations/hooks/usePresentations.jsx
 //
 // CRUD de presentaciones (cantidad de fresas y precio).
 //
@@ -8,7 +8,7 @@
 import { useState, useEffect } from 'react';
 import { PRICE_BY_QUANTITY } from '../../../catalog/data/Pricing';
 
-const STORAGE_KEY = 'chocoberry_presentaciones_v1';
+const STORAGE_KEY = 'chocoberry_presentations_v1';
 
 function delay(ms = 350) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -23,7 +23,7 @@ function buildSeed() {
   }));
 }
 
-function loadPresentaciones() {
+function loadPresentations() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
@@ -36,7 +36,7 @@ function loadPresentaciones() {
   return buildSeed();
 }
 
-export const usePresentaciones = () => {
+export const usePresentations = () => {
   const [statusFilter, setStatusFilter] = useState('todos');
 
   // Modales y estados de selección
@@ -44,83 +44,83 @@ export const usePresentaciones = () => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
-  const [selectedPresentacion, setSelectedPresentacion] = useState(null);
-  const [presentacionToEdit, setPresentacionToEdit] = useState(null);
+  const [selectedPresentation, setSelectedPresentation] = useState(null);
+  const [presentationToEdit, setPresentationToEdit] = useState(null);
 
-  const [presentaciones, setPresentaciones] = useState(loadPresentaciones);
+  const [presentations, setPresentations] = useState(loadPresentations);
 
   // Persistencia simulada
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(presentaciones));
-  }, [presentaciones]);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(presentations));
+  }, [presentations]);
 
   // Filtrado por estado (la búsqueda de texto la maneja DataTable)
-  const filteredPresentaciones = presentaciones.filter(
-    (presentacion) =>
+  const filteredPresentations = presentations.filter(
+    (presentation) =>
       statusFilter === 'todos' ||
-      presentacion.estado.toLowerCase() === statusFilter.toLowerCase()
+      presentation.estado.toLowerCase() === statusFilter.toLowerCase()
   );
 
   // Activar / desactivar
   const handleToggleStatus = (id) => {
-    setPresentaciones((prev) =>
-      prev.map((presentacion) =>
-        presentacion.id === id
+    setPresentations((prev) =>
+      prev.map((presentation) =>
+        presentation.id === id
           ? {
-              ...presentacion,
-              estado: presentacion.estado === 'Activo' ? 'Inactivo' : 'Activo',
+              ...presentation,
+              estado: presentation.estado === 'Activo' ? 'Inactivo' : 'Activo',
             }
-          : presentacion
+          : presentation
       )
     );
   };
 
   // Guardar (crear o editar)
-  const handleSavePresentacion = async (data) => {
+  const handleSavePresentation = async (data) => {
     await delay();
-    if (presentacionToEdit) {
-      setPresentaciones((prev) =>
-        prev.map((presentacion) =>
-          presentacion.id === presentacionToEdit.id
-            ? { ...presentacion, ...data }
-            : presentacion
+    if (presentationToEdit) {
+      setPresentations((prev) =>
+        prev.map((presentation) =>
+          presentation.id === presentationToEdit.id
+            ? { ...presentation, ...data }
+            : presentation
         )
       );
     } else {
-      setPresentaciones((prev) => [{ id: Date.now(), ...data }, ...prev]);
+      setPresentations((prev) => [{ id: Date.now(), ...data }, ...prev]);
     }
-    setPresentacionToEdit(null);
+    setPresentationToEdit(null);
   };
 
   // Eliminar
   const handleConfirmDelete = async () => {
     await delay();
-    if (!selectedPresentacion) return;
-    setPresentaciones((prev) =>
-      prev.filter((presentacion) => presentacion.id !== selectedPresentacion.id)
+    if (!selectedPresentation) return;
+    setPresentations((prev) =>
+      prev.filter((presentation) => presentation.id !== selectedPresentation.id)
     );
     setIsDeleteOpen(false);
-    setSelectedPresentacion(null);
+    setSelectedPresentation(null);
   };
 
   // Apertura de modales
   const handleOpenCreate = () => {
-    setPresentacionToEdit(null);
+    setPresentationToEdit(null);
     setIsModalOpen(true);
   };
 
-  const handleOpenEdit = (presentacion) => {
-    setPresentacionToEdit(presentacion);
+  const handleOpenEdit = (presentation) => {
+    setPresentationToEdit(presentation);
     setIsModalOpen(true);
   };
 
-  const handleOpenDetail = (presentacion) => {
-    setSelectedPresentacion(presentacion);
+  const handleOpenDetail = (presentation) => {
+    setSelectedPresentation(presentation);
     setIsDetailOpen(true);
   };
 
-  const handleOpenDelete = (presentacion) => {
-    setSelectedPresentacion(presentacion);
+  const handleOpenDelete = (presentation) => {
+    setSelectedPresentation(presentation);
     setIsDeleteOpen(true);
   };
 
@@ -133,11 +133,11 @@ export const usePresentaciones = () => {
     setIsDetailOpen,
     isDeleteOpen,
     setIsDeleteOpen,
-    selectedPresentacion,
-    presentacionToEdit,
-    filteredPresentaciones,
+    selectedPresentation,
+    presentationToEdit,
+    filteredPresentations,
     handleToggleStatus,
-    handleSavePresentacion,
+    handleSavePresentation,
     handleConfirmDelete,
     handleOpenCreate,
     handleOpenEdit,
