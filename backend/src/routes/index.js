@@ -9,6 +9,10 @@ import rolRoutes from './rol.routes.js';
 import moduloRoutes from './modulo.routes.js';
 import accionRoutes from './accion.routes.js';
 import permisoRoutes from './permiso.routes.js';
+import categoriaRoutes from './categoria.routes.js';
+import productoRoutes from './producto.routes.js';
+import presentacionRoutes from './presentacion.routes.js';
+import catalogoRoutes from './catalogo.routes.js';
 
 const router = Router();
 
@@ -26,10 +30,14 @@ router.use('/roles', rolRoutes);
 router.use('/modulos', moduloRoutes);
 router.use('/acciones', accionRoutes);
 router.use('/permisos', permisoRoutes);
+router.use('/categorias', categoriaRoutes);
+router.use('/productos', productoRoutes);
+router.use('/presentaciones', presentacionRoutes);
+// Catálogo público de la tienda (sin sesión, solo registros activos).
+router.use('/catalogo', catalogoRoutes);
 
 // ---------------------------------------------------------------------------
 // Módulos pendientes:
-//   router.use('/productos', productoRoutes);
 //   router.use('/pedidos', pedidoRoutes);
 //   router.use('/entregas', entregaRoutes);
 //   router.use('/ventas', ventaRoutes);

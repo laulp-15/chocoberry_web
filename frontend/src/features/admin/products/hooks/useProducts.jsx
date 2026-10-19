@@ -1,13 +1,27 @@
-import { useState, useEffect, useCallback } from 'react';
-import { PRODUCTS } from "../../../catalog/data/Products";
+// src/features/admin/products/hooks/useProducts.jsx
+//
+// Gestión de productos del panel contra el API real (/api/productos).
+// El estado vive aquí; las llamadas HTTP, en services/productService.js, y la
+// traducción de nombres/errores, en services/productMappers.js.
+//
+// Las categorías del formulario también vienen del API (no están hardcodeadas).
 
-function delay(ms = 350) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+import { useEffect, useState } from "react";
 
-export const useProducts = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('todos');
+import * as categoryService from "../../categories/services/categoryService";
+import * as productService from "../services/productService";
+
+export const useProducts = ({ autoLoad = true } = {}) => {
+  const [productos, setProductos] = useState([]);
+  const [categorias, setCategorias] = useState([]);
+
+  const [loading, setLoading] = useState(autoLoad);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [reloadToken, setReloadToken] = useState(0);
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("todos");
 
   // Modales
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -17,110 +31,138 @@ export const useProducts = () => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [productToEdit, setProductToEdit] = useState(null);
 
-  // Inicialización con LocalStorage
-  const [productos, setProductos] = useState(() => {
-    const saved = localStorage.getItem('chocoberry_products_v2');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed && parsed.length > 0) {
-          return parsed;
-        }
-      } catch (e) {
-        console.error("Error al leer localStorage", e);
-      }
-    }
-    return PRODUCTS.map((p, i) => ({
-      id: i + 1,
-      nombre: p.name,
-      descripcion: p.desc,
-      categoria: p.catLabel,
-      estado: 'Activo',
-      imagen: p.image,
-    }));
-  });
-
-  // Guardar cambios automáticamente en el almacenamiento local del navegador
+  // Carga inicial (productos + categorías para el select del formulario).
   useEffect(() => {
-    localStorage.setItem('chocoberry_products_v2', JSON.stringify(productos));
-  }, [productos]);
+    if (!autoLoad && reloadToken === 0) return undefined;
 
-  // Filtrado
-  const filteredProducts = productos.filter(prod => {
-    const matchesSearch = prod.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          prod.descripcion.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          prod.categoria.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'todos' || prod.estado.toLowerCase() === statusFilter.toLowerCase();
+    let activo = true;
+
+    Promise.all([productService.listar(), categoryService.listar()])
+      .then(([lista, listaCategorias]) => {
+        if (!activo) return;
+        setProductos(lista);
+        setCategorias(listaCategorias);
+        setError("");
+      })
+      .catch((err) => {
+        if (!activo) return;
+        setError(err?.message || "No se pudieron cargar los productos.");
+      })
+      .finally(() => {
+        if (activo) setLoading(false);
+      });
+
+    return () => {
+      activo = false;
+    };
+  }, [autoLoad, reloadToken]);
+
+  function reload() {
+    setLoading(true);
+    setError("");
+    setReloadToken((valor) => valor + 1);
+  }
+
+  // Filtrado local (la búsqueda de texto y el estado viven en la página).
+  const query = searchTerm.trim().toLowerCase();
+  const currentProducts = productos.filter((producto) => {
+    const matchesSearch =
+      !query ||
+      producto.nombre.toLowerCase().includes(query) ||
+      producto.descripcion.toLowerCase().includes(query) ||
+      producto.categoriaNombre.toLowerCase().includes(query);
+
+    const matchesStatus =
+      statusFilter === "todos" ||
+      producto.estado.toLowerCase() === statusFilter.toLowerCase();
+
     return matchesSearch && matchesStatus;
   });
 
-  // Reset a página 1 al buscar o filtrar (DataTable maneja la paginación)
-  const handleSearchChange = (value) => {
-    setSearchTerm(value);
-  };
+  const handleSearchChange = (value) => setSearchTerm(value);
+  const handleStatusFilterChange = (value) => setStatusFilter(value);
 
-  const handleStatusFilterChange = (value) => {
-    setStatusFilter(value);
-  };
+  /** Activa/desactiva un producto contra el API y refleja la respuesta. */
+  async function handleToggleStatus(id) {
+    const actual = productos.find((producto) => producto.id === id);
+    if (!actual) return;
 
-  // Toggle de Estado
-  const handleToggleStatus = useCallback(async (id) => {
-    await delay();
-    setProductos(prev =>
-      prev.map(prod =>
-        prod.id === id ? { ...prod, estado: prod.estado === 'Activo' ? 'Inactivo' : 'Activo' } : prod
-      )
-    );
-  }, []);
-
-  // Guardar (Crear o Editar)
-  const handleSaveProduct = useCallback(async (data) => {
-    await delay();
-    if (productToEdit) {
-      setProductos(prev =>
-        prev.map(prod => (prod.id === productToEdit.id ? { ...prod, ...data } : prod))
+    try {
+      const actualizado = await productService.cambiarEstado(
+        id,
+        actual.estado !== "Activo"
       );
-    } else {
-      setProductos(prev => [
-        {
-          id: Date.now(),
-          ...data,
-          estado: 'Activo'
-        },
-        ...prev
-      ]);
+      setProductos((prev) =>
+        prev.map((producto) => (producto.id === id ? actualizado : producto))
+      );
+      setError("");
+    } catch (err) {
+      setError(err?.message || "No se pudo cambiar el estado del producto.");
     }
-    setProductToEdit(null);
-  }, [productToEdit]);
+  }
 
-  // Eliminar
-  const handleConfirmDelete = useCallback(async () => {
-    await delay();
-    if (selectedProduct) {
-      setProductos(prev => prev.filter(prod => prod.id !== selectedProduct.id));
+  /**
+   * Crea o edita. Devuelve el producto guardado y relanza los errores para que
+   * el modal los muestre sin cerrarse.
+   */
+  async function handleSaveProduct(datos) {
+    setSubmitting(true);
+    try {
+      if (productToEdit) {
+        const actualizado = await productService.actualizar(
+          productToEdit.id,
+          datos
+        );
+        setProductos((prev) =>
+          prev.map((producto) =>
+            producto.id === actualizado.id ? actualizado : producto
+          )
+        );
+        setProductToEdit(null);
+        return actualizado;
+      }
+
+      const creado = await productService.crear(datos);
+      setProductos((prev) => [creado, ...prev]);
+      return creado;
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  /** Elimina; si el backend responde 409, el error se propaga a la página. */
+  async function handleConfirmDelete() {
+    if (!selectedProduct) return;
+
+    try {
+      await productService.eliminar(selectedProduct.id);
+      setProductos((prev) =>
+        prev.filter((producto) => producto.id !== selectedProduct.id)
+      );
+    } finally {
       setIsDeleteOpen(false);
       setSelectedProduct(null);
     }
-  }, [selectedProduct]);
+  }
 
-  // Control de Modales
+  // Control de modales
   const handleOpenCreate = () => {
     setProductToEdit(null);
     setIsModalOpen(true);
   };
 
-  const handleOpenEdit = (prod) => {
-    setProductToEdit(prod);
+  const handleOpenEdit = (producto) => {
+    setProductToEdit(producto);
     setIsModalOpen(true);
   };
 
-  const handleOpenDetail = (prod) => {
-    setSelectedProduct(prod);
+  const handleOpenDetail = (producto) => {
+    setSelectedProduct(producto);
     setIsDetailOpen(true);
   };
 
-  const handleOpenDelete = (prod) => {
-    setSelectedProduct(prod);
+  const handleOpenDelete = (producto) => {
+    setSelectedProduct(producto);
     setIsDeleteOpen(true);
   };
 
@@ -129,22 +171,31 @@ export const useProducts = () => {
     handleSearchChange,
     statusFilter,
     handleStatusFilterChange,
+
     isModalOpen,
     setIsModalOpen,
     isDetailOpen,
     setIsDetailOpen,
     isDeleteOpen,
     setIsDeleteOpen,
+
     selectedProduct,
     productToEdit,
-    currentProducts: filteredProducts,
-    totalProductsCount: filteredProducts.length,
+    currentProducts,
+    totalProductsCount: currentProducts.length,
+
+    categorias,
+    loading,
+    submitting,
+    error,
+    reload,
+
     handleToggleStatus,
     handleSaveProduct,
     handleConfirmDelete,
     handleOpenCreate,
     handleOpenEdit,
     handleOpenDetail,
-    handleOpenDelete
+    handleOpenDelete,
   };
 };

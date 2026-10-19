@@ -135,8 +135,75 @@ Base: `/api`
 > La gestión de clientes se hace desde este mismo módulo filtrando por rol:
 > `GET /api/usuarios?rol=cliente`.
 
-> Los módulos de categorías/productos, pedidos, entregas, ventas, reseñas y
-> dashboard se agregan progresivamente en `src/routes/index.js`.
+### Categorías (`/api/categorias`)
+
+| Método | Ruta | Descripción | Permiso |
+| --- | --- | --- | --- |
+| GET | `/categorias` | Lista con filtros `nombre`, `estado` | Categorías · Ver |
+| GET | `/categorias/:id` | Detalle de una categoría | Categorías · Ver |
+| POST | `/categorias` | Crea una categoría (`{ nombre, estado? }`) | Categorías · Crear |
+| PUT | `/categorias/:id` | Actualiza una categoría | Categorías · Editar |
+| PATCH | `/categorias/:id/estado` | Activa/desactiva (`{ estado: true }`) | Categorías · Cambiar estado |
+| DELETE | `/categorias/:id` | Elimina (bloqueado con `409` si tiene productos) | Categorías · Eliminar |
+
+### Productos (`/api/productos`)
+
+| Método | Ruta | Descripción | Permiso |
+| --- | --- | --- | --- |
+| GET | `/productos` | Lista con filtros `nombre`, `idCategoria`/`id_categoria`, `categoria`, `estado` | Productos · Ver |
+| GET | `/productos/:id` | Detalle de un producto | Productos · Ver |
+| POST | `/productos` | Crea un producto (ver nota de imagen) | Productos · Crear |
+| PUT | `/productos/:id` | Actualiza un producto | Productos · Editar |
+| PATCH | `/productos/:id/estado` | Activa/desactiva (`{ estado: true }`) | Productos · Cambiar estado |
+| DELETE | `/productos/:id` | Elimina (bloqueado con `409` si está en pedidos) | Productos · Eliminar |
+
+> **Imagen del producto:** se envía como archivo con `Content-Type:
+> multipart/form-data` en el campo `imagen` (PNG, JPG o WEBP, máx. 5 MB). El
+> archivo se guarda en `backend/uploads` y se sirve como estático en
+> `GET /uploads/<archivo>`; en `producto.imagen` solo se persiste la **ruta**
+> (`/uploads/...`). También se acepta un cuerpo JSON con `imagen` como texto
+> (ruta o URL) para no obligar a un archivo.
+>
+> El campo de categoría acepta `id_categoria` / `idCategoria` (id) o `categoria`
+> (nombre). La respuesta devuelve `categoria: { id, nombre }`.
+
+### Presentaciones (`/api/presentaciones`)
+
+| Método | Ruta | Descripción | Permiso |
+| --- | --- | --- | --- |
+| GET | `/presentaciones` | Lista con filtros `cantidadFresas`, `estado` | Productos · Ver |
+| GET | `/presentaciones/:id` | Detalle de una presentación | Productos · Ver |
+| POST | `/presentaciones` | Crea (`{ cantidadFresas, precio, estado? }`) | Productos · Crear |
+| PUT | `/presentaciones/:id` | Actualiza una presentación | Productos · Editar |
+| PATCH | `/presentaciones/:id/estado` | Activa/desactiva (`{ estado: true }`) | Productos · Cambiar estado |
+| DELETE | `/presentaciones/:id` | Elimina (bloqueado con `409` si está en pedidos) | Productos · Eliminar |
+
+> No existe un módulo "Presentaciones" en la tabla `modulo`, así que estas rutas
+> reutilizan los permisos del módulo **Productos** (las presentaciones hacen
+> parte del catálogo de productos).
+
+### Catálogo de la tienda (`/api/catalogo`) — Público
+
+| Método | Ruta | Descripción | Acceso |
+| --- | --- | --- | --- |
+| GET | `/catalogo/categorias` | Categorías activas | Público |
+| GET | `/catalogo/presentaciones` | Presentaciones activas | Público |
+| GET | `/catalogo/productos` | Productos activos (filtros `nombre`, `categoria`, `idCategoria`) | Público |
+| GET | `/catalogo/productos/:id` | Detalle de un producto activo (`404` si está inactivo) | Público |
+
+> Rutas **sin sesión**, pensadas para la tienda. Devuelven únicamente registros
+> con `estado = true`, de modo que el panel (`/categorias`, `/productos`)
+> conserva el chequeo de permisos y la tienda no necesita token.
+
+> **Reglas de negocio del catálogo:**
+> - Los nombres de **categoría** y **producto** son únicos sin distinguir
+>   mayúsculas/minúsculas → `409` (la BD no lo impone; se valida en el service).
+> - `cantidad_fresas` es única en **presentaciones** → `409`.
+> - No se elimina una categoría con productos (`409`), ni un producto o
+>   presentación que aparezca en algún pedido (`409`). Se sugiere desactivarlos.
+
+> Los módulos de pedidos, entregas, ventas, reseñas y dashboard se agregan
+> progresivamente en `src/routes/index.js`.
 
 ### Roles (`/api/roles`)
 
@@ -194,7 +261,7 @@ Base: `/api`
 - [x] Esqueleto, conexión a BD y manejo de errores
 - [x] Acceso y usuarios
 - [x] Roles y permisos
-- [ ] Categorías y productos
+- [x] Categorías, productos y presentaciones (+ catálogo público)
 - [ ] Pedidos
 - [ ] Entregas
 - [ ] Ventas

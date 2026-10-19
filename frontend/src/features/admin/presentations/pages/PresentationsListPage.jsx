@@ -1,5 +1,5 @@
 // src/features/admin/presentations/pages/PresentationsListPage.jsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { usePresentations } from '../hooks/usePresentations';
 import PresentationFormModal from '../components/PresentationFormModal';
 import DataTable from '../../../../shared/components/DataTable';
@@ -25,6 +25,10 @@ export default function PresentationsListPage() {
     selectedPresentation,
     presentationToEdit,
     filteredPresentations,
+    loading,
+    submitting,
+    error,
+    reload,
     handleToggleStatus,
     handleSavePresentation,
     handleConfirmDelete,
@@ -34,21 +38,29 @@ export default function PresentationsListPage() {
     handleOpenDelete,
   } = usePresentations();
 
-  const handleSave = (data) => {
-    handleSavePresentation(data);
+  // Relanza el error si falla para que el modal lo muestre sin cerrarse.
+  const handleSave = async (data) => {
+    const esEdicion = Boolean(presentationToEdit);
+    await handleSavePresentation(data);
     setNotification({
-      message: presentationToEdit
+      message: esEdicion
         ? `Se actualizó la presentación de ${quantityLabel(data.cantidadFresas)}.`
         : `Se creó la presentación de ${quantityLabel(data.cantidadFresas)}.`,
     });
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     const cantidad = selectedPresentation?.cantidadFresas;
-    handleConfirmDelete();
-    setNotification({
-      message: `Se eliminó la presentación de ${quantityLabel(cantidad)}.`,
-    });
+    try {
+      await handleConfirmDelete();
+      setNotification({
+        message: `Se eliminó la presentación de ${quantityLabel(cantidad)}.`,
+      });
+    } catch (err) {
+      setNotification({
+        message: err?.message || 'No se pudo eliminar la presentación.',
+      });
+    }
   };
 
   const columns = [
@@ -130,7 +142,11 @@ export default function PresentationsListPage() {
         columns={columns}
         data={filteredPresentations}
         searchPlaceholder="Buscar presentación..."
-        emptyMessage="No hay presentaciones para mostrar."
+        emptyMessage={
+          loading
+            ? 'Cargando presentaciones...'
+            : 'No hay presentaciones para mostrar.'
+        }
         extraFilter={
           <FormSelect
             value={statusFilter}
@@ -145,12 +161,22 @@ export default function PresentationsListPage() {
         }
       />
 
+      {error && (
+        <p className="crud-error-hint" role="alert">
+          <i className="fa-solid fa-triangle-exclamation" /> {error}
+          <button type="button" className="crud-retry" onClick={reload}>
+            Reintentar
+          </button>
+        </p>
+      )}
+
       {/* Modal crear / editar */}
       <PresentationFormModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleSave}
         initialData={presentationToEdit}
+        submitting={submitting}
       />
 
       {/* Modal ver detalle */}

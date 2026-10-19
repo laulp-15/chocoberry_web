@@ -6,10 +6,13 @@ Existe un backend Express en `../backend` (`http://localhost:4000/api`). La
 conexión se está haciendo **módulo por módulo**, de forma incremental:
 
 - **Conectado:** módulo de **acceso** (login, registro, sesión, perfil,
-  cambiar contraseña, logout, bloqueo por intentos, recuperar contraseña) y
-  **usuarios del panel** (`features/admin/users`, contra `/api/usuarios`).
-- **Aún simulado:** catálogo, pedidos, entregas, ventas, reseñas y
-  dashboard. Siguen usando datos mock en memoria/localStorage.
+  cambiar contraseña, logout, bloqueo por intentos, recuperar contraseña),
+  **usuarios del panel** (`features/admin/users`, contra `/api/usuarios`) y
+  **catálogo** (categorías, productos y presentaciones del panel contra
+  `/api/categorias`, `/api/productos` y `/api/presentaciones`; tienda contra
+  el catálogo público `/api/catalogo`).
+- **Aún simulado:** pedidos, entregas, ventas, reseñas y dashboard. Siguen
+  usando datos mock en memoria/localStorage.
 
 No asumas que un `services/` existe porque el módulo esté conectado: revisa
 si el hook llama al API o al mock.
@@ -81,8 +84,11 @@ Config flat, ignora `dist/`. Solo lintea `js`/`jsx`.
 
 Existen dos situaciones y hay que distinguirlas:
 
-- **Módulo conectado** (hoy: acceso y usuarios del panel): el hook delega en
-  su `services/*.js`, que usa `shared/api/client.js`.
+- **Módulo conectado** (hoy: acceso, usuarios del panel y catálogo): el hook
+  delega en su `services/*.js`, que usa `shared/api/client.js`.
 - **Módulo aún simulado:** archivos `services/` que existen de relleno
   (ej. `categoryService.js`) mientras el hook usa estado inline o mocks en
   `data/`. No asumir que el service es la fuente de verdad — revisar el hook.
+- `features/catalog/data/Products.js` y `Pricing.js` se conservan solo para
+  los módulos todavía simulados (carrito, pedidos, perfil, ventas); las
+  páginas del catálogo ya no los usan.

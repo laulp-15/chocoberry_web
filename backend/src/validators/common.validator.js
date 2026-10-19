@@ -74,3 +74,8 @@ export const booleanoFlexible = z.preprocess((valor) => {
 export const idParamSchema = z.object({
   id: z.coerce.number().int('El id debe ser un entero.').positive('El id debe ser positivo.'),
 });
+
+// Cuerpo para cambiar el estado de un recurso: { estado: true|false }.
+export const estadoSchema = z.object({
+  estado: booleanoFlexible,
+});

@@ -1,11 +1,12 @@
-// src/admin/products/pages/ProductsListPage.jsx
-import React, { useState } from 'react';
+// src/features/admin/products/pages/ProductsListPage.jsx
+import { useState } from 'react';
 import { useProducts } from '../hooks/useProducts';
 import ProductFormModal from '../components/ProductFormModal';
 import DataTable from '../../../../shared/components/DataTable';
 import ConfirmModal from '../../../../shared/components/ConfirmModal';
 import FormSelect from '../../../../shared/components/FormSelect';
 import OrderNotification from "../../orders/components/OrderNotification";
+import { imageUrl } from '../../../../shared/utils/imageUrl';
 import './ProductsListPage.css';
 
 export default function ProductsListPage() {
@@ -24,6 +25,11 @@ export default function ProductsListPage() {
     selectedProduct,
     productToEdit,
     currentProducts,
+    categorias,
+    loading,
+    submitting,
+    error,
+    reload,
     handleToggleStatus,
     handleSaveProduct,
     handleConfirmDelete,
@@ -33,20 +39,29 @@ export default function ProductsListPage() {
     handleOpenDelete
   } = useProducts();
 
-  const handleSave = (data) => {
-    handleSaveProduct(data);
+  // Relanza el error si falla para que el modal lo muestre sin cerrarse.
+  const handleSave = async (data) => {
+    const esEdicion = Boolean(productToEdit);
+    await handleSaveProduct(data);
     setNotification({
-      message: productToEdit
+      message: esEdicion
         ? `"${data.nombre}" se actualizó correctamente.`
         : `"${data.nombre}" se creó correctamente.`,
     });
   };
 
-  const handleDelete = () => {
-    handleConfirmDelete();
-    setNotification({
-      message: `"${selectedProduct?.nombre}" se eliminó correctamente.`,
-    });
+  const handleDelete = async () => {
+    const nombre = selectedProduct?.nombre;
+    try {
+      await handleConfirmDelete();
+      setNotification({
+        message: `"${nombre}" se eliminó correctamente.`,
+      });
+    } catch (err) {
+      setNotification({
+        message: err?.message || 'No se pudo eliminar el producto.',
+      });
+    }
   };
 
   // Definición de columnas con miniatura de imagen incluida
@@ -57,7 +72,7 @@ export default function ProductsListPage() {
       render: (prod) => (
         prod.imagen ? (
           <img
-            src={prod.imagen}
+            src={imageUrl(prod.imagen)}
             alt={prod.nombre}
             style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--borde)' }}
             onError={(e) => { e.target.style.display = 'none'; }}
@@ -80,9 +95,9 @@ export default function ProductsListPage() {
       render: (prod) => <span style={{ color: 'var(--texto-muted)', maxWidth: '250px', display: 'inline-block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{prod.descripcion}</span>
     },
     {
-      key: 'categoria',
+      key: 'categoriaNombre',
       label: 'CATEGORÍA',
-      render: (prod) => <span style={{ color: 'var(--texto-muted)' }}>{prod.categoria}</span>
+      render: (prod) => <span style={{ color: 'var(--texto-muted)' }}>{prod.categoriaNombre}</span>
     },
     {
       key: 'estado',
@@ -148,6 +163,7 @@ export default function ProductsListPage() {
         searchPlaceholder="Buscar producto, descripción o categoría..."
         searchTerm={searchTerm}
         onSearchChange={handleSearchChange}
+        emptyMessage={loading ? 'Cargando productos...' : 'No hay productos para mostrar.'}
         extraFilter={
           <FormSelect
             value={statusFilter}
@@ -162,12 +178,23 @@ export default function ProductsListPage() {
         }
       />
 
+      {error && (
+        <p className="products-error-hint" role="alert">
+          <i className="fa-solid fa-triangle-exclamation" /> {error}
+          <button type="button" className="products-retry" onClick={reload}>
+            Reintentar
+          </button>
+        </p>
+      )}
+
       {/* MODAL CREAR / EDITAR */}
       <ProductFormModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleSave}
         initialData={productToEdit}
+        categorias={categorias}
+        submitting={submitting}
       />
 
       {/* MODAL VER DETALLE */}

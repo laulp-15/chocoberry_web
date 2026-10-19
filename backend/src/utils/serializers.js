@@ -56,3 +56,40 @@ export function serializarPermiso(row) {
     accion: row.accion ? { id: row.id_accion, nombre: row.accion } : { id: row.id_accion },
   };
 }
+
+/** Convierte una fila de `categoria` al objeto público. */
+export function serializarCategoria(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    nombre: row.nombre,
+    estado: Boolean(row.estado),
+  };
+}
+
+/** Convierte una fila de `producto` (con nombre_categoria) al objeto público. */
+export function serializarProducto(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    nombre: row.nombre,
+    descripcion: row.descripcion,
+    imagen: row.imagen,
+    estado: Boolean(row.estado),
+    categoria: row.categoria
+      ? { id: row.id_categoria, nombre: row.categoria }
+      : { id: row.id_categoria },
+  };
+}
+
+/** Convierte una fila de `presentacion` al objeto público. */
+export function serializarPresentacion(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    cantidadFresas: row.cantidad_fresas,
+    // DECIMAL llega como texto desde MySQL; se normaliza a número.
+    precio: Number(row.precio),
+    estado: Boolean(row.estado),
+  };
+}
