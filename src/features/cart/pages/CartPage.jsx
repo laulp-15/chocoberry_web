@@ -3,7 +3,6 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useCart } from "../hooks/UseCart";
 import CartItemCard from "../components/CartItemCard";
-import OrderCardMessage from "../components/OrderCardMessage";
 import CartSummary from "../components/CartSummary";
 import CartNotification from "../components/CartNotification";
 import ConfirmModal from "../../../shared/components/ConfirmModal";
@@ -61,7 +60,6 @@ export default function CartPage() {
         ) : (
           <div className="row">
             <div className="col-12 col-lg-8">
-              <OrderCardMessage value={cardMessage} onChange={setCardMessage} />
               {items.map((item) => (
                 <CartItemCard
                   key={item.cartItemId}

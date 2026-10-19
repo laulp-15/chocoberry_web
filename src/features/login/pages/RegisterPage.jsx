@@ -15,29 +15,30 @@ import { useAuth } from "../hooks/useAuth";
 
 import {
   validateEmail,
-  validateFullName,
   validatePassword,
   validateConfirmPassword,
   validateTermsAccepted,
+  validatePhone,
+  validateDocType,
+  validateIdNumber,
+  validateNombres,
+  validateApellidos,
+  validateAddress,
+  validateNeighborhood,
 } from "../utils/validators";
 
+import { DOC_TYPE_OPTIONS } from "../../../shared/utils/documentTypes";
+
 
 // ============================================================
-// VALIDACIÓN LOCAL DEL TELÉFONO
+// VALIDACIÓN DEL TELÉFONO
+// Se delega en la validación compartida (utils/validators): solo números
+// (se toleran espacios y guiones) y exactamente 10 dígitos.
 // ============================================================
 
-function validatePhone(phone) {
-  const cleanPhone = phone.replace(/\s+/g, "");
-
-  if (!cleanPhone) {
-    return "El número de teléfono es obligatorio.";
-  }
-
-  if (!/^\+?\d{7,15}$/.test(cleanPhone)) {
-    return "Ingresa un número de teléfono válido.";
-  }
-
-  return "";
+function validateRegisterPhone(phone) {
+  if (!phone?.trim()) return "El número de teléfono es obligatorio.";
+  return validatePhone(phone);
 }
 
 
@@ -84,12 +85,16 @@ export default function RegisterPage() {
   // ============================================================
 
   const [form, setForm] = useState({
-    fullName: "",
-    phone: "",
+    docType: "",
+    idNumber: "",
+    nombres: "",
+    apellidos: "",
+    address: "",
+    neighborhood: "",
     email: "",
+    phone: "",
     password: "",
     confirmPassword: "",
-    address: "",
     acceptTerms: false,
   });
 
@@ -133,11 +138,26 @@ export default function RegisterPage() {
 
   function validateField(field, values = form) {
     switch (field) {
-      case "fullName":
-        return validateFullName(values.fullName);
+      case "docType":
+        return validateDocType(values.docType);
+
+      case "idNumber":
+        return validateIdNumber(values.idNumber);
+
+      case "nombres":
+        return validateNombres(values.nombres);
+
+      case "apellidos":
+        return validateApellidos(values.apellidos);
+
+      case "address":
+        return validateAddress(values.address);
+
+      case "neighborhood":
+        return validateNeighborhood(values.neighborhood);
 
       case "phone":
-        return validatePhone(values.phone);
+        return validateRegisterPhone(values.phone);
 
       case "email":
         return validateEmail(normalizeEmail(values.email));
@@ -150,12 +170,6 @@ export default function RegisterPage() {
           values.password,
           values.confirmPassword
         );
-
-      case "address":
-        if (!values.address.trim()) {
-          return "La dirección es obligatoria.";
-        }
-        return "";
 
       case "acceptTerms":
         return validateTermsAccepted(values.acceptTerms);
@@ -223,17 +237,19 @@ export default function RegisterPage() {
     };
 
     const nextErrors = {
-      fullName: validateFullName(values.fullName),
-      phone: validatePhone(values.phone),
+      docType: validateDocType(values.docType),
+      idNumber: validateIdNumber(values.idNumber),
+      nombres: validateNombres(values.nombres),
+      apellidos: validateApellidos(values.apellidos),
+      address: validateAddress(values.address),
+      neighborhood: validateNeighborhood(values.neighborhood),
       email: validateEmail(values.email),
+      phone: validateRegisterPhone(values.phone),
       password: validatePassword(values.password),
       confirmPassword: validateConfirmPassword(
         values.password,
         values.confirmPassword
       ),
-      address: !values.address.trim()
-        ? "La dirección es obligatoria."
-        : "",
       acceptTerms: validateTermsAccepted(values.acceptTerms),
     };
 
@@ -261,10 +277,13 @@ export default function RegisterPage() {
 
     const normalizedForm = {
       ...form,
-      fullName: form.fullName.trim(),
+      idNumber: form.idNumber.trim(),
+      nombres: form.nombres.trim(),
+      apellidos: form.apellidos.trim(),
       email: normalizeEmail(form.email),
       phone: form.phone.trim(),
       address: form.address.trim(),
+      neighborhood: form.neighborhood.trim(),
     };
 
     setLoading(true);
@@ -340,42 +359,106 @@ export default function RegisterPage() {
             </div>
           )}
 
-          {/* NOMBRE COMPLETO */}
+          {/* TIPO Y NÚMERO DE IDENTIFICACIÓN */}
           <div className="auth-register-field">
             <AuthInput
-              label="Nombre completo"
-              name="fullName"
+              label="Tipo de identificación"
+              name="docType"
+              icon="id-card"
+              placeholder="Selecciona el tipo"
+              options={DOC_TYPE_OPTIONS}
+              value={form.docType}
+              onChange={(value) => updateField("docType", value)}
+              onBlur={() => handleBlur("docType")}
+              error={errors.docType}
+              disabled={isDisabled}
+              required
+            />
+          </div>
+
+          <div className="auth-register-field">
+            <AuthInput
+              label="Número de identificación"
+              name="idNumber"
+              icon="hashtag"
+              placeholder="Ej. 1023456789"
+              value={form.idNumber}
+              onChange={(value) => updateField("idNumber", value)}
+              onBlur={() => handleBlur("idNumber")}
+              error={errors.idNumber}
+              autoComplete="off"
+              disabled={isDisabled}
+              required
+            />
+          </div>
+
+          {/* NOMBRES Y APELLIDOS */}
+          <div className="auth-register-field">
+            <AuthInput
+              label="Nombres"
+              name="nombres"
               icon="user"
-              placeholder="Ej. Isabella López"
-              value={form.fullName}
-              onChange={(value) => updateField("fullName", value)}
-              onBlur={() => handleBlur("fullName")}
-              error={errors.fullName}
-              autoComplete="name"
+              placeholder="Ej. Isabella"
+              value={form.nombres}
+              onChange={(value) => updateField("nombres", value)}
+              onBlur={() => handleBlur("nombres")}
+              error={errors.nombres}
+              autoComplete="given-name"
               disabled={isDisabled}
               required
             />
           </div>
 
-          {/* TELÉFONO */}
           <div className="auth-register-field">
             <AuthInput
-              label="Número de teléfono"
-              type="tel"
-              name="phone"
-              icon="phone"
-              placeholder="Ej. 300 123 4567"
-              value={form.phone}
-              onChange={(value) => updateField("phone", value)}
-              onBlur={() => handleBlur("phone")}
-              error={errors.phone}
-              autoComplete="tel"
+              label="Apellidos"
+              name="apellidos"
+              icon="user"
+              placeholder="Ej. López"
+              value={form.apellidos}
+              onChange={(value) => updateField("apellidos", value)}
+              onBlur={() => handleBlur("apellidos")}
+              error={errors.apellidos}
+              autoComplete="family-name"
               disabled={isDisabled}
               required
             />
           </div>
 
-          {/* CORREO ELECTRÓNICO */}
+          {/* DIRECCIÓN Y BARRIO */}
+          <div className="auth-register-field">
+            <AuthInput
+              label="Dirección de entrega"
+              name="address"
+              icon="location-dot"
+              placeholder="Ej. Calle 13 #45 - 67"
+              value={form.address}
+              onChange={(value) => updateField("address", value)}
+              onBlur={() => handleBlur("address")}
+              error={errors.address}
+              autoComplete="street-address"
+              disabled={isDisabled}
+              required
+            />
+          </div>
+
+          <div className="auth-register-field">
+            <AuthInput
+              label="Barrio"
+              name="neighborhood"
+              icon="map-location-dot"
+              placeholder="Ej. El Poblado"
+              value={form.neighborhood}
+              onChange={(value) => updateField("neighborhood", value)}
+              onBlur={() => handleBlur("neighborhood")}
+              error={errors.neighborhood}
+              autoComplete="address-level3"
+              disabled={isDisabled}
+              required
+            />
+          </div>
+
+          {/* CORREO ELECTRÓNICO Y TELÉFONO */}
           <div className="auth-register-field">
             <AuthInput
               label="Correo electrónico"
@@ -393,18 +476,18 @@ export default function RegisterPage() {
             />
           </div>
 
-          {/* DIRECCIÓN DE ENTREGA */}
           <div className="auth-register-field">
             <AuthInput
-              label="Dirección de entrega"
-              name="address"
-              icon="location-dot"
-              placeholder="Ej. Calle 13 #45 - 67"
-              value={form.address}
-              onChange={(value) => updateField("address", value)}
-              onBlur={() => handleBlur("address")}
-              error={errors.address}
-              autoComplete="street-address"
+              label="Número de teléfono"
+              type="tel"
+              name="phone"
+              icon="phone"
+              placeholder="Ej. 300 123 4567"
+              value={form.phone}
+              onChange={(value) => updateField("phone", value)}
+              onBlur={() => handleBlur("phone")}
+              error={errors.phone}
+              autoComplete="tel"
               disabled={isDisabled}
               required
             />

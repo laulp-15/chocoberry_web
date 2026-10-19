@@ -74,6 +74,57 @@
   font-weight: 700;
 }
 
+/* ---------- Grupo desplegable del menú (Configuraciones) ---------- */
+.admin-nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.admin-nav-item.admin-nav-parent {
+  width: 100%;
+  background: none;
+  border: none;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-nav-parent-label {
+  flex: 1;
+}
+
+.admin-nav-parent .admin-nav-chevron {
+  margin-left: auto;
+  width: auto;
+  font-size: 11px;
+  transition: transform 0.15s ease;
+}
+
+.admin-nav-parent .admin-nav-chevron.open {
+  transform: rotate(180deg);
+}
+
+.admin-nav-parent--active {
+  color: var(--texto);
+}
+
+.admin-nav-children {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 2px;
+  margin-left: 20px;
+  padding-left: 10px;
+  border-left: 1px solid var(--borde);
+}
+
+.admin-nav-item.admin-nav-child {
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
 /* ---------- Footer del sidebar: perfil + acciones ---------- */
 .admin-sidebar-footer {
   border-top: 1px solid var(--borde);

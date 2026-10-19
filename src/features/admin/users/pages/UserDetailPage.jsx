@@ -3,7 +3,7 @@ import React from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import useUsersAdmin from "../hooks/useUsersAdmin";
 import RoleBadge from "../components/RoleBadge";
-import { ROLE_PERMISSIONS } from "../utils/roles";
+import { docTypeLabel } from "../../../../shared/utils/documentTypes";
 import "./UserDetailPage.css";
 
 function formatDate(iso) {
@@ -39,7 +39,18 @@ export default function UserDetailPage() {
   }
 
   const isActive = user.active !== false;
-  const permissions = ROLE_PERMISSIONS[user.role] || [];
+
+  // Nombres/apellidos: si el usuario es antiguo (solo fullName), los derivamos.
+  const [derivedNombres, ...restName] = (user.fullName || "").trim().split(/\s+/);
+  const nombres = user.nombres || derivedNombres || "";
+  const apellidos = user.apellidos || restName.join(" ");
+  const documento = user.idNumber
+    ? `${docTypeLabel(user.docType)} ${user.idNumber}`.trim()
+    : "—";
+
+  // Iniciales para el avatar: nombres + apellidos, con respaldo en fullName.
+  const rawInitials = `${nombres.charAt(0)}${apellidos.charAt(0)}`.trim();
+  const initials = (rawInitials || user.fullName?.charAt(0) || "?").toUpperCase();
 
   return (
     <div className="user-detail-page">
@@ -48,47 +59,64 @@ export default function UserDetailPage() {
       </button>
 
       <div className="user-detail-heading-card">
-        <div className="user-detail-heading-top">
+        <span className="user-detail-avatar" aria-hidden="true">
+          {initials}
+        </span>
+        <div className="user-detail-heading-main">
           <h1 className="user-detail-name">{user.fullName}</h1>
+          <p className="user-detail-email">
+            <i className="fa-solid fa-envelope" /> {user.email}
+          </p>
+        </div>
+        <div className="user-detail-heading-actions">
           <span className={`user-detail-status-pill ${isActive ? "is-active" : "is-inactive"}`}>
             {isActive ? "ACTIVO" : "INACTIVO"}
           </span>
         </div>
-        <p className="user-detail-email">{user.email}</p>
       </div>
 
       <div className="row user-detail-row">
         <div className="col-12 col-lg-6 user-detail-col">
           <div className="user-detail-card">
             <h2 className="user-detail-card-title">
-              <i className="fa-solid fa-user" /> Información de la cuenta
+              <i className="fa-solid fa-user" /> Datos personales
             </h2>
             <dl className="user-detail-fields">
               <div className="user-detail-field">
-                <dt>Nombre completo</dt>
-                <dd>{user.fullName}</dd>
+                <span className="user-detail-field-icon">
+                  <i className="fa-solid fa-user" />
+                </span>
+                <div className="user-detail-field-body">
+                  <dt>Nombres</dt>
+                  <dd>{nombres || "—"}</dd>
+                </div>
               </div>
               <div className="user-detail-field">
-                <dt>Correo electrónico</dt>
-                <dd>{user.email}</dd>
+                <span className="user-detail-field-icon">
+                  <i className="fa-solid fa-user-tag" />
+                </span>
+                <div className="user-detail-field-body">
+                  <dt>Apellidos</dt>
+                  <dd>{apellidos || "—"}</dd>
+                </div>
               </div>
               <div className="user-detail-field">
-                <dt>Teléfono</dt>
-                <dd>{user.phone || "—"}</dd>
+                <span className="user-detail-field-icon">
+                  <i className="fa-solid fa-address-card" />
+                </span>
+                <div className="user-detail-field-body">
+                  <dt>Documento</dt>
+                  <dd>{documento}</dd>
+                </div>
               </div>
               <div className="user-detail-field">
-                <dt>Dirección</dt>
-                <dd>{user.address || "—"}</dd>
-              </div>
-              <div className="user-detail-field">
-                <dt>Rol de usuario</dt>
-                <dd>
-                  <RoleBadge role={user.role} />
-                </dd>
-              </div>
-              <div className="user-detail-field">
-                <dt>Fecha de creación</dt>
-                <dd>{formatDate(user.createdAt)}</dd>
+                <span className="user-detail-field-icon">
+                  <i className="fa-solid fa-phone" />
+                </span>
+                <div className="user-detail-field-body">
+                  <dt>Teléfono</dt>
+                  <dd>{user.phone || "—"}</dd>
+                </div>
               </div>
             </dl>
           </div>
@@ -97,21 +125,48 @@ export default function UserDetailPage() {
         <div className="col-12 col-lg-6 user-detail-col">
           <div className="user-detail-card">
             <h2 className="user-detail-card-title">
-              <i className="fa-solid fa-shield-halved" /> Permisos del Sistema
+              <i className="fa-solid fa-address-book" /> Contacto y cuenta
             </h2>
-            <ul className="user-detail-permissions">
-              {permissions.map((perm) => (
-                <li key={perm.title} className="user-detail-permission">
-                  <span className="user-detail-permission-icon">
-                    <i className={`fa-solid ${perm.icon}`} />
-                  </span>
-                  <div>
-                    <p className="user-detail-permission-title">{perm.title}</p>
-                    <p className="user-detail-permission-desc">{perm.description}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <dl className="user-detail-fields">
+              <div className="user-detail-field">
+                <span className="user-detail-field-icon">
+                  <i className="fa-solid fa-location-dot" />
+                </span>
+                <div className="user-detail-field-body">
+                  <dt>Dirección</dt>
+                  <dd>{user.address || "—"}</dd>
+                </div>
+              </div>
+              <div className="user-detail-field">
+                <span className="user-detail-field-icon">
+                  <i className="fa-solid fa-map" />
+                </span>
+                <div className="user-detail-field-body">
+                  <dt>Barrio</dt>
+                  <dd>{user.neighborhood || "—"}</dd>
+                </div>
+              </div>
+              <div className="user-detail-field">
+                <span className="user-detail-field-icon">
+                  <i className="fa-solid fa-user-shield" />
+                </span>
+                <div className="user-detail-field-body">
+                  <dt>Rol de usuario</dt>
+                  <dd>
+                    <RoleBadge role={user.role} />
+                  </dd>
+                </div>
+              </div>
+              <div className="user-detail-field">
+                <span className="user-detail-field-icon">
+                  <i className="fa-solid fa-calendar" />
+                </span>
+                <div className="user-detail-field-body">
+                  <dt>Fecha de creación</dt>
+                  <dd>{formatDate(user.createdAt)}</dd>
+                </div>
+              </div>
+            </dl>
           </div>
         </div>
       </div>

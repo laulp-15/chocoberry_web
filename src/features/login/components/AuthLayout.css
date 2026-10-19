@@ -512,7 +512,7 @@
 
   column-gap: 14px;
 
-  row-gap: 12px;
+  row-gap: 10px;
 
   width: 100%;
 }
@@ -529,12 +529,33 @@
   position: relative;
 }
 
-.auth-register-field input {
-  padding-top: 5px !important;
-  padding-bottom: 5px !important;
-  height: 35px !important;
-  font-size: 11.5px !important;
+/* El registro tiene 10 campos en 5 filas, así que cada campo va un poco
+   más compacto que en el resto de las vistas de acceso (caja de 40px en
+   vez de 48px) para que la tarjeta no crezca de más. */
+.auth-register-field .auth-field {
+  gap: 4px;
+}
+
+.auth-register-field .auth-field-label {
+  font-size: 12px;
+}
+
+.auth-register-field .auth-field-input.MuiOutlinedInput-root {
+  min-height: 40px;
+}
+
+.auth-register-field input,
+.auth-register-field .MuiSelect-select {
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  height: 30px !important;
+  font-size: 12.5px !important;
   padding-left: 3px !important;
+}
+
+/* El select necesita aire a la derecha para la flecha desplegable. */
+.auth-register-field .MuiSelect-select {
+  padding-right: 24px !important;
 }
 
 /* ============================================================

@@ -1,0 +1,225 @@
+/* src/shared/css/adminCrud.css
+   Estilos compartidos por los listados de configuración del panel
+   (Municipios, Presentaciones, Glaseados): acciones de tabla, botones de los
+   modales de crear/editar y tarjeta de detalle. Así las tres features no
+   duplican el mismo bloque de CSS. */
+
+/* ---------- Envoltura de página ---------- */
+.crud-page {
+  padding: 0;
+  color: var(--texto);
+  min-height: 100vh;
+  font-family: "Poppins", sans-serif;
+}
+
+/* ---------- Acciones de tabla ---------- */
+.table-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.table-action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--texto-muted);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s ease;
+}
+
+.table-action-btn:hover {
+  color: var(--primario);
+}
+
+.table-action-btn.danger:hover {
+  color: var(--error-100);
+}
+
+/* ---------- Botones del modal de crear/editar ---------- */
+.crud-form-modal .btn-cancel {
+  background-color: var(--secundario-2);
+  color: var(--texto);
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
+.crud-form-modal .btn-cancel:hover {
+  background-color: var(--secundario-1);
+}
+
+.crud-form-modal .btn-save {
+  background-color: var(--primario);
+  color: #ffffff;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
+.crud-form-modal .btn-save:hover {
+  background-color: var(--primario-oscuro);
+}
+
+/* ---------- Fila de estado (toggle + etiqueta) ---------- */
+.crud-status-field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.3rem;
+}
+
+.crud-status-label {
+  color: var(--texto);
+  font-size: 0.9rem;
+}
+
+/* ---------- Tarjeta de detalle ---------- */
+.crud-detail-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background: linear-gradient(135deg, var(--secundario-3) 0%, var(--secundario-2) 100%);
+  padding: 1.5rem;
+  border-radius: 16px;
+  border: 1px solid var(--borde);
+  box-shadow: 0 4px 12px rgba(42, 35, 29, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.crud-detail-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--primario);
+}
+
+.crud-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.crud-detail-name {
+  margin: 0;
+  color: var(--texto);
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.crud-detail-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.crud-detail-status::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.crud-detail-status.active {
+  background: rgba(36, 148, 52, 0.15);
+  color: var(--success-100);
+}
+
+.crud-detail-status.inactive {
+  background: rgba(230, 57, 74, 0.15);
+  color: var(--primario);
+}
+
+.crud-detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.crud-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.9rem;
+  border-top: 1px solid var(--borde);
+  padding-top: 0.6rem;
+}
+
+.crud-detail-row:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.crud-detail-label {
+  color: var(--texto-muted);
+}
+
+.crud-detail-value {
+  color: var(--texto);
+  font-weight: 600;
+  text-align: right;
+  word-break: break-word;
+}
+
+/* ---------- Muestra de color (glaseados) ---------- */
+.crud-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--borde);
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.crud-color-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.crud-color-input {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* Chrome/Edge añaden relleno interno al input color: lo quitamos */
+.crud-color-input::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.crud-color-input::-webkit-color-swatch {
+  border: none;
+  border-radius: 5px;
+}

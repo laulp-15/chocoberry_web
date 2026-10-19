@@ -3,6 +3,7 @@
 // que confirme Leidy para cada municipio.
 
 export const MUNICIPIOS = [
+  { value: "medellin", label: "Medellín" },
   { value: "bello", label: "Bello" },
   { value: "copacabana", label: "Copacabana" },
   { value: "barbosa", label: "Barbosa" },
@@ -13,6 +14,7 @@ export const MUNICIPIOS = [
 ];
 
 const SHIPPING_COST_BY_MUNICIPIO = {
+  medellin: 10000,
   bello: 12000,
   copacabana: 15000,
   barbosa: 20000,
@@ -23,7 +25,7 @@ const SHIPPING_COST_BY_MUNICIPIO = {
 };
 
 /**
- * Si no se elige municipio (ej. recogida en tienda), el envío es $0.
+ * Si no se elige municipio (p. ej. el select quedó vacío), el envío es $0.
  */
 export function getShippingCost(municipio) {
   if (!municipio) return 0;

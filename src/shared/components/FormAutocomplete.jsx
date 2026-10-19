@@ -17,15 +17,20 @@ import "./FormAutocomplete.css";
  * @param {string} [props.placeholder]
  * @param {string} [props.error]
  * @param {boolean} [props.required]
+ * @param {() => void} [props.onBlur] - se dispara al salir del campo.
+ * @param {(value: string | null) => void} [props.onSelect] - se dispara solo
+ *        cuando se elige (o se limpia) una opción del desplegable, no al teclear.
  */
 export default function FormAutocomplete({
   label,
   value,
   onChange,
+  onBlur,
   options,
   placeholder,
   error,
   required,
+  onSelect,
 }) {
   return (
     <div className="form-field">
@@ -41,6 +46,8 @@ export default function FormAutocomplete({
         value={value || null}
         inputValue={value}
         onInputChange={(_, newValue) => onChange(newValue)}
+        onChange={(_, newValue) => onSelect?.(newValue)}
+        onBlur={onBlur}
         renderInput={(params) => (
           <TextField {...params} className="form-input" placeholder={placeholder} />
         )}

@@ -1,6 +1,6 @@
 // src/features/catalog/pages/ProductDetail.jsx
 import React, { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@mui/material";
 import { useCart } from "../../cart/hooks/UseCart";
 import ProductGallery from "../components/ProductGallery";
@@ -19,6 +19,7 @@ const QUANTITY_OPTIONS = Object.keys(PRICE_BY_QUANTITY).map(Number); // [6, 8, 1
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { addItem } = useCart();
   const product = getProductById(id);
 
@@ -43,15 +44,22 @@ export default function ProductDetail() {
   const relatedProducts = PRODUCTS.filter((p) => p.id !== product.id).slice(0, 4);
 
   const handleAddToCart = () => {
-    const { merged } = addItem({
-      productId: product.id,
-      name: product.name,
-      image: product.image,
-      quantity,
-      color: selectedColor?.label ?? color,
-      colorHex: selectedColor?.hex,
-    });
-    navigate("/carrito", merged ? { state: { merged: true } } : undefined);
+    const { merged } = addItem(
+      {
+        productId: product.id,
+        name: product.name,
+        image: product.image,
+        quantity,
+        color: selectedColor?.label ?? color,
+        colorHex: selectedColor?.hex,
+      },
+      { fromPath: location.pathname }
+    );
+    // Si el usuario ya estaba logueado y se añadió al carrito, navegar al carrito
+    if (merged !== undefined) {
+      navigate("/carrito", merged ? { state: { merged: true } } : undefined);
+    }
+    // Si no estaba logueado, addItem ya redirigió a login; el flush ocurrirá tras login
   };
 
   const handleRelatedViewDetail = (p) => {

@@ -18,11 +18,13 @@ import "./FormFields.css";
  * @param {boolean} [props.multiline]
  * @param {number} [props.minRows]
  * @param {string} [props.type] - "text" | "number" | "email" | etc.
+ * @param {() => void} [props.onBlur] - se dispara al salir del campo.
  */
 export default function FormTextField({
   label,
   value,
   onChange,
+  onBlur,
   placeholder,
   error,
   required,
@@ -30,6 +32,7 @@ export default function FormTextField({
   minRows = 3,
   type = "text",
   readOnly,
+  endAdornment,
 }) {
   return (
     <div className="form-field">
@@ -47,7 +50,9 @@ export default function FormTextField({
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
         readOnly={readOnly}
+        endAdornment={endAdornment}
       />
       {error && <div className="form-error">{error}</div>}
     </div>

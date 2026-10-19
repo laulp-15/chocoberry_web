@@ -2,7 +2,6 @@
 // Helpers de presentación compartidos entre OrderDetailContent (Pedidos)
 // y SaleReceipt (Ventas) — misma data, distintas vistas.
 import { MUNICIPIOS } from "../../../cart/data/Shipping";
-import { PAYMENT_METHODS } from "../../../cart/data/PaymentMethods";
 
 export function formatDisplayDate(iso) {
   if (!iso) return "—";
@@ -14,10 +13,6 @@ export function getMunicipioLabel(municipio) {
   return MUNICIPIOS.find((m) => m.value === municipio)?.label ?? "Recojo en tienda";
 }
 
-export function getPaymentLabel(medioPago) {
-  return PAYMENT_METHODS.find((p) => p.value === medioPago)?.label ?? "—";
-}
-
 /**
  * Devuelve una URL utilizable en <img>, ya sea que `comprobante` sea un
  * File (subido en esta sesión) o una URL/string (ya guardado en backend).
@@ -26,4 +21,15 @@ export function getProofUrl(comprobante) {
   if (!comprobante) return null;
   if (typeof comprobante === "string") return comprobante;
   return URL.createObjectURL(comprobante);
+}
+
+/** Indica si un comprobante (File o string) es un PDF. */
+export function isPdfProof(comprobante) {
+  if (!comprobante) return false;
+  if (typeof comprobante === "string") {
+    return (
+      comprobante.startsWith("data:application/pdf") || /\.pdf($|\?)/i.test(comprobante)
+    );
+  }
+  return comprobante.type === "application/pdf";
 }

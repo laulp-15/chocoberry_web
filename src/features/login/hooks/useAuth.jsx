@@ -60,7 +60,10 @@ const SEED_USERS = [
     email: "cliente@chocoberry.com",
     password: "Cliente123!",
     role: "cliente",
-    address: "Calle 13 #45-67, Barrio Centro",
+    docType: "CC",
+    idNumber: "1002345678",
+    address: "Calle 13 #45-67",
+    neighborhood: "Barrio Centro",
     phone: "312 345 6789",
   },
   {
@@ -70,6 +73,7 @@ const SEED_USERS = [
     password: "Admin123!",
     role: "administrador",
     address: "",
+    neighborhood: "",
   },
   {
     id: "u-repartidor-demo",
@@ -78,6 +82,7 @@ const SEED_USERS = [
     password: "Repartidor123!",
     role: "repartidor",
     address: "",
+    neighborhood: "",
   },
   {
     id: "u-cliente-01",
@@ -85,7 +90,10 @@ const SEED_USERS = [
     email: "maria.gonzalez@gmail.com",
     password: "Cliente01!",
     role: "cliente",
-    address: "Carrera 43A #1-50, El Poblado",
+    docType: "CC",
+    idNumber: "1015678901",
+    address: "Carrera 43A #1-50",
+    neighborhood: "El Poblado",
     phone: "300 111 2233",
   },
   {
@@ -94,7 +102,10 @@ const SEED_USERS = [
     email: "juan.rodriguez@hotmail.com",
     password: "Cliente02!",
     role: "cliente",
-    address: "Calle 10 #43-21, El Poblado",
+    docType: "CC",
+    idNumber: "1029876543",
+    address: "Calle 10 #43-21",
+    neighborhood: "El Poblado",
     phone: "301 222 3344",
   },
   {
@@ -103,7 +114,10 @@ const SEED_USERS = [
     email: "ana.martinez@gmail.com",
     password: "Cliente03!",
     role: "cliente",
-    address: "Carrera 70 #32-50, Laureles",
+    docType: "CC",
+    idNumber: "1034567234",
+    address: "Carrera 70 #32-50",
+    neighborhood: "Laureles",
     phone: "302 333 4455",
   },
   {
@@ -112,7 +126,10 @@ const SEED_USERS = [
     email: "carlos.hernandez@outlook.com",
     password: "Cliente04!",
     role: "cliente",
-    address: "Calle 50 #41-20, Belén",
+    docType: "CC",
+    idNumber: "1045678345",
+    address: "Calle 50 #41-20",
+    neighborhood: "Belén",
     phone: "303 444 5566",
   },
   {
@@ -121,7 +138,10 @@ const SEED_USERS = [
     email: "valentina.lopez@gmail.com",
     password: "Cliente05!",
     role: "cliente",
-    address: "Carrera 65 #24-35, Estadio",
+    docType: "CC",
+    idNumber: "1056789456",
+    address: "Carrera 65 #24-35",
+    neighborhood: "Estadio",
     phone: "304 555 6677",
   },
   {
@@ -130,7 +150,10 @@ const SEED_USERS = [
     email: "santiago.ramirez@hotmail.com",
     password: "Cliente06!",
     role: "cliente",
-    address: "Carrera 80 #30-20, Robledo",
+    docType: "CC",
+    idNumber: "1067890567",
+    address: "Carrera 80 #30-20",
+    neighborhood: "Robledo",
     phone: "305 666 7788",
   },
   {
@@ -139,7 +162,10 @@ const SEED_USERS = [
     email: "camila.torres@gmail.com",
     password: "Cliente07!",
     role: "cliente",
-    address: "Calle 33 #82-20, Belén",
+    docType: "CC",
+    idNumber: "1078901678",
+    address: "Calle 33 #82-20",
+    neighborhood: "Belén",
     phone: "306 777 8899",
   },
   {
@@ -148,7 +174,10 @@ const SEED_USERS = [
     email: "daniel.vargas@outlook.com",
     password: "Cliente08!",
     role: "cliente",
-    address: "Carrera 50 #12-40, Guayabal",
+    docType: "CC",
+    idNumber: "1089012789",
+    address: "Carrera 50 #12-40",
+    neighborhood: "Guayabal",
     phone: "307 888 9900",
   },
   {
@@ -157,7 +186,10 @@ const SEED_USERS = [
     email: "isabella.morales@gmail.com",
     password: "Cliente09!",
     role: "cliente",
-    address: "Avenida Guayabal #15-30, Guayabal",
+    docType: "CC",
+    idNumber: "1090123890",
+    address: "Avenida Guayabal #15-30",
+    neighborhood: "Guayabal",
     phone: "308 999 0011",
   },
   {
@@ -166,7 +198,10 @@ const SEED_USERS = [
     email: "felipe.castro@hotmail.com",
     password: "Cliente10!",
     role: "cliente",
-    address: "Carrera 42 #3-18, El Poblado",
+    docType: "CC",
+    idNumber: "1101234901",
+    address: "Carrera 42 #3-18",
+    neighborhood: "El Poblado",
     phone: "309 000 1122",
   },
   {
@@ -175,7 +210,10 @@ const SEED_USERS = [
     email: "luciana.silva@gmail.com",
     password: "Cliente11!",
     role: "cliente",
-    address: "Calle 8 #43-10, El Poblado",
+    docType: "CC",
+    idNumber: "1112345012",
+    address: "Calle 8 #43-10",
+    neighborhood: "El Poblado",
     phone: "310 111 2233",
   },
   {
@@ -184,7 +222,10 @@ const SEED_USERS = [
     email: "andres.gomez@outlook.com",
     password: "Cliente12!",
     role: "cliente",
-    address: "Carrera 70 #38-42, Laureles",
+    docType: "CC",
+    idNumber: "1123456123",
+    address: "Carrera 70 #38-42",
+    neighborhood: "Laureles",
     phone: "311 222 3344",
   },
   {
@@ -193,7 +234,10 @@ const SEED_USERS = [
     email: "daniela.ortiz@gmail.com",
     password: "Cliente13!",
     role: "cliente",
-    address: "Calle 51 #42-15, Belén",
+    docType: "CC",
+    idNumber: "1134567234",
+    address: "Calle 51 #42-15",
+    neighborhood: "Belén",
     phone: "312 333 4455",
   },
   {
@@ -202,7 +246,10 @@ const SEED_USERS = [
     email: "sebastian.mendoza@hotmail.com",
     password: "Cliente14!",
     role: "cliente",
-    address: "Carrera 66 #32-28, Estadio",
+    docType: "CC",
+    idNumber: "1145678345",
+    address: "Carrera 66 #32-28",
+    neighborhood: "Estadio",
     phone: "313 444 5566",
   },
   {
@@ -211,7 +258,10 @@ const SEED_USERS = [
     email: "gabriela.pena@gmail.com",
     password: "Cliente15!",
     role: "cliente",
-    address: "Carrera 80 #25-10, Robledo",
+    docType: "CC",
+    idNumber: "1156789456",
+    address: "Carrera 80 #25-10",
+    neighborhood: "Robledo",
     phone: "314 555 6677",
   },
   {
@@ -220,7 +270,10 @@ const SEED_USERS = [
     email: "nicolas.rios@outlook.com",
     password: "Cliente16!",
     role: "cliente",
-    address: "Calle 12 #43-30, El Poblado",
+    docType: "CC",
+    idNumber: "1167890567",
+    address: "Calle 12 #43-30",
+    neighborhood: "El Poblado",
     phone: "315 666 7788",
   },
   {
@@ -229,7 +282,10 @@ const SEED_USERS = [
     email: "paula.jimenez@gmail.com",
     password: "Cliente17!",
     role: "cliente",
-    address: "Carrera 48 #20-15, Guayabal",
+    docType: "CC",
+    idNumber: "1178901678",
+    address: "Carrera 48 #20-15",
+    neighborhood: "Guayabal",
     phone: "316 777 8899",
   },
   {
@@ -238,7 +294,10 @@ const SEED_USERS = [
     email: "miguel.suarez@hotmail.com",
     password: "Cliente18!",
     role: "cliente",
-    address: "Calle 30A #82-40, Belén",
+    docType: "CC",
+    idNumber: "1189012789",
+    address: "Calle 30A #82-40",
+    neighborhood: "Belén",
     phone: "317 888 9900",
   },
   {
@@ -247,7 +306,10 @@ const SEED_USERS = [
     email: "carolina.duarte@gmail.com",
     password: "Cliente19!",
     role: "cliente",
-    address: "Carrera 43A #5-25, El Poblado",
+    docType: "CC",
+    idNumber: "1190123890",
+    address: "Carrera 43A #5-25",
+    neighborhood: "El Poblado",
     phone: "318 999 0011",
   },
   {
@@ -256,7 +318,10 @@ const SEED_USERS = [
     email: "jorge.parra@outlook.com",
     password: "Cliente20!",
     role: "cliente",
-    address: "Avenida Las Vegas #56-20, Guayabal",
+    docType: "CC",
+    idNumber: "1201234901",
+    address: "Avenida Las Vegas #56-20",
+    neighborhood: "Guayabal",
     phone: "319 000 1122",
   },
 ];
@@ -286,16 +351,16 @@ function readUsers() {
       existing.map((u) => [u.email.toLowerCase(), u])
     );
 
-    // Fusionar: sobrescribir o agregar seed users con datos actualizados
+    // Fusionar: agregar los seed users que falten y completar campos nuevos
+    // sin sobreescribir los datos que el usuario ya haya guardado o editado.
     let hasChanges = false;
     for (const seed of SEED_USERS) {
       const key = seed.email.toLowerCase();
       if (existingByEmail.has(key)) {
-        // Actualizar campos del seed user existente
         const prev = existingByEmail.get(key);
-        const updated = { ...seed, id: prev.id };
-        if (JSON.stringify(prev) !== JSON.stringify(updated)) {
-          existingByEmail.set(key, updated);
+        const mergedUser = { ...seed, ...prev, id: prev.id };
+        if (JSON.stringify(prev) !== JSON.stringify(mergedUser)) {
+          existingByEmail.set(key, mergedUser);
           hasChanges = true;
         }
       } else {
@@ -357,6 +422,28 @@ function readSession() {
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
+  }
+}
+
+/**
+ * Persiste la sesión actual en el mismo almacenamiento donde fue creada
+ * (localStorage si "recordar sesión" estaba activo, sessionStorage si no).
+ * Se usa al actualizar el perfil para que los cambios sobrevivan a un
+ * recargado de la página.
+ */
+function writeSession(sessionUser) {
+  try {
+    const storage = localStorage.getItem(SESSION_KEY)
+      ? localStorage
+      : sessionStorage.getItem(SESSION_KEY)
+      ? sessionStorage
+      : null;
+
+    if (storage) {
+      storage.setItem(SESSION_KEY, JSON.stringify(sessionUser));
+    }
+  } catch {
+    // Sin almacenamiento disponible: la sesión vive solo en memoria.
   }
 }
 
@@ -624,6 +711,11 @@ export function AuthProvider({ children }) {
         fullName: found.fullName,
         email: found.email,
         role: found.role,
+        phone: found.phone ?? "",
+        address: found.address ?? "",
+        neighborhood: found.neighborhood ?? "",
+        docType: found.docType ?? "",
+        idNumber: found.idNumber ?? "",
       };
 
       setUser(sessionUser);
@@ -655,10 +747,15 @@ export function AuthProvider({ children }) {
 
   const register = useCallback(
     async ({
-      fullName,
+      docType,
+      idNumber,
+      nombres,
+      apellidos,
       email,
-      password,
+      phone,
       address,
+      neighborhood,
+      password,
     }) => {
       await delay();
 
@@ -684,14 +781,31 @@ export function AuthProvider({ children }) {
         throw err;
       }
 
+      const nombresLimpios =
+        nombres?.trim() || "";
+
+      const apellidosLimpios =
+        apellidos?.trim() || "";
+
       const newUser = {
         id: `u-${Date.now()}`,
-        fullName: fullName.trim(),
+        docType: docType || "",
+        idNumber:
+          idNumber?.trim() || "",
+        nombres: nombresLimpios,
+        apellidos: apellidosLimpios,
+        // El resto del sistema (sesión, checkout, panel) sigue leyendo fullName.
+        fullName:
+          `${nombresLimpios} ${apellidosLimpios}`.trim(),
         email: normalizedEmail,
         password,
         role: "cliente",
+        phone:
+          phone?.trim() || "",
         address:
           address?.trim() || "",
+        neighborhood:
+          neighborhood?.trim() || "",
         active: true,
         createdAt:
           new Date().toISOString(),
@@ -862,6 +976,46 @@ export function AuthProvider({ children }) {
   );
 
   // ---------------------------------------------------------------------------
+  // ACTUALIZAR USUARIO
+  // ---------------------------------------------------------------------------
+
+  const updateUser = useCallback(
+    (updates) => {
+      const users = readUsers();
+
+      const idx = users.findIndex((u) => u.id === updates.id);
+
+      if (idx === -1) {
+        const err = new Error("Usuario no encontrado.");
+        err.code = "USER_NOT_FOUND";
+        throw err;
+      }
+
+      users[idx] = {
+        ...users[idx],
+        ...updates,
+      };
+
+      writeUsers(users);
+
+      // Actualizar el estado de sesión si es el usuario actual
+      if (user && user.id === updates.id) {
+        const nextUser = { ...user, ...updates };
+        setUser(nextUser);
+        writeSession(nextUser);
+      }
+
+      logAccess({
+        email: users[idx].email,
+        result: "actualizacion_perfil",
+      });
+
+      return users[idx];
+    },
+    [user, setUser]
+  );
+
+  // ---------------------------------------------------------------------------
   // CONTEXT VALUE
   // ---------------------------------------------------------------------------
 
@@ -880,6 +1034,7 @@ export function AuthProvider({ children }) {
       requestPasswordReset,
       changePassword,
       logout,
+      updateUser,
     }),
     [
       user,
@@ -888,6 +1043,7 @@ export function AuthProvider({ children }) {
       requestPasswordReset,
       changePassword,
       logout,
+      updateUser,
     ]
   );
 

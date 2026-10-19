@@ -39,29 +39,26 @@ const ProfileLayout = () => {
       gap: '30px',
       fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif',
       backgroundColor: colors.pageBg,
-      minHeight: '80vh',
+      minHeight: 'calc(100vh - 120px)',
+      width: '100%',
+      boxSizing: 'border-box',
       transition: 'background-color 0.3s ease'
     }}>
       {/* Menú Lateral Fijo en Modo Claro */}
-      <aside className="profile-sidebar" style={{ background: colors.sidebarBg }}>
+      <aside className="profile-sidebar" style={{ background: colors.sidebarBg, flexShrink: 0 }}>
         <h3 className="profile-sidebar-title">
           Mi Cuenta Chocoberry
         </h3>
         <nav>
           <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <li>
-              <NavLink to="/users/listdomicilios" className={({ isActive }) => `profile-nav-link${isActive ? ' active' : ''}`}>
-                Bienvenida
+            <NavLink to="/users/orders" className={({ isActive }) => `profile-nav-link${isActive ? ' active' : ''}`}>
+                Mis Pedidos
               </NavLink>
             </li>
             <li>
               <NavLink to="/users/informacion-personal" className={({ isActive }) => `profile-nav-link${isActive ? ' active' : ''}`}>
-                Información Personal
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/users/orders" className={({ isActive }) => `profile-nav-link${isActive ? ' active' : ''}`}>
-                Mis Pedidos
+                Mis datos
               </NavLink>
             </li>
             <li className="profile-nav-divider">
@@ -79,15 +76,17 @@ const ProfileLayout = () => {
       {/* Cuadro Grande Central Dinámico */}
       <main style={{
         flex: 1,
+        minHeight: '600px',
         background: colors.mainBg,
         borderRadius: '16px',
         boxShadow: isDark ? '0 8px 30px rgba(0, 0, 0, 0.5)' : '0 8px 30px rgba(230, 57, 70, 0.08)',
         padding: '35px',
         border: isDark ? '1px solid #2d1e22' : `1px solid ${colors.sidebarBorder}`,
         color: colors.mainText,
-        transition: 'background 0.3s ease, color 0.3s ease, border-color 0.3s ease'
+        transition: 'background 0.3s ease, color 0.3s ease, border-color 0.3s ease',
+        display: 'flex',
+        flexDirection: 'column',
       }}>
-        {/* AQUÍ ESTÁ EL TRUCO: Pasamos { theme } a través del context */}
         <Outlet context={{ theme }} />
       </main>
     </div>

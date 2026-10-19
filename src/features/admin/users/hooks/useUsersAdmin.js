@@ -119,12 +119,18 @@ export default function useUsersAdmin() {
   const createUser =
     useCallback(
       async ({
+        docType = "",
+        idNumber = "",
+        nombres = "",
+        apellidos = "",
         fullName,
         email,
         password,
         role,
         active = true,
         address = "",
+        neighborhood = "",
+        phone = "",
       }) => {
         setLoading(true);
 
@@ -158,12 +164,24 @@ export default function useUsersAdmin() {
             throw err;
           }
 
+          const finalFullName = (
+            fullName ||
+            [nombres, apellidos].filter(Boolean).join(" ")
+          ).trim();
+
           // Crear usuario
           const newUser = {
             id: `u-${Date.now()}`,
 
-            fullName:
-              fullName.trim(),
+            fullName: finalFullName,
+
+            nombres: nombres.trim(),
+
+            apellidos: apellidos.trim(),
+
+            docType,
+
+            idNumber: idNumber.trim(),
 
             email:
               normalizedEmail,
@@ -174,6 +192,12 @@ export default function useUsersAdmin() {
 
             address:
               address?.trim() || "",
+
+            neighborhood:
+              neighborhood?.trim() || "",
+
+            phone:
+              phone?.trim() || "",
 
             active,
 
@@ -210,12 +234,18 @@ export default function useUsersAdmin() {
       async (
         id,
         {
+          docType = "",
+          idNumber = "",
+          nombres = "",
+          apellidos = "",
           fullName,
           email,
           password,
           role,
           active,
           address = "",
+          neighborhood = "",
+          phone = "",
         }
       ) => {
         setLoading(true);
@@ -259,8 +289,18 @@ export default function useUsersAdmin() {
                   ? {
                       ...user,
 
-                      fullName:
-                        fullName.trim(),
+                      fullName: (
+                        fullName ||
+                        [nombres, apellidos].filter(Boolean).join(" ")
+                      ).trim(),
+
+                      nombres: nombres.trim(),
+
+                      apellidos: apellidos.trim(),
+
+                      docType,
+
+                      idNumber: idNumber.trim(),
 
                       email:
                         normalizedEmail,
@@ -271,6 +311,14 @@ export default function useUsersAdmin() {
 
                       address:
                         address?.trim() ||
+                        "",
+
+                      neighborhood:
+                        neighborhood?.trim() ||
+                        "",
+
+                      phone:
+                        phone?.trim() ||
                         "",
 
                       /*

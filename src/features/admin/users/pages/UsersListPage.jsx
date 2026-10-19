@@ -18,15 +18,6 @@ const STATUS_OPTIONS = [
   { value: "inactivo", label: "Inactivo" },
 ];
 
-function formatDate(iso) {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("es-CO", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
 export default function UsersListPage() {
   const { users, createUser, updateUser, setActive, removeUser } = useUsersAdmin();
   const { role: currentRole } = useAuth();
@@ -131,6 +122,7 @@ export default function UsersListPage() {
   }
 
   const columns = [
+    { key: "idNumber", label: "N. Identificación", render: (row) => row.idNumber || "—" },
     { key: "fullName", label: "Usuario" },
     { key: "email", label: "Correo" },
     { key: "phone", label: "Teléfono", render: (row) => row.phone || "—" },
@@ -152,11 +144,6 @@ export default function UsersListPage() {
           />
         </div>
       ),
-    },
-    {
-      key: "createdAt",
-      label: "Creación",
-      render: (row) => formatDate(row.createdAt),
     },
     {
       key: "actions",

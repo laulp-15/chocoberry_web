@@ -14,11 +14,13 @@ import "./FormFields.css";
  * @param {string} [props.placeholder]
  * @param {string} [props.error]
  * @param {boolean} [props.required]
+ * @param {() => void} [props.onBlur] - se dispara al salir del campo.
  */
 export default function FormSelect({
   label,
   value,
   onChange,
+  onBlur,
   options,
   placeholder = "Selecciona una opción",
   error,
@@ -37,6 +39,7 @@ export default function FormSelect({
         displayEmpty
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
       >
         <MenuItem value="">
           <span className="form-select-placeholder">{placeholder}</span>

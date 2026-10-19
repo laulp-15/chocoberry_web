@@ -24,7 +24,7 @@ export default function AppRoutes() {
   return (
     <Routes>
       <Route element={<ScrollToTopWrapper />}>
-        {/* TIENDA PÚBLICA Y PERFIL PROTEGIDO */}
+        {/* TIENDA PÚBLICA + PERFIL (Navbar siempre, Footer condicional en StoreLayout) */}
         <Route element={<StoreLayout />}>
           <Route path="/" element={<Home />} />
           <Route path="/home" element={<Home />} />

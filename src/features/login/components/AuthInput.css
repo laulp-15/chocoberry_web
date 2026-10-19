@@ -273,6 +273,31 @@
 }
 
 /* ================================
+   VARIANTE SELECT
+   ================================ */
+
+.auth-field-input.MuiOutlinedInput-root .MuiSelect-select {
+  display: flex;
+  align-items: center;
+
+  padding: 12.5px 14px;
+
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  line-height: 1.4;
+
+  color: var(--auth-text);
+}
+
+.auth-field-input.MuiOutlinedInput-root .MuiSelect-icon {
+  color: var(--auth-text-muted);
+}
+
+.auth-select-placeholder {
+  color: var(--auth-text-muted);
+}
+
+/* ================================
    REDUCED MOTION
    ================================ */
 

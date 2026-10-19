@@ -28,6 +28,22 @@
   margin-bottom: 0;
 }
 
+/* Fila de dos columnas para campos que van juntos (ej. dirección y barrio) */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.form-row .form-field {
+  margin-bottom: 0;
+}
+@media (max-width: 576px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
 .form-label {
   display: block;
   font-size: 11px;
