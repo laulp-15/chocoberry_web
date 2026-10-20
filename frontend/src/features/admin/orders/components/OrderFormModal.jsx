@@ -1,5 +1,5 @@
 // src/features/admin/orders/components/OrderFormModal.jsx
-import React from "react";
+import { useState } from "react";
 import Modal from "../../../../shared/components/Modal";
 import FormTextField from "../../../../shared/components/FormTextField";
 import FormSelect from "../../../../shared/components/FormSelect";
@@ -9,45 +9,83 @@ import FileDropzone from "../../../../shared/components/FileDropZone";
 import useFormValidation from "../../../../shared/hooks/useFormValidation";
 import OrderProductLineForm from "./OrderProductLineForm";
 import OrderProductLineItem from "./OrderProductLineItem";
-import { MOCK_CLIENTS } from "../data/mockClients";
-import { ORDER_STATUSES } from "../data/orderStatus";
-import { MUNICIPIOS, getShippingCost } from "../../../cart/data/Shipping";
+import { getStatusMeta } from "../data/orderStatus";
+import { getProofUrl } from "../utils/orderDisplay";
 import { formatPrice } from "../../../../shared/utils/formatPrice";
+import { IMAGE_ACCEPT } from "../../../../shared/utils/fileValidation";
 import { validatePhone } from "../../../login/utils/validators";
 import "./OrderFormModal.css";
 
-// Listas para buscar al cliente: por nombre y por número de identificación.
-// TODO: reemplazar por el módulo real de Clientes cuando exista.
-const CLIENT_NAMES = MOCK_CLIENTS.map((c) => c.nombre);
-const CLIENT_ID_NUMBERS = MOCK_CLIENTS.map((c) => c.idNumber);
+const MAX_LINEAS = 50;
 
 const EMPTY_ORDER = {
+  clienteId: "",
   cliente: "",
   clienteIdentificacion: "",
   fecha: "",
   direccion: "",
   barrio: "",
-  municipio: "",
+  municipioId: "",
   recipientName: "",
   recipientPhone: "",
   instrucciones: "",
   comprobante: null,
   cardMessage: "",
-  products: [],
-  estado: "pendiente",
+  lineas: [],
 };
+
+/** Convierte un pedido del API al shape plano del formulario. */
+function toFormValues(order) {
+  if (!order) return EMPTY_ORDER;
+
+  return {
+    clienteId: order.clienteId != null ? String(order.clienteId) : "",
+    cliente: order.cliente ?? "",
+    clienteIdentificacion: order.clienteIdentificacion ?? "",
+    fecha: order.fechaEntrega ?? "",
+    direccion: order.direccion ?? "",
+    barrio: order.barrio ?? "",
+    municipioId:
+      order.municipioId != null ? String(order.municipioId) : "",
+    recipientName: order.nombreReceptor ?? order.recipientName ?? "",
+    recipientPhone: order.telefonoReceptor ?? order.recipientPhone ?? "",
+    instrucciones: order.instruccionesEntrega ?? order.instrucciones ?? "",
+    comprobante: null,
+    cardMessage: order.mensajeTarjeta ?? order.cardMessage ?? "",
+    lineas: Array.isArray(order.lineas) ? order.lineas : [],
+  };
+}
 
 /**
  * Modal de Crear/Editar pedido en una sola vista continua.
+ *
+ * Crear: exige cliente registrado, comprobante y al menos una línea.
+ * Editar: solo cabecera (el backend no permite cambiar líneas ni comprobante).
  *
  * @param {object} props
  * @param {boolean} props.open
  * @param {() => void} props.onClose
  * @param {object} [props.initialData]
- * @param {(order: object) => void} props.onSave
+ * @param {(datos: object) => Promise<void>} props.onSubmit
+ * @param {boolean} [props.submitting]
+ * @param {object} props.options
+ * @param {boolean} [props.optionsLoading]
+ * @param {string} [props.optionsError]
+ * @param {() => void} [props.onRetryOptions]
  */
-export default function OrderFormModal({ open, onClose, initialData, onSave }) {
+export default function OrderFormModal({
+  open,
+  onClose,
+  initialData,
+  onSubmit,
+  submitting = false,
+  options,
+  optionsLoading = false,
+  optionsError = "",
+  onRetryOptions,
+}) {
   const isEditing = Boolean(initialData);
+  const [formError, setFormError] = useState("");
 
   const {
     values: order,
@@ -56,119 +94,327 @@ export default function OrderFormModal({ open, onClose, initialData, onSave }) {
     setMany,
     handleBlur,
     validateAll,
-    reset,
   } = useFormValidation({
-    initialValues: EMPTY_ORDER,
+    initialValues: toFormValues(initialData),
     validators: {
-      cliente: (o) => (o.cliente.trim() ? '' : 'El cliente es obligatorio.'),
-      clienteIdentificacion: (o) =>
-        o.clienteIdentificacion.trim() ? '' : 'El número de identificación es obligatorio.',
-      fecha: (o) => (o.fecha ? '' : 'La fecha de entrega es obligatoria.'),
-      direccion: (o) => (o.direccion.trim() ? '' : 'La dirección es obligatoria.'),
-      barrio: (o) => (o.barrio.trim() ? '' : 'El barrio es obligatorio.'),
-      municipio: (o) => (o.municipio ? '' : 'El municipio es obligatorio.'),
-      recipientName: (o) => (o.recipientName.trim() ? '' : 'El nombre de quien recibe es obligatorio.'),
+      clienteId: (o) =>
+        isEditing || o.clienteId ? "" : "Selecciona un cliente registrado.",
+      fecha: (o) => (o.fecha ? "" : "La fecha de entrega es obligatoria."),
+      direccion: (o) => {
+        const valor = o.direccion.trim();
+        if (!valor) return "La dirección es obligatoria.";
+        if (valor.length < 5) return "La dirección es demasiado corta.";
+        if (valor.length > 200) {
+          return "La dirección no puede superar los 200 caracteres.";
+        }
+        return "";
+      },
+      barrio: (o) => {
+        const valor = o.barrio.trim();
+        if (!valor) return "El barrio es obligatorio.";
+        if (valor.length < 2) return "El barrio es demasiado corto.";
+        if (valor.length > 100) {
+          return "El barrio no puede superar los 100 caracteres.";
+        }
+        return "";
+      },
+      municipioId: (o) => (o.municipioId ? "" : "El municipio es obligatorio."),
+      recipientName: (o) => {
+        const valor = o.recipientName.trim();
+        if (!valor) return "El nombre de quien recibe es obligatorio.";
+        if (valor.length < 2) return "El nombre es demasiado corto.";
+        if (valor.length > 100) {
+          return "El nombre no puede superar los 100 caracteres.";
+        }
+        return "";
+      },
       recipientPhone: (o) =>
-        o.recipientPhone.trim() ? validatePhone(o.recipientPhone) : 'El teléfono de quien recibe es obligatorio.',
-      estado: (o) => (o.estado ? '' : 'Selecciona un estado.'),
-      comprobante: (o) => (o.comprobante ? '' : 'Debes adjuntar el comprobante de pago.'),
-      products: (o) => (o.products.length > 0 ? '' : 'Agrega al menos un producto.'),
+        o.recipientPhone.trim()
+          ? validatePhone(o.recipientPhone)
+          : "El teléfono de quien recibe es obligatorio.",
+      comprobante: (o) =>
+        isEditing || o.comprobante
+          ? ""
+          : "Debes adjuntar el comprobante de pago.",
+      instrucciones: (o) =>
+        o.instrucciones.trim().length > 255
+          ? "Las instrucciones no pueden superar los 255 caracteres."
+          : "",
+      cardMessage: (o) =>
+        o.cardMessage.trim().length > 255
+          ? "El mensaje de la tarjeta no puede superar los 255 caracteres."
+          : "",
+      lineas: (o) => {
+        if (isEditing) return "";
+        if (o.lineas.length === 0) return "Agrega al menos un producto.";
+        if (o.lineas.length > MAX_LINEAS) {
+          return `Puedes agregar hasta ${MAX_LINEAS} productos por pedido.`;
+        }
+        return "";
+      },
     },
-    immediate: ['fecha', 'municipio', 'estado', 'comprobante', 'products'],
+    immediate: [
+      "clienteId",
+      "fecha",
+      "municipioId",
+      "comprobante",
+      "lineas",
+    ],
   });
 
-  // Sincroniza el formulario cuando cambia el pedido a editar (o se limpia al crear).
-  React.useEffect(() => {
-    reset(initialData ?? EMPTY_ORDER);
-  }, [initialData, open]);
+  const clientes = options?.clientes ?? [];
+  const municipios = options?.municipios ?? [];
+  const clienteNames = clientes.map((cliente) => cliente.fullName);
+  const clienteDocs = clientes.map((cliente) => cliente.idNumber);
 
-  const update = (field, value) => setField(field, value);
-
-  // Al elegir un cliente (por nombre o por identificación) se rellenan sus
-  // datos. Es una selección explícita, así que sobrescribe lo que hubiera.
   const applyClient = (client) => {
     if (!client) return;
     setMany({
-      cliente: client.nombre,
+      clienteId: String(client.id),
+      cliente: client.fullName,
       clienteIdentificacion: client.idNumber,
-      direccion: client.direccion,
-      barrio: client.barrio,
-      municipio: client.municipio,
-      recipientName: client.nombre,
-      recipientPhone: client.telefono,
+      direccion: client.address ?? "",
+      barrio: client.neighborhood ?? "",
+      recipientName: client.fullName ?? "",
+      recipientPhone: client.phone ?? "",
     });
   };
 
-  const selectClientByName = (nombre) =>
-    applyClient(MOCK_CLIENTS.find((c) => c.nombre === nombre));
-  const selectClientById = (idNumber) =>
-    applyClient(MOCK_CLIENTS.find((c) => c.idNumber === idNumber));
+  const handleClientNameChange = (value) => {
+    const match = clientes.find((cliente) => cliente.fullName === value);
+    if (match) {
+      applyClient(match);
+      return;
+    }
+    setMany({ cliente: value, clienteId: "" });
+  };
 
-  const addLine = (line) => setField('products', [...order.products, line]);
-  const removeLine = (lineId) =>
-    setField('products', order.products.filter((l) => l.lineId !== lineId));
+  const handleClientDocChange = (value) => {
+    const match = clientes.find((cliente) => cliente.idNumber === value);
+    if (match) {
+      applyClient(match);
+      return;
+    }
+    setMany({ clienteIdentificacion: value, clienteId: "" });
+  };
 
-  const shippingCost = getShippingCost(order.municipio);
-  const subtotal = order.products.reduce((sum, l) => sum + l.unitPrice * l.units, 0);
+  const selectedMunicipio = municipios.find(
+    (municipio) => String(municipio.id) === String(order.municipioId)
+  );
+  const shippingCost =
+    selectedMunicipio?.costoEnvio ??
+    (isEditing ? initialData?.shippingCost ?? 0 : 0);
+
+  const municipioOptions = municipios.map((municipio) => ({
+    value: String(municipio.id),
+    label: `${municipio.nombre} — ${formatPrice(municipio.costoEnvio)}`,
+  }));
+
+  // Un pedido viejo puede apuntar a un municipio que ya fue desactivado.
+  if (
+    isEditing &&
+    initialData?.municipioId &&
+    !municipios.some(
+      (municipio) => String(municipio.id) === String(initialData.municipioId)
+    )
+  ) {
+    municipioOptions.unshift({
+      value: String(initialData.municipioId),
+      label: `${initialData.municipio} — ${formatPrice(
+        initialData.shippingCost ?? 0
+      )}`,
+    });
+  }
+
+  const lineas = order.lineas ?? [];
+  const subtotal = lineas.reduce(
+    (suma, linea) =>
+      suma + Number(linea.precioUnitario) * Number(linea.unidades),
+    0
+  );
   const total = subtotal + shippingCost;
 
-  const handleSave = () => {
-    if (!validateAll()) return;
-    onSave({ ...order, subtotal, shippingCost, total });
+  const addLine = (linea) => {
+    if (lineas.length >= MAX_LINEAS) {
+      setFormError(`Puedes agregar hasta ${MAX_LINEAS} productos por pedido.`);
+      return;
+    }
+    setFormError("");
+    setField("lineas", [...lineas, linea]);
   };
+  const removeLine = (lineId) =>
+    setField(
+      "lineas",
+      lineas.filter((linea) => String(linea.lineId ?? linea.id) !== String(lineId))
+    );
+
+  const handleClose = () => {
+    setFormError("");
+    onClose();
+  };
+
+  const handleSave = async () => {
+    if (submitting) return;
+
+    setFormError("");
+    if (!validateAll()) return;
+
+    try {
+      if (isEditing) {
+        await onSubmit({
+          fechaEntrega: order.fecha,
+          direccion: order.direccion.trim(),
+          barrio: order.barrio.trim(),
+          idMunicipio: Number(order.municipioId),
+          nombreReceptor: order.recipientName.trim(),
+          telefonoReceptor: order.recipientPhone.trim(),
+          instruccionesEntrega: order.instrucciones.trim(),
+          mensajeTarjeta: order.cardMessage.trim(),
+        });
+      } else {
+        await onSubmit({
+          idUsuario: Number(order.clienteId),
+          comprobante: order.comprobante,
+          fechaEntrega: order.fecha,
+          direccion: order.direccion.trim(),
+          barrio: order.barrio.trim(),
+          idMunicipio: Number(order.municipioId),
+          nombreReceptor: order.recipientName.trim(),
+          telefonoReceptor: order.recipientPhone.trim(),
+          instruccionesEntrega: order.instrucciones.trim(),
+          mensajeTarjeta: order.cardMessage.trim(),
+          lineas,
+        });
+      }
+    } catch (err) {
+      setFormError(err?.message || "No se pudo guardar el pedido.");
+    }
+  };
+
+  const currentProofUrl = isEditing
+    ? getProofUrl(initialData?.comprobante)
+    : null;
 
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       title={isEditing ? "Editar pedido" : "Crear pedido"}
       maxWidth="md"
       footer={
         <div className="order-form-footer">
           <div className="order-form-totals">
-            <span>Subtotal: <strong>{formatPrice(subtotal)}</strong></span>
-            <span>Envío: <strong>{formatPrice(shippingCost)}</strong></span>
-            <span className="order-form-total">Total: {formatPrice(total)}</span>
+            <span>
+              Subtotal: <strong>{formatPrice(subtotal)}</strong>
+            </span>
+            <span>
+              Envío: <strong>{formatPrice(shippingCost)}</strong>
+            </span>
+            <span className="order-form-total">
+              Total: {formatPrice(total)}
+            </span>
           </div>
           <div className="order-form-actions">
-            <button type="button" className="btn-cancel" onClick={onClose}>
+            <button type="button" className="btn-cancel" onClick={handleClose}>
               Cancelar
             </button>
-            <button type="button" className="btn-save" onClick={handleSave}>
-              Guardar
+            <button
+              type="button"
+              className="btn-save"
+              onClick={handleSave}
+              disabled={
+                submitting || optionsLoading || Boolean(optionsError)
+              }
+            >
+              {submitting ? "Guardando..." : "Guardar"}
             </button>
           </div>
         </div>
       }
     >
       <div className="order-form-continuous-container">
+        {optionsError && (
+          <div className="form-error form-error-block" role="alert">
+            <i className="fa-solid fa-triangle-exclamation" /> {optionsError}
+            {onRetryOptions && (
+              <button
+                type="button"
+                className="order-form-retry"
+                onClick={onRetryOptions}
+              >
+                Reintentar
+              </button>
+            )}
+          </div>
+        )}
+
+        {optionsLoading && (
+          <div className="order-form-info" role="status">
+            <i className="fa-solid fa-spinner fa-spin" /> Cargando clientes,
+            municipios y productos...
+          </div>
+        )}
+
+        {formError && (
+          <div className="form-error form-error-block" role="alert">
+            {formError}
+          </div>
+        )}
+
         {/* SECCIÓN 1: DATOS DEL PEDIDO */}
         <div className="order-form-block">
           <h3 className="order-block-title">1. Datos del pedido</h3>
-          
+
           <div className="order-form-row">
-            <FormAutocomplete
-              label="N. identificación"
-              required
-              value={order.clienteIdentificacion}
-              onChange={(v) => update("clienteIdentificacion", v)}
-              onSelect={selectClientById}
-              onBlur={() => handleBlur("clienteIdentificacion")}
-              options={CLIENT_ID_NUMBERS}
-              placeholder="Buscar por documento"
-              error={errors.clienteIdentificacion}
-            />
-            <FormAutocomplete
-              label="Cliente"
-              required
-              value={order.cliente}
-              onChange={(v) => update("cliente", v)}
-              onSelect={selectClientByName}
-              onBlur={() => handleBlur("cliente")}
-              options={CLIENT_NAMES}
-              placeholder="Buscar por nombre"
-              error={errors.cliente}
-            />
+            {isEditing ? (
+              <>
+                <FormTextField
+                  label="N. identificación"
+                  value={order.clienteIdentificacion}
+                  readOnly
+                />
+                <FormTextField
+                  label="Cliente"
+                  value={order.cliente}
+                  readOnly
+                />
+              </>
+            ) : (
+              <>
+                <FormAutocomplete
+                  label="N. identificación"
+                  required
+                  value={order.clienteIdentificacion}
+                  onChange={handleClientDocChange}
+                  onSelect={(value) => {
+                    const match = clientes.find(
+                      (cliente) => cliente.idNumber === value
+                    );
+                    if (match) applyClient(match);
+                  }}
+                  onBlur={() => handleBlur("clienteId")}
+                  options={clienteDocs}
+                  placeholder="Buscar por documento"
+                  error={errors.clienteId}
+                />
+                <FormAutocomplete
+                  label="Cliente"
+                  required
+                  value={order.cliente}
+                  onChange={handleClientNameChange}
+                  onSelect={(value) => {
+                    const match = clientes.find(
+                      (cliente) => cliente.fullName === value
+                    );
+                    if (match) applyClient(match);
+                  }}
+                  onBlur={() => handleBlur("clienteId")}
+                  options={clienteNames}
+                  placeholder="Buscar por nombre"
+                  error={errors.clienteId}
+                />
+              </>
+            )}
           </div>
 
           <div className="order-form-row">
@@ -176,18 +422,19 @@ export default function OrderFormModal({ open, onClose, initialData, onSave }) {
               label="Fecha de entrega"
               required
               value={order.fecha}
-              onChange={(v) => update("fecha", v)}
+              onChange={(v) => setField("fecha", v)}
               error={errors.fecha}
-              minDate={addDaysISO(1)}
-              maxDate={addDaysISO(15)}
+              minDate={isEditing ? undefined : addDaysISO(1)}
+              maxDate={isEditing ? undefined : addDaysISO(15)}
             />
-            <FormSelect
+            <FormTextField
               label="Estado del pedido"
-              required
-              value={order.estado}
-              onChange={(v) => update("estado", v)}
-              options={ORDER_STATUSES}
-              error={errors.estado}
+              value={
+                isEditing
+                  ? getStatusMeta(initialData.estado).label
+                  : "Pendiente"
+              }
+              readOnly
             />
           </div>
 
@@ -196,7 +443,7 @@ export default function OrderFormModal({ open, onClose, initialData, onSave }) {
               label="Dirección"
               required
               value={order.direccion}
-              onChange={(v) => update("direccion", v)}
+              onChange={(v) => setField("direccion", v)}
               onBlur={() => handleBlur("direccion")}
               placeholder="Ej. Calle 48 # 72-18"
               error={errors.direccion}
@@ -205,7 +452,7 @@ export default function OrderFormModal({ open, onClose, initialData, onSave }) {
               label="Barrio"
               required
               value={order.barrio}
-              onChange={(v) => update("barrio", v)}
+              onChange={(v) => setField("barrio", v)}
               onBlur={() => handleBlur("barrio")}
               placeholder="Ej. El Poblado"
               error={errors.barrio}
@@ -217,7 +464,7 @@ export default function OrderFormModal({ open, onClose, initialData, onSave }) {
               label="Quién recibe la entrega"
               required
               value={order.recipientName}
-              onChange={(v) => update("recipientName", v)}
+              onChange={(v) => setField("recipientName", v)}
               onBlur={() => handleBlur("recipientName")}
               placeholder="Ej. Mariana Valenzuela"
               error={errors.recipientName}
@@ -226,7 +473,7 @@ export default function OrderFormModal({ open, onClose, initialData, onSave }) {
               label="Teléfono"
               required
               value={order.recipientPhone}
-              onChange={(v) => update("recipientPhone", v)}
+              onChange={(v) => setField("recipientPhone", v)}
               onBlur={() => handleBlur("recipientPhone")}
               placeholder="Ej. 300 123 4567"
               error={errors.recipientPhone}
@@ -237,11 +484,12 @@ export default function OrderFormModal({ open, onClose, initialData, onSave }) {
             <FormSelect
               label="Municipio"
               required
-              value={order.municipio}
-              onChange={(v) => update("municipio", v)}
-              options={MUNICIPIOS}
+              value={order.municipioId}
+              onChange={(v) => setField("municipioId", v)}
+              onBlur={() => handleBlur("municipioId")}
+              options={municipioOptions}
               placeholder="Selecciona un municipio"
-              error={errors.municipio}
+              error={errors.municipioId}
             />
             <FormTextField
               label="Costo domicilio"
@@ -254,55 +502,97 @@ export default function OrderFormModal({ open, onClose, initialData, onSave }) {
           <FormTextField
             label="Instrucciones de entrega"
             value={order.instrucciones}
-            onChange={(v) => update("instrucciones", v)}
+            onChange={(v) => setField("instrucciones", v)}
+            onBlur={() => handleBlur("instrucciones")}
             multiline
             minRows={2}
             placeholder="Instrucciones especiales para el repartidor..."
+            error={errors.instrucciones}
           />
         </div>
 
         {/* SECCIÓN 2: PRODUCTOS Y TARJETA */}
         <div className="order-form-block">
           <h3 className="order-block-title">
-            2. Productos {order.products.length > 0 && `(${order.products.length})`}
+            2. Productos {lineas.length > 0 && `(${lineas.length})`}
           </h3>
 
-          <OrderProductLineForm onAdd={addLine} />
+          {isEditing ? (
+            <div className="order-form-note">
+              Los productos y sus precios no se editan desde este formulario.
+              Si necesitas cambiarlos, crea un pedido nuevo.
+            </div>
+          ) : (
+            <OrderProductLineForm onAdd={addLine} options={options} />
+          )}
 
-          {order.products.length > 0 ? (
+          {lineas.length > 0 ? (
             <div className="order-lines-list">
-              {order.products.map((line) => (
-                <OrderProductLineItem key={line.lineId} line={line} onRemove={removeLine} />
+              {lineas.map((linea) => (
+                <OrderProductLineItem
+                  key={linea.lineId ?? linea.id}
+                  line={linea}
+                  onRemove={isEditing ? undefined : removeLine}
+                />
               ))}
             </div>
           ) : (
-            errors.products && <div className="form-error">{errors.products}</div>
+            errors.lineas && <div className="form-error">{errors.lineas}</div>
           )}
 
           <FormTextField
             label="Mensaje para la tarjeta del pedido"
             value={order.cardMessage}
-            onChange={(v) => update("cardMessage", v)}
+            onChange={(v) => setField("cardMessage", v)}
+            onBlur={() => handleBlur("cardMessage")}
             multiline
             minRows={2}
             placeholder="Una sola tarjeta para todo el pedido, no por producto..."
+            error={errors.cardMessage}
           />
         </div>
 
         {/* SECCIÓN 3: PAGO Y COMPROBANTE */}
         <div className="order-form-block">
-          <h3 className="order-block-title">3. Pago y Comprobante</h3>
+          <h3 className="order-block-title">3. Pago y comprobante</h3>
 
-          <div className="form-field">
-            <label className="form-label">Comprobante de pago *</label>
-            <FileDropzone
-              file={order.comprobante}
-              onChange={(f) => update("comprobante", f)}
-              label="Subir comprobante de pago"
-              hint="PNG, JPG, WEBP o PDF (máx. 5 MB)"
-              error={errors.comprobante}
-            />
-          </div>
+          {isEditing ? (
+            <div className="order-form-current-proof">
+              <div className="form-label">Comprobante de pago</div>
+              {currentProofUrl ? (
+                <a
+                  href={currentProofUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="order-form-proof-link"
+                >
+                  <img
+                    src={currentProofUrl}
+                    alt="Comprobante de pago"
+                    className="order-form-proof-thumb"
+                  />
+                </a>
+              ) : (
+                <div className="order-form-note">Sin comprobante adjunto.</div>
+              )}
+              <div className="order-form-note">
+                El comprobante no se puede cambiar desde la edición.
+              </div>
+            </div>
+          ) : (
+            <div className="form-field">
+              <label className="form-label">Comprobante de pago *</label>
+              <FileDropzone
+                file={order.comprobante}
+                onChange={(file) => setField("comprobante", file)}
+                label="Subir comprobante de pago"
+                hint="PNG, JPG o WEBP (máx. 5 MB)"
+                accept={IMAGE_ACCEPT}
+                allowPdf={false}
+                error={errors.comprobante}
+              />
+            </div>
+          )}
         </div>
       </div>
     </Modal>

@@ -1,7 +1,8 @@
 // src/routes/catalogo.routes.js
 // Rutas PÚBLICAS de solo lectura para la tienda: NO exigen sesión.
 // Solo devuelven registros activos (estado = true). El panel de administración
-// sigue usando /categorias, /productos y /presentaciones (con permisos).
+// sigue usando /categorias, /productos, /presentaciones, /municipios y
+// /glaseados (con permisos).
 import { Router } from 'express';
 import * as catalogoController from '../controllers/catalogo.controller.js';
 import { validar } from '../middlewares/validate.js';
@@ -21,5 +22,10 @@ router.get(
 );
 
 router.get('/productos/:id', validar(idParamSchema, 'params'), catalogoController.obtenerProducto);
+
+// Datos maestros de apoyo al checkout (municipios y colores de glaseado).
+router.get('/municipios', catalogoController.listarMunicipios);
+
+router.get('/glaseados', catalogoController.listarGlaseados);
 
 export default router;

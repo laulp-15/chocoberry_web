@@ -1,5 +1,5 @@
 // src/features/admin/frostings/components/FrostingFormModal.jsx
-import React, { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Modal from '../../../../shared/components/Modal';
 import FormTextField from '../../../../shared/components/FormTextField';
 import StatusToggle from '../../../../shared/components/StatusToggle';
@@ -13,8 +13,11 @@ export default function FrostingFormModal({
   onSubmit,
   initialData,
   isReadOnly = false,
+  submitting = false,
 }) {
-  const { values, errors, setField, handleBlur, validateAll, reset } = useFormValidation({
+  const [formError, setFormError] = useState('');
+
+  const { values, errors, setField, handleBlur, setFieldError, validateAll, reset } = useFormValidation({
     initialValues: { nombre: '', hex: '', estado: 'Activo' },
     validators: {
       nombre: (v) => (v.nombre.trim() ? '' : 'El nombre es obligatorio.'),
@@ -31,16 +34,30 @@ export default function FrostingFormModal({
     });
   }, [initialData, isOpen]);
 
-  const handleSubmit = (e) => {
+  const handleClose = () => {
+    setFormError('');
+    onClose();
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setFormError('');
     if (!validateAll()) return;
 
-    onSubmit({
-      nombre: values.nombre.trim(),
-      hex: values.hex.trim().toUpperCase(),
-      estado: values.estado,
-    });
-    onClose();
+    try {
+      await onSubmit({
+        nombre: values.nombre.trim(),
+        hex: values.hex.trim().toUpperCase(),
+        estado: values.estado,
+      });
+      handleClose();
+    } catch (err) {
+      if (err?.code === 'NAME_TAKEN') {
+        setFieldError('nombre', err.message);
+      } else {
+        setFormError(err?.message || 'No fue posible guardar el glaseado.');
+      }
+    }
   };
 
   const isHexValid = HEX_PATTERN.test(values.hex.trim());
@@ -55,21 +72,26 @@ export default function FrostingFormModal({
   return (
     <Modal
       open={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title={title}
       maxWidth="sm"
       footer={
         !isReadOnly ? (
           <>
-            <button type="button" className="btn-cancel" onClick={onClose}>
+            <button type="button" className="btn-cancel" onClick={handleClose}>
               Cancelar
             </button>
-            <button type="submit" className="btn-save" onClick={handleSubmit}>
-              Guardar
+            <button
+              type="submit"
+              form="frosting-form"
+              className="btn-save"
+              disabled={submitting}
+            >
+              {submitting ? 'Guardando...' : 'Guardar'}
             </button>
           </>
         ) : (
-          <button type="button" className="btn-save" onClick={onClose}>
+          <button type="button" className="btn-save" onClick={handleClose}>
             Cerrar
           </button>
         )
@@ -100,7 +122,13 @@ export default function FrostingFormModal({
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit}>
+          <form id="frosting-form" onSubmit={handleSubmit}>
+            {formError && (
+              <div className="form-error form-error-block" role="alert">
+                {formError}
+              </div>
+            )}
+
             <FormTextField
               label="Nombre"
               value={values.nombre}

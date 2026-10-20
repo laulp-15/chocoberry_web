@@ -1,5 +1,5 @@
 // src/features/admin/municipalities/components/MunicipalityFormModal.jsx
-import React, { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Modal from '../../../../shared/components/Modal';
 import FormTextField from '../../../../shared/components/FormTextField';
 import StatusToggle from '../../../../shared/components/StatusToggle';
@@ -12,8 +12,11 @@ export default function MunicipalityFormModal({
   onSubmit,
   initialData,
   isReadOnly = false,
+  submitting = false,
 }) {
-  const { values, errors, setField, handleBlur, validateAll, reset } = useFormValidation({
+  const [formError, setFormError] = useState('');
+
+  const { values, errors, setField, handleBlur, setFieldError, validateAll, reset } = useFormValidation({
     initialValues: { nombre: '', costoEnvio: '', estado: 'Activo' },
     validators: {
       nombre: (v) => (v.nombre.trim() ? '' : 'El nombre es obligatorio.'),
@@ -38,16 +41,30 @@ export default function MunicipalityFormModal({
     });
   }, [initialData, isOpen]);
 
-  const handleSubmit = (e) => {
+  const handleClose = () => {
+    setFormError('');
+    onClose();
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setFormError('');
     if (!validateAll()) return;
 
-    onSubmit({
-      nombre: values.nombre.trim(),
-      costoEnvio: Number(values.costoEnvio),
-      estado: values.estado,
-    });
-    onClose();
+    try {
+      await onSubmit({
+        nombre: values.nombre.trim(),
+        costoEnvio: Number(values.costoEnvio),
+        estado: values.estado,
+      });
+      handleClose();
+    } catch (err) {
+      if (err?.code === 'NAME_TAKEN') {
+        setFieldError('nombre', err.message);
+      } else {
+        setFormError(err?.message || 'No fue posible guardar el municipio.');
+      }
+    }
   };
 
   const title = isReadOnly
@@ -59,21 +76,26 @@ export default function MunicipalityFormModal({
   return (
     <Modal
       open={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title={title}
       maxWidth="sm"
       footer={
         !isReadOnly ? (
           <>
-            <button type="button" className="btn-cancel" onClick={onClose}>
+            <button type="button" className="btn-cancel" onClick={handleClose}>
               Cancelar
             </button>
-            <button type="submit" className="btn-save" onClick={handleSubmit}>
-              Guardar
+            <button
+              type="submit"
+              form="municipality-form"
+              className="btn-save"
+              disabled={submitting}
+            >
+              {submitting ? 'Guardando...' : 'Guardar'}
             </button>
           </>
         ) : (
-          <button type="button" className="btn-save" onClick={onClose}>
+          <button type="button" className="btn-save" onClick={handleClose}>
             Cerrar
           </button>
         )
@@ -103,7 +125,13 @@ export default function MunicipalityFormModal({
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit}>
+          <form id="municipality-form" onSubmit={handleSubmit}>
+            {formError && (
+              <div className="form-error form-error-block" role="alert">
+                {formError}
+              </div>
+            )}
+
             <FormTextField
               label="Nombre"
               value={values.nombre}

@@ -1,5 +1,4 @@
 // src/features/admin/orders/components/RejectReasonModal.jsx
-import React, { useEffect } from "react";
 import Modal from "../../../../shared/components/Modal";
 import FormTextField from "../../../../shared/components/FormTextField";
 import useFormValidation from "../../../../shared/hooks/useFormValidation";
@@ -12,23 +11,39 @@ import "./RejectReasonModal.css";
  * @param {object} props
  * @param {boolean} props.open
  * @param {() => void} props.onClose
- * @param {(reason: string) => void} props.onSubmit
+ * @param {(reason: string) => Promise<void>} props.onSubmit
+ * @param {boolean} [props.submitting]
+ * @param {string} [props.formError]
  */
-export default function RejectReasonModal({ open, onClose, onSubmit }) {
-  const { values, errors, setField, handleBlur, validateAll, reset } = useFormValidation({
-    initialValues: { reason: "" },
-    validators: {
-      reason: (v) => (v.reason.trim() ? "" : "Escribe el motivo del rechazo."),
-    },
-  });
+export default function RejectReasonModal({
+  open,
+  onClose,
+  onSubmit,
+  submitting = false,
+  formError = "",
+}) {
+  const { values, errors, setField, handleBlur, validateAll } =
+    useFormValidation({
+      initialValues: { reason: "" },
+      validators: {
+        reason: (v) => {
+          const motivo = v.reason.trim();
+          if (!motivo) return "Escribe el motivo del rechazo.";
+          if (motivo.length < 5) {
+            return "El motivo debe tener al menos 5 caracteres.";
+          }
+          if (motivo.length > 255) {
+            return "El motivo no puede superar los 255 caracteres.";
+          }
+          return "";
+        },
+      },
+    });
 
-  useEffect(() => {
-    if (open) reset({ reason: "" });
-  }, [open]);
-
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (submitting) return;
     if (!validateAll()) return;
-    onSubmit(values.reason.trim());
+    await onSubmit(values.reason.trim());
   };
 
   return (
@@ -42,12 +57,22 @@ export default function RejectReasonModal({ open, onClose, onSubmit }) {
           <button type="button" className="btn-cancel" onClick={onClose}>
             Cancelar
           </button>
-          <button type="button" className="btn-save" onClick={handleSubmit}>
-            Guardar
+          <button
+            type="button"
+            className="btn-save"
+            onClick={handleSubmit}
+            disabled={submitting}
+          >
+            {submitting ? "Guardando..." : "Guardar"}
           </button>
         </>
       }
     >
+      {formError && (
+        <div className="form-error form-error-block" role="alert">
+          {formError}
+        </div>
+      )}
       <FormTextField
         label="Motivo"
         required

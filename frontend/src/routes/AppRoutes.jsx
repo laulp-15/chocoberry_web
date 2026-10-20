@@ -31,7 +31,14 @@ export default function AppRoutes() {
           <Route path="/productos" element={<ProductCatalog />} />
           <Route path="/productos/:id" element={<ProductDetail />} />
           <Route path="/carrito" element={<CartPage />} />
-          <Route path="/carrito/pago" element={<CheckoutPage />} />
+          <Route
+            path="/carrito/pago"
+            element={
+              <RequireAuth>
+                <CheckoutPage />
+              </RequireAuth>
+            }
+          />
           <Route path="/reseñas" element={<ReviewsPage />} />
           <Route path="/conocenos" element={<AboutPage />} />
 

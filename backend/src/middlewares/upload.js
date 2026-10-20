@@ -38,17 +38,33 @@ function fileFilter(req, file, cb) {
 }
 
 /**
- * Middleware de subida de una única imagen en el campo "imagen".
+ * Middleware de subida de una única imagen en el campo indicado.
  * Si la petición no es multipart (por ejemplo JSON), multer no hace nada y la
  * ruta sigue funcionando con una ruta/URL enviada como texto en el cuerpo.
  */
-export const subirImagen = multer({
-  storage,
-  fileFilter,
-  limits: { fileSize: MAX_BYTES, files: 1 },
-}).single('imagen');
+function subirArchivo(campo) {
+  return multer({
+    storage,
+    fileFilter,
+    limits: { fileSize: MAX_BYTES, files: 1 },
+  }).single(campo);
+}
+
+/** Imagen del producto (campo "imagen"). */
+export const subirImagen = subirArchivo('imagen');
+
+/** Comprobante de pago del pedido (campo "comprobante"). */
+export const subirComprobante = subirArchivo('comprobante');
+
+/** Evidencia fotográfica de la entrega (campo "evidencia"). */
+export const subirEvidencia = subirArchivo('evidencia');
 
 /** Ruta pública ("/uploads/archivo.png") del archivo subido, si vino alguno. */
-export function rutaImagenSubida(req) {
+export function rutaArchivoSubido(req) {
   return req.file ? `/uploads/${req.file.filename}` : undefined;
+}
+
+/** Alias histórico para la imagen del producto. */
+export function rutaImagenSubida(req) {
+  return rutaArchivoSubido(req);
 }

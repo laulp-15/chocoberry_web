@@ -1,70 +1,26 @@
 // src/features/admin/municipalities/hooks/useMunicipalities.jsx
 //
-// CRUD de municipios (nombre, identificador y costo de envío).
-//
-// Datos simulados: el estado parte de los municipios de ejemplo de
-// `features/cart/data/Shipping` y se persiste en localStorage. Cuando exista
-// backend, solo hay que reemplazar los handlers por llamadas al servicio.
-import { useState, useEffect } from 'react';
-import { MUNICIPIOS, getShippingCost } from '../../../cart/data/Shipping';
+// Gestión de municipios (nombre, costo de envío y estado) contra el API real
+// (/api/municipios). El estado vive aquí; las llamadas HTTP, en
+// services/municipalityService.js.
 
-const STORAGE_KEY = 'chocoberry_municipalities_v1';
+import { useEffect, useState } from 'react';
 
-function delay(ms = 350) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+import * as municipalityService from '../services/municipalityService';
+
+/** El backend lista alfabéticamente; se mantiene ese orden al crear o editar. */
+function ordenarPorNombre(lista) {
+  return [...lista].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
 }
 
-/**
- * Identificador estable a partir del nombre (ej. "La Estrella" -> "la-estrella").
- * Es el valor que guardan los pedidos en `order.municipio`.
- */
-function slugify(texto) {
-  return String(texto ?? '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
+export const useMunicipalities = ({ autoLoad = true } = {}) => {
+  const [municipalities, setMunicipalities] = useState([]);
 
-function buildSeed() {
-  return MUNICIPIOS.map((municipio, index) => ({
-    id: index + 1,
-    nombre: municipio.label,
-    slug: municipio.value,
-    costoEnvio: getShippingCost(municipio.value),
-    estado: 'Activo',
-  }));
-}
+  const [loading, setLoading] = useState(autoLoad);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [reloadToken, setReloadToken] = useState(0);
 
-function loadMunicipalities() {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    }
-  } catch (error) {
-    console.error('Error al leer los municipios guardados', error);
-  }
-  return buildSeed();
-}
-
-/** Devuelve un slug único dentro del listado (agrega -2, -3... si se repite). */
-function uniqueSlug(base, municipalities, ignoreId = null) {
-  const taken = new Set(
-    municipalities.filter((m) => m.id !== ignoreId).map((m) => m.slug)
-  );
-  if (!base) return '';
-  if (!taken.has(base)) return base;
-
-  let suffix = 2;
-  while (taken.has(`${base}-${suffix}`)) suffix += 1;
-  return `${base}-${suffix}`;
-}
-
-export const useMunicipalities = () => {
   const [statusFilter, setStatusFilter] = useState('todos');
 
   // Modales y estados de selección
@@ -75,12 +31,36 @@ export const useMunicipalities = () => {
   const [selectedMunicipality, setSelectedMunicipality] = useState(null);
   const [municipalityToEdit, setMunicipalityToEdit] = useState(null);
 
-  const [municipalities, setMunicipalities] = useState(loadMunicipalities);
-
-  // Persistencia simulada
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(municipalities));
-  }, [municipalities]);
+    if (!autoLoad && reloadToken === 0) return undefined;
+
+    let activo = true;
+
+    municipalityService
+      .listar()
+      .then((lista) => {
+        if (!activo) return;
+        setMunicipalities(ordenarPorNombre(lista));
+        setError('');
+      })
+      .catch((err) => {
+        if (!activo) return;
+        setError(err?.message || 'No se pudieron cargar los municipios.');
+      })
+      .finally(() => {
+        if (activo) setLoading(false);
+      });
+
+    return () => {
+      activo = false;
+    };
+  }, [autoLoad, reloadToken]);
+
+  function reload() {
+    setLoading(true);
+    setError('');
+    setReloadToken((valor) => valor + 1);
+  }
 
   // Filtrado por estado (la búsqueda de texto la maneja DataTable)
   const filteredMunicipalities = municipalities.filter(
@@ -89,57 +69,74 @@ export const useMunicipalities = () => {
       municipality.estado.toLowerCase() === statusFilter.toLowerCase()
   );
 
-  // Activar / desactivar
-  const handleToggleStatus = (id) => {
-    setMunicipalities((prev) =>
-      prev.map((municipality) =>
-        municipality.id === id
-          ? {
-              ...municipality,
-              estado: municipality.estado === 'Activo' ? 'Inactivo' : 'Activo',
-            }
-          : municipality
-      )
-    );
-  };
+  /** Activa/desactiva un municipio contra el API y refleja la respuesta. */
+  async function handleToggleStatus(id) {
+    const actual = municipalities.find((municipality) => municipality.id === id);
+    if (!actual) return;
 
-  // Guardar (crear o editar)
-  const handleSaveMunicipality = async (data) => {
-    await delay();
-    if (municipalityToEdit) {
-      // El slug no se regenera: es la referencia que usan los pedidos.
+    try {
+      const actualizado = await municipalityService.cambiarEstado(
+        id,
+        actual.estado !== 'Activo'
+      );
       setMunicipalities((prev) =>
         prev.map((municipality) =>
-          municipality.id === municipalityToEdit.id
-            ? { ...municipality, nombre: data.nombre, costoEnvio: data.costoEnvio, estado: data.estado }
-            : municipality
+          municipality.id === id ? actualizado : municipality
         )
       );
-    } else {
-      setMunicipalities((prev) => [
-        {
-          id: Date.now(),
-          nombre: data.nombre,
-          slug: uniqueSlug(slugify(data.nombre), prev),
-          costoEnvio: data.costoEnvio,
-          estado: data.estado,
-        },
-        ...prev,
-      ]);
+      setError('');
+    } catch (err) {
+      setError(err?.message || 'No se pudo cambiar el estado del municipio.');
     }
-    setMunicipalityToEdit(null);
-  };
+  }
 
-  // Eliminar
-  const handleConfirmDelete = async () => {
-    await delay();
+  /**
+   * Crea o edita. Devuelve el municipio guardado y relanza los errores para
+   * que el modal los muestre sin cerrarse.
+   */
+  async function handleSaveMunicipality(datos) {
+    setSubmitting(true);
+    try {
+      if (municipalityToEdit) {
+        const actualizado = await municipalityService.actualizar(
+          municipalityToEdit.id,
+          datos
+        );
+        setMunicipalities((prev) =>
+          ordenarPorNombre(
+            prev.map((municipality) =>
+              municipality.id === actualizado.id ? actualizado : municipality
+            )
+          )
+        );
+        setMunicipalityToEdit(null);
+        return actualizado;
+      }
+
+      const creado = await municipalityService.crear(datos);
+      setMunicipalities((prev) => ordenarPorNombre([creado, ...prev]));
+      return creado;
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  /** Elimina; si el backend responde 409, el error se propaga a la página. */
+  async function handleConfirmDelete() {
     if (!selectedMunicipality) return;
-    setMunicipalities((prev) =>
-      prev.filter((municipality) => municipality.id !== selectedMunicipality.id)
-    );
-    setIsDeleteOpen(false);
-    setSelectedMunicipality(null);
-  };
+
+    try {
+      await municipalityService.eliminar(selectedMunicipality.id);
+      setMunicipalities((prev) =>
+        prev.filter(
+          (municipality) => municipality.id !== selectedMunicipality.id
+        )
+      );
+    } finally {
+      setIsDeleteOpen(false);
+      setSelectedMunicipality(null);
+    }
+  }
 
   // Apertura de modales
   const handleOpenCreate = () => {
@@ -165,15 +162,23 @@ export const useMunicipalities = () => {
   return {
     statusFilter,
     setStatusFilter,
+
     isModalOpen,
     setIsModalOpen,
     isDetailOpen,
     setIsDetailOpen,
     isDeleteOpen,
     setIsDeleteOpen,
+
     selectedMunicipality,
     municipalityToEdit,
     filteredMunicipalities,
+
+    loading,
+    submitting,
+    error,
+    reload,
+
     handleToggleStatus,
     handleSaveMunicipality,
     handleConfirmDelete,

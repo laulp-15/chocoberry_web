@@ -1,5 +1,5 @@
 // src/features/admin/frostings/pages/FrostingsListPage.jsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useFrostings } from '../hooks/useFrostings';
 import FrostingFormModal from '../components/FrostingFormModal';
 import DataTable from '../../../../shared/components/DataTable';
@@ -23,6 +23,10 @@ export default function FrostingsListPage() {
     selectedFrosting,
     frostingToEdit,
     filteredFrostings,
+    loading,
+    submitting,
+    error,
+    reload,
     handleToggleStatus,
     handleSaveFrosting,
     handleConfirmDelete,
@@ -32,21 +36,29 @@ export default function FrostingsListPage() {
     handleOpenDelete,
   } = useFrostings();
 
-  const handleSave = (data) => {
-    handleSaveFrosting(data);
+  // Relanza el error si falla para que el modal lo muestre sin cerrarse.
+  const handleSave = async (data) => {
+    const esEdicion = Boolean(frostingToEdit);
+    await handleSaveFrosting(data);
     setNotification({
-      message: frostingToEdit
+      message: esEdicion
         ? `"${data.nombre}" se actualizó correctamente.`
         : `"${data.nombre}" se creó correctamente.`,
     });
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     const nombre = selectedFrosting?.nombre;
-    handleConfirmDelete();
-    setNotification({
-      message: `"${nombre}" se eliminó correctamente.`,
-    });
+    try {
+      await handleConfirmDelete();
+      setNotification({
+        message: `"${nombre}" se eliminó correctamente.`,
+      });
+    } catch (err) {
+      setNotification({
+        message: err?.message || 'No se pudo eliminar el glaseado.',
+      });
+    }
   };
 
   const columns = [
@@ -127,7 +139,9 @@ export default function FrostingsListPage() {
         columns={columns}
         data={filteredFrostings}
         searchPlaceholder="Buscar glaseado..."
-        emptyMessage="No hay glaseados para mostrar."
+        emptyMessage={
+          loading ? 'Cargando glaseados...' : 'No hay glaseados para mostrar.'
+        }
         extraFilter={
           <FormSelect
             value={statusFilter}
@@ -142,12 +156,22 @@ export default function FrostingsListPage() {
         }
       />
 
+      {error && (
+        <p className="crud-error-hint" role="alert">
+          <i className="fa-solid fa-triangle-exclamation" /> {error}
+          <button type="button" className="crud-retry" onClick={reload}>
+            Reintentar
+          </button>
+        </p>
+      )}
+
       {/* Modal crear / editar */}
       <FrostingFormModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleSave}
         initialData={frostingToEdit}
+        submitting={submitting}
       />
 
       {/* Modal ver detalle */}

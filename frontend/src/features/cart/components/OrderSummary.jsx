@@ -1,7 +1,5 @@
 // src/features/cart/components/OrderSummary.jsx
-import React from "react";
 import { Button } from "@mui/material";
-import { getPriceByQuantity } from "../../catalog/data/Pricing";
 import { formatPrice } from "../../../shared/utils/formatPrice";
 import "./OrderSummary.css";
 
@@ -10,14 +8,16 @@ import "./OrderSummary.css";
  * @param {object[]} props.items - items del carrito (ver useCart)
  * @param {number} props.shippingCost
  * @param {() => void} props.onSubmit
+ * @param {boolean} [props.submitting]
  */
-export default function OrderSummary({ items, shippingCost, onSubmit }) {
+export default function OrderSummary({ items, shippingCost, onSubmit, submitting = false }) {
   const lines = items.map((it) => ({
     cartItemId: it.cartItemId,
     name: it.name,
     image: it.image,
+    quantity: it.quantity,
     units: it.units,
-    total: getPriceByQuantity(it.quantity) * it.units,
+    total: Number(it.unitPrice ?? 0) * it.units,
   }));
 
   const subtotal = lines.reduce((sum, line) => sum + line.total, 0);
@@ -39,7 +39,9 @@ export default function OrderSummary({ items, shippingCost, onSubmit }) {
             </div>
             <div className="order-summary-item-info">
               <div className="order-summary-item-name">{line.name}</div>
-              <div className="order-summary-item-qty">Cant: {line.units}</div>
+              <div className="order-summary-item-qty">
+                {line.units} un. · {line.quantity} fresas
+              </div>
             </div>
             <div className="order-summary-item-price">{formatPrice(line.total)}</div>
           </div>
@@ -70,9 +72,10 @@ export default function OrderSummary({ items, shippingCost, onSubmit }) {
         disableRipple
         fullWidth
         onClick={onSubmit}
+        disabled={submitting}
         endIcon={<i className="fa-solid fa-arrow-right-long" />}
       >
-        Finalizar pedido
+        {submitting ? "Enviando pedido..." : "Finalizar pedido"}
       </Button>
     </div>
   );

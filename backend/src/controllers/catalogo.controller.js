@@ -1,6 +1,8 @@
 // src/controllers/catalogo.controller.js
 // Lectura PÚBLICA del catálogo para la tienda (sin sesión). Solo datos activos.
 import * as categoriaService from '../services/categoria.service.js';
+import * as colorGlaseadoService from '../services/colorGlaseado.service.js';
+import * as municipioService from '../services/municipio.service.js';
 import * as presentacionService from '../services/presentacion.service.js';
 import * as productoService from '../services/producto.service.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
@@ -25,4 +27,16 @@ export const listarProductos = asyncHandler(async (req, res) => {
 export const obtenerProducto = asyncHandler(async (req, res) => {
   const producto = await productoService.obtenerActivo(req.validado.params.id);
   return sendSuccess(res, producto, 'Producto del catálogo obtenido exitosamente.');
+});
+
+export const listarMunicipios = asyncHandler(async (req, res) => {
+  // La tienda solo necesita los municipios activos (y su costo de domicilio).
+  const municipios = await municipioService.listar({ estado: true });
+  return sendSuccess(res, municipios, 'Municipios del catálogo obtenidos exitosamente.');
+});
+
+export const listarGlaseados = asyncHandler(async (req, res) => {
+  // La tienda solo necesita los colores activos.
+  const glaseados = await colorGlaseadoService.listar({ estado: true });
+  return sendSuccess(res, glaseados, 'Glaseados del catálogo obtenidos exitosamente.');
 });

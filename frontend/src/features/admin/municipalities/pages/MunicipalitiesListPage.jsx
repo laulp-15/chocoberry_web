@@ -1,5 +1,5 @@
 // src/features/admin/municipalities/pages/MunicipalitiesListPage.jsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useMunicipalities } from '../hooks/useMunicipalities';
 import MunicipalityFormModal from '../components/MunicipalityFormModal';
 import DataTable from '../../../../shared/components/DataTable';
@@ -24,6 +24,10 @@ export default function MunicipalitiesListPage() {
     selectedMunicipality,
     municipalityToEdit,
     filteredMunicipalities,
+    loading,
+    submitting,
+    error,
+    reload,
     handleToggleStatus,
     handleSaveMunicipality,
     handleConfirmDelete,
@@ -33,21 +37,29 @@ export default function MunicipalitiesListPage() {
     handleOpenDelete,
   } = useMunicipalities();
 
-  const handleSave = (data) => {
-    handleSaveMunicipality(data);
+  // Relanza el error si falla para que el modal lo muestre sin cerrarse.
+  const handleSave = async (data) => {
+    const esEdicion = Boolean(municipalityToEdit);
+    await handleSaveMunicipality(data);
     setNotification({
-      message: municipalityToEdit
+      message: esEdicion
         ? `"${data.nombre}" se actualizó correctamente.`
         : `"${data.nombre}" se creó correctamente.`,
     });
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     const nombre = selectedMunicipality?.nombre;
-    handleConfirmDelete();
-    setNotification({
-      message: `"${nombre}" se eliminó correctamente.`,
-    });
+    try {
+      await handleConfirmDelete();
+      setNotification({
+        message: `"${nombre}" se eliminó correctamente.`,
+      });
+    } catch (err) {
+      setNotification({
+        message: err?.message || 'No se pudo eliminar el municipio.',
+      });
+    }
   };
 
   const columns = [
@@ -127,7 +139,11 @@ export default function MunicipalitiesListPage() {
         columns={columns}
         data={filteredMunicipalities}
         searchPlaceholder="Buscar municipio..."
-        emptyMessage="No hay municipios para mostrar."
+        emptyMessage={
+          loading
+            ? 'Cargando municipios...'
+            : 'No hay municipios para mostrar.'
+        }
         extraFilter={
           <FormSelect
             value={statusFilter}
@@ -142,12 +158,22 @@ export default function MunicipalitiesListPage() {
         }
       />
 
+      {error && (
+        <p className="crud-error-hint" role="alert">
+          <i className="fa-solid fa-triangle-exclamation" /> {error}
+          <button type="button" className="crud-retry" onClick={reload}>
+            Reintentar
+          </button>
+        </p>
+      )}
+
       {/* Modal crear / editar */}
       <MunicipalityFormModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleSave}
         initialData={municipalityToEdit}
+        submitting={submitting}
       />
 
       {/* Modal ver detalle */}

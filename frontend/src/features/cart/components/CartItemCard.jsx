@@ -1,8 +1,6 @@
 // src/features/cart/components/CartItemCard.jsx
-import React from "react";
 import { useNavigate } from "react-router-dom";
 import { IconButton, OutlinedInput, Button } from "@mui/material";
-import { getPriceByQuantity } from "../../catalog/data/Pricing";
 import { formatPrice } from "../../../shared/utils/formatPrice";
 import "./CartItemCard.css";
 
@@ -13,7 +11,7 @@ import "./CartItemCard.css";
  * completo (ver OrderCardMessage en CartPage).
  *
  * @param {object} props
- * @param {object} props.item - { cartItemId, productId, name, image, quantity, color, colorHex, units, decorativeMessage, extraCustomization }
+ * @param {object} props.item - { cartItemId, productId, name, image, quantity, presentationId, unitPrice, colorId, color, colorHex, units, decorativeMessage, extraCustomization }
  * @param {(cartItemId: string, delta: number) => void} props.onUnitsChange
  * @param {(cartItemId: string, field: string, value: string) => void} props.onFieldChange
  * @param {(cartItemId: string) => void} props.onRemove
@@ -33,8 +31,9 @@ export default function CartItemCard({ item, onUnitsChange, onFieldChange, onRem
     extraCustomization,
   } = item;
 
-  const unitPrice = getPriceByQuantity(quantity);
+  const unitPrice = Number(item.unitPrice ?? 0);
   const lineTotal = unitPrice * units;
+  const maxDecorative = Math.min(Number(quantity) || 0, 255);
 
   return (
     <div className="cart-item-card">
@@ -71,10 +70,11 @@ export default function CartItemCard({ item, onUnitsChange, onFieldChange, onRem
               className="cart-item-input"
               placeholder="Mensaje decorativo (chocolate)"
               value={decorativeMessage}
+              inputProps={{ maxLength: maxDecorative }}
               onChange={(e) => onFieldChange(cartItemId, "decorativeMessage", e.target.value)}
             />
             <div className="cart-field-hint">
-              Debe ser una frase corta, acorde con las {quantity} fresas de esta caja.
+              Máximo {maxDecorative} caracteres (una letra por fresa de esta caja).
             </div>
           </div>
 
@@ -85,6 +85,7 @@ export default function CartItemCard({ item, onUnitsChange, onFieldChange, onRem
               placeholder="Ej: quitar decoraciones de mariposa"
               multiline
               minRows={2}
+              inputProps={{ maxLength: 255 }}
               value={extraCustomization}
               onChange={(e) => onFieldChange(cartItemId, "extraCustomization", e.target.value)}
             />
