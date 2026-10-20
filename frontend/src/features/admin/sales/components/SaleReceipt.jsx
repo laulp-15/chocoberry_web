@@ -1,8 +1,8 @@
 // src/features/admin/sales/components/SaleReceipt.jsx
-import React, { useState } from "react";
+import { useState } from "react";
 import { formatPrice } from "../../../../shared/utils/formatPrice";
-import { formatDisplayDate, getMunicipioLabel, getProofUrl, isPdfProof } from "../../orders/utils/orderDisplay";
-import { PRODUCTS } from "../../../catalog/data/Products";
+import { formatDisplayDate, getProofUrl, isPdfProof } from "../../orders/utils/orderDisplay";
+import OrderStatusBadge from "../../orders/components/OrderStatusBadge";
 import ImageLightbox from "../../../../shared/components/ImageLightbox";
 import "./SaleReceipt.css";
 
@@ -15,10 +15,6 @@ function getInitials(name) {
     .toUpperCase();
 }
 
-function getProductImage(productId) {
-  return PRODUCTS.find((p) => p.id === productId)?.image ?? null;
-}
-
 /**
  * Presentación de "ver venta": tarjeta de cliente/pago + total destacado
  * arriba, tabla de productos abajo. Misma data que OrderDetailContent
@@ -28,7 +24,7 @@ function getProductImage(productId) {
  * @param {object} props.sale
  */
 export default function SaleReceipt({ sale }) {
-  const municipioLabel = getMunicipioLabel(sale.municipio);
+  const municipioLabel = sale.municipio || "—";
   const proofUrl = getProofUrl(sale.comprobante);
   const proofIsPdf = isPdfProof(sale.comprobante);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -47,6 +43,11 @@ export default function SaleReceipt({ sale }) {
                 <div className="sale-client-sub">{municipioLabel}</div>
               </div>
             </div>
+          </div>
+
+          <div className="sale-info-col">
+            <div className="sale-info-label">Estado de la venta</div>
+            <OrderStatusBadge status={sale.estado} title="Estado de la venta" />
           </div>
 
           <div className="sale-info-col sale-info-col-full">
@@ -75,7 +76,7 @@ export default function SaleReceipt({ sale }) {
           </div>
 
           {sale.products.map((line) => {
-            const image = getProductImage(line.productId);
+            const image = line.productImage;
             const personalization = [
               line.color && `Color ${line.color}`,
               line.decorativeMessage && `“${line.decorativeMessage}”`,

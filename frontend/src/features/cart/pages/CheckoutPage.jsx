@@ -1,16 +1,17 @@
 // src/features/cart/pages/CheckoutPage.jsx
-import React, { useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { IconButton } from "@mui/material";
 import { useAuth } from "../../login/hooks/useAuth";
 import { useCart } from "../hooks/UseCart";
+import useMunicipiosEntrega from "../hooks/useMunicipiosEntrega";
 import useFormValidation from "../../../shared/hooks/useFormValidation";
 import { validatePhone } from "../../login/utils/validators";
 import ShippingForm from "../components/ShippingForm";
 import PaymentSection from "../components/PaymentSection";
 import OrderSummary from "../components/OrderSummary";
 import OrderCardMessage from "../components/OrderCardMessage";
-import { getShippingCost } from "../data/Shipping";
+import * as orderService from "../../orders/services/orderService";
 import "./CheckoutPage.css";
 
 const INITIAL_FORM = {
@@ -26,20 +27,68 @@ const INITIAL_FORM = {
   proofFile: null,
 };
 
+/** Precarga los datos del perfil sin sobrescribir lo que el usuario escriba. */
+function initialFormForUser(user) {
+  return {
+    ...INITIAL_FORM,
+    fullName: user?.fullName ?? "",
+    address: user?.address ?? "",
+    neighborhood: user?.neighborhood ?? "",
+    recipientName: user?.fullName ?? "",
+    recipientPhone: user?.phone ?? "",
+  };
+}
+
+/**
+ * Reglas que el backend también valida. Se comprueban antes de subir el
+ * comprobante para no dejar archivos huérfanos por un error de texto.
+ */
+function validarLineas(items, cardMessage) {
+  if (String(cardMessage ?? "").trim().length > 255) {
+    return "El mensaje de la tarjeta no puede superar los 255 caracteres.";
+  }
+
+  for (const item of items) {
+    if (!item.presentationId || !item.colorId) {
+      return `La configuración de "${item.name}" está incompleta. Vuelve a agregarla al carrito.`;
+    }
+
+    const mensaje = String(item.decorativeMessage ?? "").trim();
+    const maximo = Math.min(Number(item.quantity) || 0, 255);
+    if (mensaje.length > maximo) {
+      return `El mensaje decorativo de "${item.name}" no puede superar ${maximo} caracteres (una letra por fresa).`;
+    }
+
+    if (String(item.extraCustomization ?? "").trim().length > 255) {
+      return `La personalización adicional de "${item.name}" no puede superar los 255 caracteres.`;
+    }
+  }
+
+  return "";
+}
+
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { items, cardMessage, clearCart } = useCart();
+  const { items, clearCart } = useCart();
+  const {
+    municipios,
+    loading: loadingMunicipios,
+    error: municipiosError,
+    reload: reloadMunicipios,
+  } = useMunicipiosEntrega();
+
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const {
     values: form,
     errors,
     setField,
-    setMany,
     handleBlur,
     validateAll,
   } = useFormValidation({
-    initialValues: INITIAL_FORM,
+    initialValues: initialFormForUser(user),
     validators: {
       fullName: (v) => (v.fullName.trim() ? "" : "El nombre completo es obligatorio."),
       deliveryDate: (v) => (v.deliveryDate ? "" : "Selecciona la fecha de entrega."),
@@ -54,32 +103,76 @@ export default function CheckoutPage() {
     immediate: ["deliveryDate", "municipio", "proofFile"],
   });
 
-  // Precarga el nombre y la dirección con los datos del perfil del usuario.
-  // Solo rellena si el campo está vacío, para no sobrescribir lo que el
-  // usuario ya haya escrito o modificado en esta pantalla.
-  useEffect(() => {
-    if (!user) return;
-    setMany({
-      fullName: form.fullName || user.fullName || "",
-      address: form.address || user.address || "",
-      neighborhood: form.neighborhood || user.neighborhood || "",
-      recipientName: form.recipientName || user.fullName || "",
-      recipientPhone: form.recipientPhone || user.phone || "",
-    });
-  }, [user]);
-
-  const shippingCost = getShippingCost(form.municipio);
+  const selectedMunicipio = municipios.find(
+    (municipio) => String(municipio.id) === String(form.municipio)
+  );
+  const shippingCost = selectedMunicipio?.precioDomicilio ?? 0;
 
   const handleFieldChange = (field, value) => setField(field, value);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (submitting) return;
+
+    setSubmitError("");
     if (!validateAll()) return;
 
-    // TODO: enviar `form` + `cardMessage` + `items` al backend (crear pedido)
-    console.log("Pedido:", { ...form, cardMessage, items, shippingCost });
+    const errorLineas = validarLineas(items, form.cardMessage);
+    if (errorLineas) {
+      setSubmitError(errorLineas);
+      return;
+    }
 
-    clearCart();
-    navigate("/productos"); // TODO: navegar a una página de confirmación real
+    if (!selectedMunicipio) {
+      setSubmitError("Selecciona un municipio de entrega válido.");
+      return;
+    }
+
+    const datos = new FormData();
+    datos.append("comprobante", form.proofFile);
+    datos.append("fechaEntrega", form.deliveryDate);
+    datos.append("direccion", form.address.trim());
+    datos.append("barrio", form.neighborhood.trim());
+    datos.append("idMunicipio", String(form.municipio));
+    datos.append("nombreReceptor", form.recipientName.trim());
+    datos.append("telefonoReceptor", form.recipientPhone.trim());
+
+    if (form.cardMessage.trim()) {
+      datos.append("mensajeTarjeta", form.cardMessage.trim());
+    }
+    if (form.instructions.trim()) {
+      datos.append("instruccionesEntrega", form.instructions.trim());
+    }
+
+    datos.append(
+      "lineas",
+      JSON.stringify(
+        items.map((item) => ({
+          idProducto: item.productId,
+          idPresentacion: item.presentationId,
+          cantidadProductos: item.units,
+          idColorGlaseado: item.colorId,
+          ...(String(item.decorativeMessage ?? "").trim()
+            ? { mensajePersonalizado: item.decorativeMessage.trim() }
+            : {}),
+          ...(String(item.extraCustomization ?? "").trim()
+            ? { personalizacionAdicional: item.extraCustomization.trim() }
+            : {}),
+        }))
+      )
+    );
+
+    setSubmitting(true);
+    try {
+      const pedido = await orderService.crear(datos);
+      clearCart();
+      navigate("/users/orders", { state: { pedidoCreado: pedido.id } });
+    } catch (err) {
+      setSubmitError(
+        err?.message || "No se pudo crear el pedido. Inténtalo de nuevo."
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (items.length === 0) {
@@ -105,6 +198,23 @@ export default function CheckoutPage() {
           <h1 className="checkout-title">Finalizar Pedido</h1>
         </div>
 
+        {submitError && (
+          <div className="checkout-error" role="alert">
+            <i className="fa-solid fa-circle-exclamation" />
+            <span>{submitError}</span>
+          </div>
+        )}
+
+        {municipiosError && (
+          <div className="checkout-error" role="alert">
+            <i className="fa-solid fa-triangle-exclamation" />
+            <span>{municipiosError}</span>
+            <button type="button" className="checkout-retry" onClick={reloadMunicipios}>
+              Reintentar
+            </button>
+          </div>
+        )}
+
         <div className="row">
           <div className="col-12 col-lg-7">
             <OrderCardMessage
@@ -115,6 +225,8 @@ export default function CheckoutPage() {
               values={form}
               onChange={handleFieldChange}
               onBlurField={handleBlur}
+              municipios={municipios}
+              municipiosLoading={loadingMunicipios}
               fullNameError={errors.fullName}
               deliveryDateError={errors.deliveryDate}
               municipioError={errors.municipio}
@@ -130,7 +242,12 @@ export default function CheckoutPage() {
             />
           </div>
           <div className="col-12 col-lg-5">
-            <OrderSummary items={items} shippingCost={shippingCost} onSubmit={handleSubmit} />
+            <OrderSummary
+              items={items}
+              shippingCost={shippingCost}
+              onSubmit={handleSubmit}
+              submitting={submitting || loadingMunicipios}
+            />
           </div>
         </div>
       </div>

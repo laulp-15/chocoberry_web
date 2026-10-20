@@ -1,9 +1,8 @@
 // src/features/cart/components/ShippingForm.jsx
-import React from "react";
 import { OutlinedInput, Select, MenuItem } from "@mui/material";
 import DatePicker, { addDaysISO } from "../../../shared/components/DatePicker";
-import { MUNICIPIOS } from "../data/Shipping";
 import { PICKUP_SCHEDULE } from "../data/pickupInfo";
+import { formatPrice } from "../../../shared/utils/formatPrice";
 import "./ShippingForm.css";
 
 // La entrega no puede ser para hoy: mínimo el día siguiente (mañana) y
@@ -28,6 +27,8 @@ export default function ShippingForm({
   values,
   onChange,
   onBlurField,
+  municipios = [],
+  municipiosLoading = false,
   fullNameError,
   deliveryDateError,
   municipioError,
@@ -113,14 +114,17 @@ export default function ShippingForm({
           fullWidth
           displayEmpty
           value={municipio}
+          disabled={municipiosLoading}
           onChange={(e) => onChange("municipio", e.target.value)}
         >
           <MenuItem value="">
-            <span className="form-select-placeholder">Selecciona un municipio</span>
+            <span className="form-select-placeholder">
+              {municipiosLoading ? "Cargando municipios..." : "Selecciona un municipio"}
+            </span>
           </MenuItem>
-          {MUNICIPIOS.map((m) => (
-            <MenuItem key={m.value} value={m.value}>
-              {m.label}
+          {municipios.map((m) => (
+            <MenuItem key={m.id} value={m.id}>
+              {m.nombre} — {formatPrice(m.precioDomicilio)}
             </MenuItem>
           ))}
         </Select>

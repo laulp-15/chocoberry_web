@@ -43,10 +43,33 @@ export function mapPresentaciones(presentaciones) {
   const lista = Array.isArray(presentaciones) ? presentaciones : [];
   return lista
     .map((presentacion) => ({
+      id: presentacion.id,
       cantidadFresas: Number(presentacion.cantidadFresas),
       precio: Number(presentacion.precio),
     }))
     .sort((a, b) => a.cantidadFresas - b.cantidadFresas);
+}
+
+/** Municipios activos para el checkout (id + costo de domicilio vigente). */
+export function mapMunicipios(municipios) {
+  const lista = Array.isArray(municipios) ? municipios : [];
+  return lista.map((municipio) => ({
+    id: municipio.id,
+    nombre: municipio.nombre ?? '',
+    precioDomicilio: Number(municipio.precioDomicilio ?? 0),
+  }));
+}
+
+/** Glaseados activos con la forma que consume el selector de colores. */
+export function mapGlaseados(glaseados) {
+  const lista = Array.isArray(glaseados) ? glaseados : [];
+  return lista.map((glaseado) => ({
+    id: glaseado.id,
+    value: String(glaseado.id),
+    label: glaseado.nombre ?? '',
+    nombre: glaseado.nombre ?? '',
+    hex: glaseado.codigoHex ?? '#d90429',
+  }));
 }
 
 /** Menor precio disponible, para el "Desde $..." de las tarjetas. */

@@ -1,7 +1,5 @@
 // src/features/cart/components/CartSummary.jsx
-import React from "react";
 import { Button } from "@mui/material";
-import { getPriceByQuantity } from "../../catalog/data/Pricing";
 import { formatPrice } from "../../../shared/utils/formatPrice";
 import "./CartSummary.css";
 
@@ -15,7 +13,7 @@ export default function CartSummary({ items, onCheckout }) {
     cartItemId: it.cartItemId,
     name: it.name,
     units: it.units,
-    total: getPriceByQuantity(it.quantity) * it.units,
+    total: Number(it.unitPrice ?? 0) * it.units,
   }));
 
   const total = lines.reduce((sum, line) => sum + line.total, 0);

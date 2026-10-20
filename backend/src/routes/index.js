@@ -13,6 +13,10 @@ import categoriaRoutes from './categoria.routes.js';
 import productoRoutes from './producto.routes.js';
 import presentacionRoutes from './presentacion.routes.js';
 import catalogoRoutes from './catalogo.routes.js';
+import pedidoRoutes from './pedido.routes.js';
+import ventaRoutes from './venta.routes.js';
+import municipioRoutes from './municipio.routes.js';
+import colorGlaseadoRoutes from './colorGlaseado.routes.js';
 
 const router = Router();
 
@@ -35,12 +39,18 @@ router.use('/productos', productoRoutes);
 router.use('/presentaciones', presentacionRoutes);
 // Catálogo público de la tienda (sin sesión, solo registros activos).
 router.use('/catalogo', catalogoRoutes);
+// Pedidos (clientes, panel y repartidor).
+router.use('/pedidos', pedidoRoutes);
+// Ventas (vista de solo lectura de pedidos confirmados).
+router.use('/ventas', ventaRoutes);
+// Datos maestros del panel (con permisos). La tienda los lee, solo activos,
+// desde /catalogo/municipios y /catalogo/glaseados.
+router.use('/municipios', municipioRoutes);
+router.use('/glaseados', colorGlaseadoRoutes);
 
 // ---------------------------------------------------------------------------
 // Módulos pendientes:
-//   router.use('/pedidos', pedidoRoutes);
 //   router.use('/entregas', entregaRoutes);
-//   router.use('/ventas', ventaRoutes);
 //   router.use('/resenas', resenaRoutes);
 //   router.use('/dashboard', dashboardRoutes);
 // ---------------------------------------------------------------------------

@@ -13,9 +13,20 @@ import {
   toCrearUsuarioPayload,
 } from "./userMappers";
 
-/** GET /usuarios -> lista de usuarios (ya traducida al shape del panel). */
-export async function listar() {
-  const usuarios = await api.get("/usuarios");
+/**
+ * GET /usuarios -> lista de usuarios (ya traducida al shape del panel).
+ * Acepta filtros opcionales del backend: { nombre, correo, rol, id_rol, estado }.
+ */
+export async function listar(filtros = {}) {
+  const params = new URLSearchParams();
+  Object.entries(filtros).forEach(([clave, valor]) => {
+    if (valor !== undefined && valor !== null && valor !== "") {
+      params.set(clave, String(valor));
+    }
+  });
+
+  const query = params.toString();
+  const usuarios = await api.get(`/usuarios${query ? `?${query}` : ""}`);
   return mapUsuariosAdmin(usuarios);
 }
 

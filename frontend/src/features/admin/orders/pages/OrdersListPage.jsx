@@ -1,5 +1,5 @@
 // src/features/admin/orders/pages/OrdersListPage.jsx
-import React, { useState } from "react";
+import { useState } from "react";
 import DataTable from "../../../../shared/components/DataTable";
 import FormSelect from "../../../../shared/components/FormSelect";
 import OrderStatusSelector from "../components/OrderStatusSelector";
@@ -7,13 +7,39 @@ import OrderFormModal from "../components/OrderFormModal";
 import OrderDetailModal from "../components/OrderDetailModal";
 import RejectReasonModal from "../components/RejectReasonModal";
 import OrderNotification from "../components/OrderNotification";
-import { ORDER_STATUSES } from "../data/orderStatus";
-import { INITIAL_ORDERS } from "../data/MockOrders";
+import useOrders from "../hooks/useOrders";
+import useOrderFormOptions from "../hooks/useOrderFormOptions";
+import {
+  ORDER_STATUSES,
+  getStatusMeta,
+  isFinalStatus,
+} from "../data/orderStatus";
+import { formatDisplayDate } from "../utils/orderDisplay";
 import { formatPrice } from "../../../../shared/utils/formatPrice";
-import { todayISO } from "../../../../shared/components/DatePicker";
+import "../../../../shared/css/adminCrud.css";
+
+// Las cinco columnas de datos comparten el mismo ancho; Acciones se reserva
+// aparte para que el encabezado y los iconos queden juntos a la derecha.
+const EQUAL_COLUMN_STYLE = {
+  width: "calc((100% - 112px) / 5)",
+  boxSizing: "border-box",
+};
 
 export default function OrdersListPage() {
-  const [orders, setOrders] = useState(INITIAL_ORDERS);
+  const {
+    orders,
+    loading,
+    error,
+    reload,
+    submitting,
+    statusSavingId,
+    rejectSubmitting,
+    createOrder,
+    updateOrder,
+    changeStatus,
+    rejectOrder,
+  } = useOrders();
+
   const [statusFilter, setStatusFilter] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState(null);
@@ -21,125 +47,191 @@ export default function OrdersListPage() {
 
   // Pedido que se está rechazando: se pide el motivo antes de aplicar el estado.
   const [rejectingOrder, setRejectingOrder] = useState(null);
+  const [rejectError, setRejectError] = useState("");
 
-  const [notification, setNotification] = useState(null); // { title, message }
+  const [notification, setNotification] = useState(null); // { message, variant }
 
-  const filtered = orders.filter((o) => !statusFilter || o.estado === statusFilter);
+  // Los catálogos se recargan cada vez que se abre el formulario para que los
+  // maestros recién creados aparezcan sin recargar la página.
+  const {
+    clientes,
+    municipios,
+    productos,
+    presentaciones,
+    glaseados,
+    loading: optionsLoading,
+    error: optionsError,
+    reload: reloadOptions,
+  } = useOrderFormOptions();
 
-  // Solo se bloquea la edición/rechazo si el pedido ya fue Entregado,
-  // Cancelado o Rechazado.
-  const isLocked = (order) =>
-    order.estado === "entregado" ||
-    order.estado === "cancelado" ||
-    order.estado === "rechazado";
+  const filtered = orders.filter(
+    (order) => !statusFilter || order.estado === statusFilter
+  );
 
-  // Regla de negocio: un pedido solo se puede rechazar mientras está Pendiente.
+  const isLocked = (order) => isFinalStatus(order.estado);
   const canReject = (order) => order.estado === "pendiente";
 
   const handleCreate = () => {
+    reloadOptions();
     setEditingOrder(null);
     setFormOpen(true);
   };
 
   const handleEdit = (order) => {
     if (isLocked(order)) return;
+    reloadOptions();
     setEditingOrder(order);
     setFormOpen(true);
   };
 
-  const handleSave = (order) => {
-    if (editingOrder) {
-      setOrders((prev) => prev.map((o) => (o.id === editingOrder.id ? { ...order, id: o.id } : o)));
-      setNotification({
-        message: "Pedido actualizado correctamente.",
-      });
-    } else {
-      const newId = Math.max(...orders.map((o) => o.id)) + 1;
-      setOrders((prev) => [{ ...order, id: newId }, ...prev]);
-      setNotification({
-        message: "Pedido creado correctamente.",
-      });
-    }
+  const handleCloseForm = () => {
     setFormOpen(false);
+    setEditingOrder(null);
+  };
+
+  const handleSave = async (datos) => {
+    if (editingOrder) {
+      await updateOrder(editingOrder.id, datos);
+      setNotification({ message: "Pedido actualizado correctamente." });
+    } else {
+      await createOrder(datos);
+      setNotification({ message: "Pedido creado correctamente." });
+    }
+    handleCloseForm();
   };
 
   // Cambio de estado desde el desplegable. "Rechazado" no se aplica directo:
   // primero se pide el motivo (mismo flujo que el icono "Rechazar pedido").
-  const handleStatusChange = (order, newStatus) => {
+  const handleStatusChange = async (order, newStatus) => {
     if (newStatus === "rechazado") {
       if (!canReject(order)) return;
+      setRejectError("");
       setRejectingOrder(order);
       return;
     }
-    setOrders((prev) =>
-      prev.map((o) => (o.id === order.id ? { ...o, estado: newStatus } : o))
-    );
+
+    try {
+      await changeStatus(order.id, newStatus);
+      setNotification({
+        message: `El pedido pasó a "${getStatusMeta(newStatus).label}".`,
+      });
+    } catch (err) {
+      setNotification({
+        message: err?.message || "No se pudo cambiar el estado del pedido.",
+        variant: "error",
+      });
+    }
   };
 
-  const handleSubmitRejectReason = (reason) => {
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.id === rejectingOrder.id
-          ? { ...o, estado: "rechazado", motivoRechazo: reason, fechaRechazo: todayISO() }
-          : o
-      )
-    );
-    setRejectingOrder(null);
-    setNotification({
-      message: "Pedido rechazado correctamente.",
-    });
+  const handleSubmitReject = async (reason) => {
+    if (!rejectingOrder) return;
+
+    setRejectError("");
+    try {
+      await rejectOrder(rejectingOrder.id, reason);
+      setRejectingOrder(null);
+      setNotification({ message: "Pedido rechazado correctamente." });
+    } catch (err) {
+      setRejectError(err?.message || "No se pudo rechazar el pedido.");
+    }
   };
 
   const columns = [
-    { key: "cliente", label: "Cliente" },
-    { key: "direccion", label: "Dirección", render: (row) => row.direccion || "—" },
-    { key: "fecha", label: "Fecha" },
-    { key: "total", label: "Total", render: (row) => formatPrice(row.total) },
-    { 
-      key: "estado", 
-      label: "Estado", 
-      render: (row) => (
-        <OrderStatusSelector
-          status={row.estado}
-          onChange={(newStatus) => handleStatusChange(row, newStatus)}
-          disabled={isLocked(row)}
-          lockedReason="Este pedido está bloqueado"
-          canReject={canReject(row)}
-        />
-      ) 
+    {
+      key: "cliente",
+      label: "Cliente",
+      style: EQUAL_COLUMN_STYLE,
+    },
+    {
+      key: "direccion",
+      label: "Dirección",
+      style: EQUAL_COLUMN_STYLE,
+      render: (row) => row.direccion || "—",
+    },
+    {
+      key: "fechaEntrega",
+      label: "Fecha de entrega",
+      style: EQUAL_COLUMN_STYLE,
+      render: (row) => formatDisplayDate(row.fechaEntrega),
+    },
+    {
+      key: "total",
+      label: "Total",
+      style: EQUAL_COLUMN_STYLE,
+      render: (row) => formatPrice(row.total),
+    },
+    {
+      key: "estado",
+      label: "Estado",
+      style: EQUAL_COLUMN_STYLE,
+      render: (row) => {
+        const saving = String(statusSavingId) === String(row.id);
+        return (
+          <OrderStatusSelector
+            status={row.estado}
+            onChange={(newStatus) => handleStatusChange(row, newStatus)}
+            disabled={isLocked(row) || saving}
+            lockedReason={
+              saving
+                ? "Actualizando estado..."
+                : "Este pedido está en un estado final"
+            }
+            canReject={canReject(row)}
+          />
+        );
+      },
     },
     {
       key: "actions",
       label: "Acciones",
+      style: {
+        width: "112px",
+        boxSizing: "border-box",
+        textAlign: "right",
+        paddingRight: "2rem",
+      },
       render: (row) => {
         const locked = isLocked(row);
         const rejectable = canReject(row);
+
         return (
-          <div style={{ display: "flex", gap: "12px", color: "var(--texto-muted)" }}>
-            <i
-              className="fa-solid fa-eye"
-              style={{ cursor: "pointer" }}
+          <div className="table-actions">
+            <button
+              type="button"
+              className="table-action-btn"
               title="Ver detalle"
               onClick={() => setDetailOrder(row)}
-            />
-            <i
-              className="fa-solid fa-pen"
-              style={{
-                color: locked ? "var(--borde)" : "var(--texto-muted)",
-                cursor: locked ? "not-allowed" : "pointer",
-              }}
-              title={locked ? "Ya no se puede editar este pedido" : "Editar"}
+            >
+              <i className="fa-solid fa-eye" />
+            </button>
+            <button
+              type="button"
+              className="table-action-btn"
+              title={
+                locked
+                  ? "Ya no se puede editar este pedido"
+                  : "Editar cabecera del pedido"
+              }
+              disabled={locked}
+              style={{ opacity: locked ? 0.35 : 1 }}
               onClick={() => handleEdit(row)}
-            />
-            <i
-              className="fa-solid fa-circle-xmark"
-              style={{
-                color: rejectable ? "var(--texto-muted)" : "var(--borde)",
-                cursor: rejectable ? "pointer" : "not-allowed",
-              }}
-              title={rejectable ? "Rechazar pedido" : "Solo se puede rechazar un pedido pendiente"}
-              onClick={() => rejectable && handleStatusChange(row, "rechazado")}
-            />
+            >
+              <i className="fa-solid fa-pen" />
+            </button>
+            <button
+              type="button"
+              className="table-action-btn danger"
+              title={
+                rejectable
+                  ? "Rechazar pedido"
+                  : "Solo se puede rechazar un pedido pendiente"
+              }
+              disabled={!rejectable}
+              style={{ opacity: rejectable ? 1 : 0.35 }}
+              onClick={() => handleStatusChange(row, "rechazado")}
+            >
+              <i className="fa-solid fa-circle-xmark" />
+            </button>
           </div>
         );
       },
@@ -147,18 +239,33 @@ export default function OrdersListPage() {
   ];
 
   return (
-    <>
+    <div className="crud-page">
       <DataTable
         title="Pedidos"
-        description="Consulta y administra los pedidos del negocio."
+        description="Consulta y administra los pedidos reales del negocio."
         createLabel="Crear pedido"
         onCreate={handleCreate}
         columns={columns}
         data={filtered}
+        tableLayout="fixed"
         searchPlaceholder="Buscar por cliente..."
+        emptyMessage={
+          loading ? "Cargando pedidos..." : "No hay pedidos para mostrar."
+        }
         extraFilter={
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: "200px" }}>
-            <i className="fa-solid fa-filter" style={{ color: "var(--texto-muted, #888)" }} title="Filtrar" />
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              minWidth: "200px",
+            }}
+          >
+            <i
+              className="fa-solid fa-filter"
+              style={{ color: "var(--texto-muted, #888)" }}
+              title="Filtrar"
+            />
             <div style={{ flex: 1 }}>
               <FormSelect
                 value={statusFilter}
@@ -171,32 +278,64 @@ export default function OrdersListPage() {
         }
       />
 
-      <OrderFormModal
-        open={formOpen}
-        onClose={() => setFormOpen(false)}
-        initialData={editingOrder}
-        onSave={handleSave}
-      />
+      {error && (
+        <p className="crud-error-hint" role="alert">
+          <i className="fa-solid fa-triangle-exclamation" /> {error}
+          <button type="button" className="crud-retry" onClick={reload}>
+            Reintentar
+          </button>
+        </p>
+      )}
 
-      <OrderDetailModal
-        open={Boolean(detailOrder)}
-        onClose={() => setDetailOrder(null)}
-        order={detailOrder}
-      />
+      {formOpen && (
+        <OrderFormModal
+          open
+          onClose={handleCloseForm}
+          initialData={editingOrder}
+          onSubmit={handleSave}
+          submitting={submitting}
+          options={{
+            clientes,
+            municipios,
+            productos,
+            presentaciones,
+            glaseados,
+          }}
+          optionsLoading={optionsLoading}
+          optionsError={optionsError}
+          onRetryOptions={reloadOptions}
+        />
+      )}
+
+      {detailOrder && (
+        <OrderDetailModal
+          open
+          onClose={() => setDetailOrder(null)}
+          order={detailOrder}
+        />
+      )}
 
       {/* Motivo del rechazo (mismo flujo desde el desplegable y el icono) */}
-      <RejectReasonModal
-        open={Boolean(rejectingOrder)}
-        onClose={() => setRejectingOrder(null)}
-        onSubmit={handleSubmitRejectReason}
-      />
+      {rejectingOrder && (
+        <RejectReasonModal
+          open
+          onClose={() => {
+            setRejectingOrder(null);
+            setRejectError("");
+          }}
+          onSubmit={handleSubmitReject}
+          submitting={rejectSubmitting}
+          formError={rejectError}
+        />
+      )}
 
       <OrderNotification
         open={Boolean(notification)}
         onClose={() => setNotification(null)}
-        title={notification?.title}
+        title={notification?.variant === "error" ? "No se pudo completar" : undefined}
         message={notification?.message}
+        variant={notification?.variant}
       />
-    </>
+    </div>
   );
 }

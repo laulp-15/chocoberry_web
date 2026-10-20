@@ -1,6 +1,6 @@
 // src/features/cart/components/PaymentSection.jsx
-import React from "react";
 import FileDropzone from "../../../shared/components/FileDropZone";
+import { IMAGE_ACCEPT } from "../../../shared/utils/fileValidation";
 import { NEQUI_ACCOUNT } from "../data/paymentInfo";
 import "./PaymentSection.css";
 
@@ -36,7 +36,9 @@ export default function PaymentSection({
           file={proofFile}
           onChange={onProofFileChange}
           label="Subir comprobante de pago"
-          hint="PNG, JPG, WEBP o PDF (máx. 5 MB)"
+          hint="PNG, JPG o WEBP (máx. 5 MB)"
+          accept={IMAGE_ACCEPT}
+          allowPdf={false}
           error={proofFileError}
         />
       </div>

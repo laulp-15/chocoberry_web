@@ -9,7 +9,6 @@ import ColorSelector from "../components/ColorSelector";
 import FeatureHighlights from "../components/FeatureHighlights";
 import RelatedProducts from "../components/RelatedProducts";
 import useProducto from "../hooks/useProducto";
-import { COLOR_OPTIONS } from "../data/Colors";
 import { formatPrice } from "../../../shared/utils/formatPrice";
 import "./ProductDetail.css";
 
@@ -18,12 +17,12 @@ export default function ProductDetail() {
   const navigate = useNavigate();
   const location = useLocation();
   const { addItem } = useCart();
-  const { producto, relacionados, presentaciones, loading, error, reload } =
+  const { producto, relacionados, presentaciones, glaseados, loading, error, reload } =
     useProducto(id);
 
   // Cantidad de fresas elegida; se ajusta a las presentaciones disponibles.
   const [quantity, setQuantity] = useState(12);
-  const [color, setColor] = useState("rosa");
+  const [color, setColor] = useState("");
 
   if (error) {
     return (
@@ -76,17 +75,30 @@ export default function ProductDetail() {
     ? Math.min(...presentaciones.map((presentacion) => presentacion.precio))
     : 0;
 
-  const selectedColor = COLOR_OPTIONS.find((c) => c.value === color);
+  // Mantiene el rosa como opción inicial (como en el diseño original) y usa
+  // el primer glaseado activo si ese color ya no existe.
+  const defaultColor =
+    glaseados.find((c) => (c.nombre ?? "").toLowerCase() === "rosa") ??
+    glaseados[0];
+  const selectedColor =
+    glaseados.find((c) => c.value === color) ?? defaultColor;
+  const selectedColorValue = selectedColor?.value ?? "";
+  const canAddToCart = Boolean(selectedPresentation && selectedColor);
 
   const handleAddToCart = () => {
+    if (!canAddToCart) return;
+
     const { merged } = addItem(
       {
         productId: producto.id,
         name: producto.name,
         image: producto.image,
         quantity: selectedQuantity,
-        color: selectedColor?.label ?? color,
-        colorHex: selectedColor?.hex,
+        presentationId: selectedPresentation.id,
+        unitPrice: currentPrice,
+        colorId: Number(selectedColor.id),
+        color: selectedColor.label,
+        colorHex: selectedColor.hex,
       },
       { fromPath: location.pathname }
     );
@@ -129,10 +141,16 @@ export default function ProductDetail() {
               />
 
               <ColorSelector
-                options={COLOR_OPTIONS}
-                value={color}
+                options={glaseados}
+                value={selectedColorValue}
                 onChange={setColor}
               />
+
+              {glaseados.length === 0 && (
+                <p className="form-error">
+                  No hay colores de glaseado disponibles en este momento.
+                </p>
+              )}
 
               <Button
                 className="btn-add-to-cart"
@@ -140,6 +158,7 @@ export default function ProductDetail() {
                 disableRipple
                 fullWidth
                 onClick={handleAddToCart}
+                disabled={!canAddToCart}
                 startIcon={<i className="fa-solid fa-cart-plus" />}
               >
                 Añadir al Carrito

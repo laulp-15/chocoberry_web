@@ -1,5 +1,4 @@
 // src/features/admin/orders/components/OrderStatusBadge.jsx
-import React from "react";
 import { getStatusMeta } from "../data/orderStatus";
 import "./OrderStatusBadge.css";
 

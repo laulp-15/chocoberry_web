@@ -1,0 +1,194 @@
+// src/models/pedido.model.js
+// Acceso a la tabla `pedido` (cabecera) y creación transaccional con sus
+// líneas (productoPedido). Los nombres de columnas siguen EXACTAMENTE la
+// capitalización del script SQL.
+import { query, withTransaction } from '../config/db.js';
+import * as productoPedidoModel from './productoPedido.model.js';
+
+// Columnas de cabecera que se pueden actualizar (lista blanca).
+const CAMPOS_ACTUALIZABLES = [
+  'mensaje_tarjeta',
+  'fecha_entrega',
+  'direccion',
+  'barrio',
+  'precio_domicilio',
+  'nombre_receptor',
+  'telefono_receptor',
+  'instrucciones_entrega',
+  'id_municipio',
+];
+
+// Columnas que gestiona el repartidor (evidencia de entrega).
+const CAMPOS_ENTREGA = ['observaciones_entrega', 'evidencia_entrega'];
+
+const SELECT_BASE = `SELECT p.*, e.nombre AS estado, m.nombre AS municipio,
+                            u.nombres, u.apellidos, u.correo, u.telefono,
+                            u.tipo_documento, u.numero_documento
+                       FROM pedido p
+                       JOIN estadosPedido e ON e.id = p.id_estado
+                       JOIN municipio m ON m.id = p.id_municipio
+                       JOIN usuario u ON u.id = p.id_usuario`;
+
+/** Lista pedidos con filtros opcionales (todos aplicados con parámetros). */
+export async function listar({
+  estado,
+  estados,
+  idEstado,
+  idMunicipio,
+  idUsuario,
+  cliente,
+  fechaDesde,
+  fechaHasta,
+} = {}) {
+  const where = [];
+  const params = [];
+
+  if (estado) {
+    where.push('LOWER(e.nombre) = LOWER(?)');
+    params.push(estado);
+  }
+
+  // Permite consultar un subconjunto de estados (ej. la vista de Ventas).
+  if (Array.isArray(estados) && estados.length > 0) {
+    const marcadores = estados.map(() => '?').join(', ');
+    where.push(`e.nombre IN (${marcadores})`);
+    params.push(...estados);
+  }
+
+  if (idEstado) {
+    where.push('p.id_estado = ?');
+    params.push(idEstado);
+  }
+
+  if (idMunicipio) {
+    where.push('p.id_municipio = ?');
+    params.push(idMunicipio);
+  }
+
+  if (idUsuario) {
+    where.push('p.id_usuario = ?');
+    params.push(idUsuario);
+  }
+
+  if (cliente) {
+    const like = `%${cliente}%`;
+    where.push(
+      `(u.nombres LIKE ? OR u.apellidos LIKE ?
+        OR CONCAT(u.nombres, ' ', u.apellidos) LIKE ?
+        OR u.numero_documento LIKE ? OR u.correo LIKE ?)`
+    );
+    params.push(like, like, like, like, like);
+  }
+
+  if (fechaDesde) {
+    where.push('p.fecha >= ?');
+    params.push(`${fechaDesde} 00:00:00`);
+  }
+
+  if (fechaHasta) {
+    where.push('p.fecha <= ?');
+    params.push(`${fechaHasta} 23:59:59`);
+  }
+
+  const sql = `${SELECT_BASE}${where.length ? ` WHERE ${where.join(' AND ')}` : ''}
+               ORDER BY p.fecha DESC, p.id DESC`;
+  return query(sql, params);
+}
+
+export async function buscarPorId(id) {
+  const rows = await query(`${SELECT_BASE} WHERE p.id = ? LIMIT 1`, [id]);
+  return rows[0] ?? null;
+}
+
+/**
+ * Inserta la cabecera y todas sus líneas en una sola transacción.
+ * Devuelve el id del pedido creado.
+ */
+export async function crearConLineas({ pedido, lineas }) {
+  return withTransaction(async (conexion) => {
+    const [resultado] = await conexion.execute(
+      `INSERT INTO pedido
+         (mensaje_tarjeta, fecha_entrega, direccion, barrio, precio_domicilio,
+          nombre_receptor, telefono_receptor, comprobante_pago,
+          instrucciones_entrega, id_usuario, id_estado, id_municipio)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        pedido.mensaje_tarjeta ?? null,
+        pedido.fecha_entrega,
+        pedido.direccion,
+        pedido.barrio,
+        pedido.precio_domicilio,
+        pedido.nombre_receptor,
+        pedido.telefono_receptor,
+        pedido.comprobante_pago,
+        pedido.instrucciones_entrega ?? null,
+        pedido.id_usuario,
+        pedido.id_estado,
+        pedido.id_municipio,
+      ]
+    );
+
+    const idPedido = resultado.insertId;
+    await productoPedidoModel.insertarLineas(conexion, idPedido, lineas);
+    return idPedido;
+  });
+}
+
+/** Actualiza solo las columnas de cabecera presentes en `campos`. */
+export async function actualizar(id, campos) {
+  const asignaciones = [];
+  const valores = [];
+
+  for (const columna of CAMPOS_ACTUALIZABLES) {
+    if (campos[columna] !== undefined) {
+      asignaciones.push(`${columna} = ?`);
+      valores.push(campos[columna]);
+    }
+  }
+
+  if (asignaciones.length === 0) return buscarPorId(id);
+
+  valores.push(id);
+  await query(`UPDATE pedido SET ${asignaciones.join(', ')} WHERE id = ?`, valores);
+  return buscarPorId(id);
+}
+
+/** Actualiza la evidencia/observaciones de entrega. */
+export async function actualizarEntrega(id, campos) {
+  const asignaciones = [];
+  const valores = [];
+
+  for (const columna of CAMPOS_ENTREGA) {
+    if (campos[columna] !== undefined) {
+      asignaciones.push(`${columna} = ?`);
+      valores.push(campos[columna]);
+    }
+  }
+
+  if (asignaciones.length === 0) return buscarPorId(id);
+
+  valores.push(id);
+  await query(`UPDATE pedido SET ${asignaciones.join(', ')} WHERE id = ?`, valores);
+  return buscarPorId(id);
+}
+
+/** Cambia el estado sin tocar el motivo de rechazo. */
+export async function cambiarEstado(id, idEstado) {
+  await query('UPDATE pedido SET id_estado = ? WHERE id = ?', [idEstado, id]);
+  return buscarPorId(id);
+}
+
+/** Pasa el pedido a Rechazado y guarda el motivo. */
+export async function rechazar(id, idEstado, motivo) {
+  await query('UPDATE pedido SET id_estado = ?, motivo_rechazo = ? WHERE id = ?', [
+    idEstado,
+    motivo,
+    id,
+  ]);
+  return buscarPorId(id);
+}
+
+/** Elimina la cabecera; las líneas se borran en cascada (FK). */
+export async function eliminar(id) {
+  await query('DELETE FROM pedido WHERE id = ?', [id]);
+}

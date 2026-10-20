@@ -1,5 +1,5 @@
 // src/features/cart/pages/CartPage.jsx
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useCart } from "../hooks/UseCart";
 import CartItemCard from "../components/CartItemCard";
@@ -11,17 +11,18 @@ import "./CartPage.css";
 export default function CartPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { items, removeItem, updateUnits, updateField, clearCart, cardMessage, setCardMessage } = useCart();
+  const { items, removeItem, updateUnits, updateField, clearCart } = useCart();
   const [clearModalOpen, setClearModalOpen] = useState(false);
-  const [mergedNotificationOpen, setMergedNotificationOpen] = useState(false);
+  const [mergedNotificationOpen, setMergedNotificationOpen] = useState(
+    () => Boolean(location.state?.merged)
+  );
 
   // Si venimos de "Añadir al Carrito" y el producto se fusionó con una línea
-  // ya existente (mismo producto + cantidad + color), avisamos aquí.
+  // ya existente (mismo producto + cantidad + color), avisamos aquí. El aviso
+  // se inicializa desde el estado de navegación y este se limpia de la historia.
   useEffect(() => {
-    if (location.state?.merged) {
-      setMergedNotificationOpen(true);
-      navigate(location.pathname, { replace: true, state: {} });
-    }
+    if (!location.state?.merged) return;
+    navigate(location.pathname, { replace: true, state: {} });
   }, [location.state, location.pathname, navigate]);
 
   const handleCheckout = () => {

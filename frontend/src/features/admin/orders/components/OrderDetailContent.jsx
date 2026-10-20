@@ -1,28 +1,33 @@
 // src/features/admin/orders/components/OrderDetailContent.jsx
-import React, { useState } from "react";
+import { useState } from "react";
 import OrderStatusBadge from "./OrderStatusBadge";
 import ImageLightbox from "../../../../shared/components/ImageLightbox";
 import { formatPrice } from "../../../../shared/utils/formatPrice";
-import { formatDisplayDate, getMunicipioLabel, getProofUrl, getInitials, isPdfProof } from "../utils/orderDisplay";
+import {
+  formatDisplayDate,
+  getInitials,
+  getProofUrl,
+  isPdfProof,
+} from "../utils/orderDisplay";
 import "./OrderDetailContent.css";
 
 /**
  * Contenido de "ver detalle" de un pedido — sin ningún wrapper (ni Modal,
  * ni layout de página). Se usa dentro de OrderDetailModal (Pedidos).
- * 
+ *
  * @param {object} props
  * @param {object} props.order
  */
 export default function OrderDetailContent({ order }) {
-  const municipioLabel = getMunicipioLabel(order.municipio);
-  const proofUrl = getProofUrl(order.comprobante);
-  const proofIsPdf = isPdfProof(order.comprobante);
-  
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [evidenceLightboxOpen, setEvidenceLightboxOpen] = useState(false);
 
-  // Extraemos la evidencia (puede venir como order.evidence o dentro de order)
-  const evidence = order.evidence;
+  if (!order) return null;
+
+  const proofUrl = getProofUrl(order.comprobante);
+  const proofIsPdf = isPdfProof(order.comprobante);
+  const evidenceUrl = getProofUrl(order.evidenciaEntrega);
+  const hasEvidence = Boolean(evidenceUrl || order.observacionesEntrega);
 
   return (
     <div className="order-detail-content">
@@ -33,37 +38,33 @@ export default function OrderDetailContent({ order }) {
           <div className="order-detail-hero-info">
             <div className="order-detail-hero-name">{order.cliente}</div>
             <div className="order-detail-hero-id">
-              N. identificación: <strong>{order.clienteIdentificacion || "—"}</strong>
+              N. identificación:{" "}
+              <strong>{order.clienteIdentificacion || "—"}</strong>
             </div>
+            {(order.clienteCorreo || order.clienteTelefono) && (
+              <div className="order-detail-hero-id">
+                {[order.clienteCorreo, order.clienteTelefono]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </div>
+            )}
           </div>
         </div>
 
         <div className="order-detail-hero-side">
           <OrderStatusBadge status={order.estado} />
           <span className="order-detail-date">
-            <i className="fa-solid fa-calendar" /> Entrega: {formatDisplayDate(order.fecha)}
+            <i className="fa-solid fa-calendar" /> Entrega:{" "}
+            {formatDisplayDate(order.fechaEntrega)}
           </span>
           <div className="order-detail-hero-total">
             <span className="order-detail-hero-total-label">Total</span>
-            <strong className="order-detail-hero-total-value">{formatPrice(order.total)}</strong>
+            <strong className="order-detail-hero-total-value">
+              {formatPrice(order.total)}
+            </strong>
           </div>
         </div>
       </div>
-
-      {order.estado === "cancelado" && order.motivoCancelacion && (
-        <div className="detail-section cancel-reason-section">
-          <div className="detail-section-title">
-            <i className="fa-solid fa-circle-xmark" />
-            Motivo de cancelación
-          </div>
-          <div className="order-detail-value">{order.motivoCancelacion}</div>
-          {order.fechaCancelacion && (
-            <div className="order-detail-label" style={{ marginTop: "8px" }}>
-              Cancelado el {formatDisplayDate(order.fechaCancelacion)}
-            </div>
-          )}
-        </div>
-      )}
 
       {order.estado === "rechazado" && order.motivoRechazo && (
         <div className="detail-section cancel-reason-section">
@@ -72,11 +73,6 @@ export default function OrderDetailContent({ order }) {
             Motivo del rechazo
           </div>
           <div className="order-detail-value">{order.motivoRechazo}</div>
-          {order.fechaRechazo && (
-            <div className="order-detail-label" style={{ marginTop: "8px" }}>
-              Rechazado el {formatDisplayDate(order.fechaRechazo)}
-            </div>
-          )}
         </div>
       )}
 
@@ -100,7 +96,7 @@ export default function OrderDetailContent({ order }) {
             </div>
             <div>
               <div className="order-detail-label">Municipio</div>
-              <div className="order-detail-value">{municipioLabel}</div>
+              <div className="order-detail-value">{order.municipio || "—"}</div>
             </div>
           </div>
         </div>
@@ -110,19 +106,25 @@ export default function OrderDetailContent({ order }) {
           <div className="order-detail-grid">
             <div>
               <div className="order-detail-label">Quién recibe</div>
-              <div className="order-detail-value">{order.recipientName || "—"}</div>
+              <div className="order-detail-value">
+                {order.nombreReceptor || "—"}
+              </div>
             </div>
             <div>
               <div className="order-detail-label">Teléfono</div>
-              <div className="order-detail-value">{order.recipientPhone || "—"}</div>
+              <div className="order-detail-value">
+                {order.telefonoReceptor || "—"}
+              </div>
             </div>
           </div>
         </div>
 
-        {order.instrucciones && (
+        {order.instruccionesEntrega && (
           <div className="order-detail-subsection">
             <div className="order-detail-subsection-title">Instrucciones</div>
-            <div className="order-detail-value">{order.instrucciones}</div>
+            <div className="order-detail-value">
+              {order.instruccionesEntrega}
+            </div>
           </div>
         )}
       </div>
@@ -134,44 +136,64 @@ export default function OrderDetailContent({ order }) {
           Productos
         </div>
 
-        <div className="order-detail-products">
-          {order.products.map((line) => (
-            <div key={line.lineId} className="order-detail-product-row">
-              <div>
-                <div className="order-detail-product-name">
-                  {line.productName} <span>x{line.units}</span>
-                </div>
-                <div className="order-detail-product-meta">
-                  <span>{line.quantity} fresas</span>
-                  <span className="order-detail-product-color">
-                    <span className="color-dot" style={{ backgroundColor: line.colorHex }} />
-                    {line.color}
-                  </span>
-                </div>
-                {(line.decorativeMessage || line.extraCustomization) && (
-                  <div className="order-detail-product-note">
-                    {line.decorativeMessage && <span>“{line.decorativeMessage}”</span>}
-                    {line.extraCustomization && <span>{line.extraCustomization}</span>}
+        {order.lineas.length === 0 ? (
+          <div className="order-detail-muted">Este pedido no tiene líneas.</div>
+        ) : (
+          <div className="order-detail-products">
+            {order.lineas.map((linea) => (
+              <div
+                key={linea.id ?? linea.lineId}
+                className="order-detail-product-row"
+              >
+                <div>
+                  <div className="order-detail-product-name">
+                    {linea.productoNombre}{" "}
+                    <span>x{linea.unidades}</span>
                   </div>
-                )}
+                  <div className="order-detail-product-meta">
+                    <span>{linea.cantidadFresas} fresas</span>
+                    <span className="order-detail-product-color">
+                      <span
+                        className="color-dot"
+                        style={{
+                          backgroundColor: linea.colorHex || "transparent",
+                        }}
+                      />
+                      {linea.colorNombre || "—"}
+                    </span>
+                  </div>
+                  {(linea.mensajePersonalizado ||
+                    linea.personalizacionAdicional) && (
+                    <div className="order-detail-product-note">
+                      {linea.mensajePersonalizado && (
+                        <span>“{linea.mensajePersonalizado}”</span>
+                      )}
+                      {linea.personalizacionAdicional && (
+                        <span>{linea.personalizacionAdicional}</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="order-detail-product-price">
+                  {formatPrice(linea.precioUnitario * linea.unidades)}
+                </div>
               </div>
-              <div className="order-detail-product-price">{formatPrice(line.unitPrice * line.units)}</div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
-        {order.cardMessage && (
+        {order.mensajeTarjeta && (
           <div className="order-detail-card-message">
             <i className="fa-solid fa-envelope" />
             <div>
               <div className="order-detail-label">Mensaje para la tarjeta</div>
-              <div className="order-detail-value">{order.cardMessage}</div>
+              <div className="order-detail-value">{order.mensajeTarjeta}</div>
             </div>
           </div>
         )}
       </div>
 
-      {/* --- Totales (van justo después de los productos) --- */}
+      {/* --- Totales --- */}
       <div className="order-detail-totals">
         <div>
           <span>Subtotal</span>
@@ -179,7 +201,7 @@ export default function OrderDetailContent({ order }) {
         </div>
         <div>
           <span>Envío</span>
-          <span>{formatPrice(order.shippingCost)}</span>
+          <span>{formatPrice(order.shippingCost ?? order.precioDomicilio)}</span>
         </div>
         <div className="order-detail-total-row">
           <span>Total</span>
@@ -199,17 +221,32 @@ export default function OrderDetailContent({ order }) {
               <div className="order-detail-label">Comprobante</div>
               {proofUrl ? (
                 proofIsPdf ? (
-                  <a href={proofUrl} target="_blank" rel="noreferrer" className="order-detail-proof-pdf">
+                  <a
+                    href={proofUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="order-detail-proof-pdf"
+                  >
                     <i className="fa-solid fa-file-pdf" />
                     Ver comprobante PDF
                   </a>
                 ) : (
-                  <button type="button" className="order-detail-proof-link" onClick={() => setLightboxOpen(true)}>
-                    <img src={proofUrl} alt="Comprobante de pago" className="order-detail-proof-thumb" />
+                  <button
+                    type="button"
+                    className="order-detail-proof-link"
+                    onClick={() => setLightboxOpen(true)}
+                  >
+                    <img
+                      src={proofUrl}
+                      alt="Comprobante de pago"
+                      className="order-detail-proof-thumb"
+                    />
                   </button>
                 )
               ) : (
-                <div className="order-detail-value order-detail-muted">Sin comprobante adjunto</div>
+                <div className="order-detail-value order-detail-muted">
+                  Sin comprobante adjunto
+                </div>
               )}
             </div>
           </div>
@@ -221,37 +258,55 @@ export default function OrderDetailContent({ order }) {
             Evidencia de entrega
           </div>
 
-          {!evidence ? (
+          {!hasEvidence ? (
             <div className="order-detail-muted">
               Este pedido todavía no cuenta con evidencia de entrega registrada.
             </div>
           ) : (
             <>
-              <div className="order-detail-label" style={{ marginTop: "8px" }}>Fecha y hora registrada</div>
-              <div className="order-detail-value" style={{ marginBottom: 12 }}>
-                {evidence.deliveredAt ? formatDisplayDate(evidence.deliveredAt) : "—"}
+              <div className="order-detail-label" style={{ marginTop: "8px" }}>
+                Observaciones del repartidor
               </div>
-
-              <div className="order-detail-label">Observaciones del repartidor</div>
-              <div className="delivery-evidence-comments" style={{ padding: "10px", background: "var(--secundario-3, #f9f9f9)", borderRadius: "8px", marginTop: "4px", marginBottom: "12px" }}>
-                {evidence.comments || "Sin observaciones registradas."}
+              <div
+                className="delivery-evidence-comments"
+                style={{
+                  padding: "10px",
+                  background: "var(--secundario-3, #f9f9f9)",
+                  borderRadius: "8px",
+                  marginTop: "4px",
+                  marginBottom: "12px",
+                }}
+              >
+                {order.observacionesEntrega || "Sin observaciones registradas."}
               </div>
 
               <div className="order-detail-label" style={{ marginTop: 14 }}>
                 Foto de evidencia
               </div>
-              {evidence.photoUrl ? (
+              {evidenceUrl ? (
                 <button
                   type="button"
                   className="order-detail-proof-link"
                   onClick={() => setEvidenceLightboxOpen(true)}
-                  style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "block", marginTop: "4px" }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    cursor: "pointer",
+                    display: "block",
+                    marginTop: "4px",
+                  }}
                 >
                   <img
                     className="delivery-evidence-photo order-detail-proof-thumb"
-                    src={evidence.photoUrl}
+                    src={evidenceUrl}
                     alt={`Evidencia de entrega del pedido #${order.id}`}
-                    style={{ width: "120px", height: "120px", objectFit: "cover", borderRadius: "8px" }}
+                    style={{
+                      width: "120px",
+                      height: "120px",
+                      objectFit: "cover",
+                      borderRadius: "8px",
+                    }}
                   />
                 </button>
               ) : (
@@ -261,6 +316,7 @@ export default function OrderDetailContent({ order }) {
               )}
             </>
           )}
+
         </div>
       </div>
 
@@ -273,11 +329,11 @@ export default function OrderDetailContent({ order }) {
       />
 
       {/* Visor para foto de evidencia de entrega */}
-      {evidence && evidence.photoUrl && (
+      {evidenceUrl && (
         <ImageLightbox
           open={evidenceLightboxOpen}
           onClose={() => setEvidenceLightboxOpen(false)}
-          src={evidence.photoUrl}
+          src={evidenceUrl}
           alt={`Evidencia de entrega del pedido #${order.id}`}
         />
       )}

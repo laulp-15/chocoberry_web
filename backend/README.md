@@ -49,10 +49,27 @@ Se definen en `.env` (nunca se sube al repositorio):
 ## Scripts
 
 ```bash
-npm run dev      # desarrollo con recarga automática (nodemon)
-npm start        # producción (node src/server.js)
-npm test         # pruebas con Jest + Supertest
+npm run dev            # desarrollo con recarga automática (nodemon)
+npm start              # producción (node src/server.js)
+npm test               # pruebas con Jest + Supertest
+npm run seed:catalogo  # carga el catálogo inicial (categorías, productos, etc.)
+npm run seed:pedidos   # crea 15 pedidos de demostración con el catálogo real
 ```
+
+El seed de pedidos no escribe etiquetas visibles en los pedidos. Guarda los IDs
+del lote en `scripts/.seed-pedidos.json` (ignorado por git) para poder
+reemplazarlo después. Para borrar el lote anterior y volver a crearlo:
+
+```bash
+npm run seed:pedidos -- --reset
+```
+
+Ese `--reset` solo elimina los pedidos del manifiesto y los seeds antiguos
+marcados con `[SEED-xx]`; no toca pedidos reales. El lote incluye pedidos
+recientes en `Pendiente`, pedidos antiguos `Entregado` y algunos casos
+`Rechazado`/`Cancelado`. Varios pedidos quedan sin comprobante para simular
+pagos pendientes; los entregados se crean sin evidencia, porque esa carga es
+exclusiva del repartidor.
 
 ## Estructura
 
@@ -190,10 +207,13 @@ Base: `/api`
 | GET | `/catalogo/presentaciones` | Presentaciones activas | Público |
 | GET | `/catalogo/productos` | Productos activos (filtros `nombre`, `categoria`, `idCategoria`) | Público |
 | GET | `/catalogo/productos/:id` | Detalle de un producto activo (`404` si está inactivo) | Público |
+| GET | `/catalogo/municipios` | Municipios activos con su precio de domicilio | Público |
+| GET | `/catalogo/glaseados` | Colores de glaseado activos (`codigoHex`) | Público |
 
 > Rutas **sin sesión**, pensadas para la tienda. Devuelven únicamente registros
-> con `estado = true`, de modo que el panel (`/categorias`, `/productos`)
-> conserva el chequeo de permisos y la tienda no necesita token.
+> con `estado = true`, de modo que el panel (`/categorias`, `/productos`,
+> `/municipios`, `/glaseados`) conserva el chequeo de permisos y la tienda no
+> necesita token.
 
 > **Reglas de negocio del catálogo:**
 > - Los nombres de **categoría** y **producto** son únicos sin distinguir
@@ -202,8 +222,115 @@ Base: `/api`
 > - No se elimina una categoría con productos (`409`), ni un producto o
 >   presentación que aparezca en algún pedido (`409`). Se sugiere desactivarlos.
 
-> Los módulos de pedidos, entregas, ventas, reseñas y dashboard se agregan
+> Los módulos de entregas, reseñas y dashboard se agregan
 > progresivamente en `src/routes/index.js`.
+
+### Pedidos (`/api/pedidos`)
+
+| Método | Ruta | Descripción | Permiso |
+| --- | --- | --- | --- |
+| GET | `/pedidos` | Lista con filtros `estado`, `idEstado`, `idMunicipio`, `idUsuario`, `cliente`, `fechaDesde`, `fechaHasta` | Pedidos · Ver |
+| GET | `/pedidos/:id` | Detalle de un pedido | Pedidos · Ver |
+| GET | `/pedidos/mios` | Pedidos del usuario autenticado | Pedidos · Ver |
+| GET | `/pedidos/mios/:id` | Detalle de un pedido propio | Pedidos · Ver |
+| POST | `/pedidos` | Crea un pedido con su comprobante (multipart) | Pedidos · Crear |
+| PUT | `/pedidos/:id` | Edita la cabecera (no las líneas) | Pedidos · Editar |
+| PATCH | `/pedidos/:id/estado` | Cambia el estado (`{ estado }`) | Pedidos · Cambiar estado |
+| PATCH | `/pedidos/:id/rechazar` | Rechaza con motivo (`{ motivo }`) | Pedidos · Cambiar estado |
+| PATCH | `/pedidos/:id/entrega` | Evidencia y observaciones del repartidor | Pedidos · Editar + solo Repartidor |
+| DELETE | `/pedidos/:id` | Elimina el pedido y sus líneas | Pedidos · Eliminar |
+
+> **Alcance por rol:** un **Cliente** solo ve sus propios pedidos (tanto en
+> `/pedidos` como en `/pedidos/mios`); el **Repartidor** ve todos pero solo
+> puede registrar la evidencia de entrega, nunca cambiar el estado ni editar la
+> cabecera. El panel (Administrador) gestiona todo el ciclo, pero **no sube ni
+> actualiza evidencia de entrega**: esa acción es exclusiva del Repartidor.
+
+> **Estados y transiciones:**
+> `Pendiente → En preparación / Rechazado` · `En preparación → Despachado` ·
+> `Despachado → Entregado / Cancelado`. **Entregado, Rechazado y Cancelado son
+> finales** (no admiten más cambios de estado). El rechazo solo aplica desde
+> `Pendiente` y exige `motivo`; para rechazar se usa su endpoint, no el de
+> cambio de estado.
+
+> **Creación (multipart/form-data):** campo `comprobante`
+> (PNG/JPG/WEBP, máx. 5 MB) + `fechaEntrega` (`YYYY-MM-DD`, se guarda a las
+> 00:00), `direccion`, `barrio`, `idMunicipio`, `nombreReceptor`,
+> `telefonoReceptor`, `lineas` (array JSON **como texto**) y los opcionales
+> `mensajeTarjeta`, `instruccionesEntrega`, `idUsuario` (solo el admin puede
+> crear a nombre de otro usuario). Cada línea es
+> `{ idProducto, idPresentacion, cantidadProductos, idColorGlaseado, mensajePersonalizado?, personalizacionAdicional? }`.
+
+> **Precios:** se calculan siempre en el servidor con `presentacion.precio`.
+> `pedido.precio_domicilio` es un **snapshot** del precio del municipio al
+> momento de crear el pedido; el total es derivado (`subtotal + domicilio`) y
+> no existe como columna.
+
+> **Mensaje personalizado (letras de chocolate):** por línea, el máximo de
+> caracteres es la `cantidad_fresas` de la presentación (una letra por fresa) y
+> nunca más de 255 → `422`.
+
+> **Evidencia de entrega:** solo el rol **Repartidor** puede registrarla o
+> actualizarla. Se envía como archivo en el campo `evidencia` y solo se permite
+> con el pedido **Despachado** o **Entregado**; registrarla no cambia el estado.
+> Si el pedido aún no tiene evidencia, la foto es obligatoria.
+
+### Ventas (`/api/ventas`)
+
+| Método | Ruta | Descripción | Permiso |
+| --- | --- | --- | --- |
+| GET | `/ventas` | Lista las ventas con filtros `estado`, `idMunicipio`, `idUsuario`, `cliente`, `fechaDesde`, `fechaHasta` | Ventas · Ver |
+| GET | `/ventas/:id` | Detalle de una venta | Ventas · Ver |
+
+> **Ventas no es una tabla nueva:** es una vista de solo lectura sobre
+> `pedido`/`productoPedido`. No existen endpoints para crear, editar ni
+> eliminar ventas; el ciclo de vida sigue viviendo en Pedidos.
+
+> **Qué cuenta como venta:** un pedido en **En preparación**, **Despachado**,
+> **Entregado** o **Cancelado**. Se excluyen **Pendiente** y **Rechazado**
+> porque el pago aún no está aprobado. Por eso un pedido cancelado sigue
+> apareciendo en Ventas: su pago ya estaba confirmado.
+
+> **Detalle:** `GET /ventas/:id` responde `404` si el pedido existe pero está
+> en un estado que no es venta. Los filtros por un estado no vendible
+> (`pendiente` o `rechazado`) responden `422`. El listado conserva el orden
+> `fecha DESC, id DESC` de Pedidos y devuelve el mismo contrato de pedido.
+
+> Hoy el permiso **Ventas · Ver** solo lo tiene el rol **Administrador**. Los
+> reportes (`Generar reporte` y `Exportar reporte`) y la generación de
+> comprobantes quedan para una fase posterior.
+
+### Municipios y glaseados (`/api/municipios`, `/api/glaseados`)
+
+| Método | Ruta | Descripción | Permiso |
+| --- | --- | --- | --- |
+| GET | `/municipios` | Lista con filtros `nombre`, `estado` | Productos · Ver |
+| GET | `/municipios/:id` | Detalle de un municipio | Productos · Ver |
+| POST | `/municipios` | Crea (`{ nombre, precioDomicilio }` o alias `costoEnvio`) | Productos · Crear |
+| PUT | `/municipios/:id` | Actualiza nombre, precio y/o estado | Productos · Editar |
+| PATCH | `/municipios/:id/estado` | Activa/desactiva (`{ estado: true }`) | Productos · Cambiar estado |
+| DELETE | `/municipios/:id` | Elimina (bloqueado con `409` si tiene pedidos) | Productos · Eliminar |
+| GET | `/glaseados` | Lista con filtros `nombre`, `estado` | Productos · Ver |
+| GET | `/glaseados/:id` | Detalle de un glaseado | Productos · Ver |
+| POST | `/glaseados` | Crea (`{ nombre, codigoHex }` o alias `hex`) | Productos · Crear |
+| PUT | `/glaseados/:id` | Actualiza nombre, color y/o estado | Productos · Editar |
+| PATCH | `/glaseados/:id/estado` | Activa/desactiva (`{ estado: true }`) | Productos · Cambiar estado |
+| DELETE | `/glaseados/:id` | Elimina (bloqueado con `409` si está en pedidos) | Productos · Eliminar |
+
+> No existe un módulo "Municipios" ni "Glaseados" en la tabla `modulo`, así que
+> estas rutas reutilizan los permisos del módulo **Productos**, igual que
+> Presentaciones. La tienda los consulta sin sesión en
+> `/catalogo/municipios` y `/catalogo/glaseados` (solo activos).
+
+> **Reglas de negocio:**
+> - El nombre de municipios y glaseados es único sin distinguir
+>   mayúsculas/minúsculas → `409`.
+> - El costo de envío debe ser un número ≥ 0; el color se normaliza a
+>   `#RRGGBB` (acepta `#abcdef` o `abcdef`) → `422` si no es válido.
+> - No se elimina un municipio con pedidos (`409`) ni un glaseado usado en
+>   líneas de pedido (`409`). Se sugiere desactivarlos.
+> - Un usuario sin rol administrador que consulte estas rutas solo ve los
+>   registros activos (el Cliente hereda `Productos · Ver`).
 
 ### Roles (`/api/roles`)
 
@@ -262,8 +389,8 @@ Base: `/api`
 - [x] Acceso y usuarios
 - [x] Roles y permisos
 - [x] Categorías, productos y presentaciones (+ catálogo público)
-- [ ] Pedidos
+- [x] Pedidos + maestros (municipios y glaseados, con CRUD)
+- [x] Ventas (vista de solo lectura de pedidos confirmados)
 - [ ] Entregas
-- [ ] Ventas
 - [ ] Reseñas
 - [ ] Dashboard

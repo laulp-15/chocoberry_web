@@ -1,18 +1,15 @@
 // src/features/admin/sales/pages/SalesListPage.jsx
-import React from "react";
 import { useNavigate } from "react-router-dom";
 import DataTable from "../../../../shared/components/DataTable";
-import { INITIAL_ORDERS } from "../../orders/data/MockOrders";
+import OrderStatusBadge from "../../orders/components/OrderStatusBadge";
+import useSales from "../hooks/useSales";
+import { formatDisplayDate } from "../../orders/utils/orderDisplay";
 import { formatPrice } from "../../../../shared/utils/formatPrice";
-
-// Ventas = pedidos ya confirmados (en preparación o despachados).
-// Los pendientes y cancelados NO son ventas todavía, no aparecen aquí.
-const SALE_STATUSES = ["en_preparacion", "despachado"];
+import "../../../../shared/css/adminCrud.css";
 
 export default function SalesListPage() {
   const navigate = useNavigate();
-
-  const sales = INITIAL_ORDERS.filter((o) => SALE_STATUSES.includes(o.estado));
+  const { sales, loading, error, reload } = useSales();
 
   const handleGenerateReceipt = (row) => {
     console.log("TODO: generar comprobante digital (PDF) para el pedido", row.id);
@@ -24,7 +21,18 @@ export default function SalesListPage() {
 
   const columns = [
     { key: "cliente", label: "Cliente" },
-    { key: "fecha", label: "Fecha" },
+    {
+      key: "estado",
+      label: "Estado",
+      render: (row) => (
+        <OrderStatusBadge status={row.estado} title="Estado de la venta" />
+      ),
+    },
+    {
+      key: "fecha",
+      label: "Fecha",
+      render: (row) => formatDisplayDate(row.fecha),
+    },
     { key: "total", label: "Total", render: (row) => formatPrice(row.total) },
     {
       key: "actions",
@@ -55,12 +63,30 @@ export default function SalesListPage() {
   ];
 
   return (
-    <DataTable
-      title="Ventas"
-      description="Consulta las ventas confirmadas del negocio."
-      columns={columns}
-      data={sales}
-      searchPlaceholder="Buscar por cliente..."
-    />
+    <div className="crud-page">
+      <DataTable
+        title="Ventas"
+        description="Consulta las ventas confirmadas del negocio."
+        columns={columns}
+        data={sales}
+        searchPlaceholder="Buscar por cliente..."
+        emptyMessage={
+          loading
+            ? "Cargando ventas..."
+            : error
+              ? "No se pudieron cargar las ventas."
+              : "No hay ventas para mostrar."
+        }
+      />
+
+      {error && (
+        <p className="crud-error-hint" role="alert">
+          <i className="fa-solid fa-triangle-exclamation" /> {error}
+          <button type="button" className="crud-retry" onClick={reload}>
+            Reintentar
+          </button>
+        </p>
+      )}
+    </div>
   );
 }

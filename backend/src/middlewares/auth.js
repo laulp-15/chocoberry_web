@@ -30,4 +30,20 @@ export const verifyToken = asyncHandler(async (req, res, next) => {
   next();
 });
 
+/**
+ * Restringe una ruta a uno o varios roles por nombre (ej. "Repartidor").
+ * Debe usarse después de verifyToken.
+ */
+export function checkRol(...roles) {
+  const permitidos = roles.map((rol) => String(rol).trim().toLowerCase());
+
+  return (req, res, next) => {
+    const actual = String(req.usuario?.nombre_rol ?? '').trim().toLowerCase();
+    if (!permitidos.includes(actual)) {
+      return next(new ForbiddenError('No tienes permiso para realizar esta acción.'));
+    }
+    return next();
+  };
+}
+
 export default verifyToken;

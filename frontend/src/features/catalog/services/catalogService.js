@@ -1,12 +1,15 @@
 // src/features/catalog/services/catalogService.js
 //
-// Catálogo público de la tienda (no requiere sesión): productos activos,
-// categorías activas y presentaciones con sus precios.
+// Catálogo público de la tienda (no requiere sesión): productos y categorías
+// activas, presentaciones con sus precios, municipios con su costo de envío y
+// glaseados activos.
 // Solo esta capa conoce las rutas de /api/catalogo.
 
 import { api } from '../../../shared/api/client';
 import {
   mapCategorias,
+  mapGlaseados,
+  mapMunicipios,
   mapPresentaciones,
   mapProducto,
   mapProductos,
@@ -36,4 +39,16 @@ export async function listarPresentaciones() {
     auth: false,
   });
   return mapPresentaciones(presentaciones);
+}
+
+/** GET /catalogo/municipios (activos, con su costo de domicilio). */
+export async function listarMunicipios() {
+  const municipios = await api.get('/catalogo/municipios', { auth: false });
+  return mapMunicipios(municipios);
+}
+
+/** GET /catalogo/glaseados (colores activos). */
+export async function listarGlaseados() {
+  const glaseados = await api.get('/catalogo/glaseados', { auth: false });
+  return mapGlaseados(glaseados);
 }

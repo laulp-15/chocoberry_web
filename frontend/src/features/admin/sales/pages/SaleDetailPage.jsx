@@ -1,15 +1,13 @@
 // src/features/admin/sales/pages/SaleDetailPage.jsx
-import React from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import SaleReceipt from "../components/SaleReceipt";
-import { INITIAL_ORDERS } from "../../orders/data/MockOrders";
+import useSale from "../hooks/useSale";
 import "./SaleDetailPage.css";
 
 export default function SaleDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-
-  const sale = INITIAL_ORDERS.find((o) => String(o.id) === id);
+  const { sale, loading, error, notFound, reload } = useSale(id);
 
   const handleGenerateReceipt = () => {
     console.log("TODO: generar comprobante digital (PDF) para el pedido", id);
@@ -19,7 +17,15 @@ export default function SaleDetailPage() {
     console.log("TODO: descargar comprobante digital (PDF) del pedido", id);
   };
 
-  if (!sale) {
+  if (loading) {
+    return (
+      <div className="sale-detail-page">
+        <p>Cargando venta...</p>
+      </div>
+    );
+  }
+
+  if (notFound) {
     return (
       <div>
         <p>No encontramos esta venta.</p>
@@ -27,6 +33,23 @@ export default function SaleDetailPage() {
           <i className="fa-solid fa-arrow-left-long" />
           Volver a Ventas
         </button>
+      </div>
+    );
+  }
+
+  if (error || !sale) {
+    return (
+      <div className="sale-detail-page">
+        <p>{error || "No se pudo cargar la venta."}</p>
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+          <button type="button" className="btn-generate-receipt" onClick={reload}>
+            Reintentar
+          </button>
+          <button type="button" className="btn-download-receipt" onClick={() => navigate("/admin/ventas")}>
+            <i className="fa-solid fa-arrow-left-long" />
+            Volver a Ventas
+          </button>
+        </div>
       </div>
     );
   }
