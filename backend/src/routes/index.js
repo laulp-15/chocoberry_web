@@ -16,6 +16,7 @@ import catalogoRoutes from './catalogo.routes.js';
 import pedidoRoutes from './pedido.routes.js';
 import ventaRoutes from './venta.routes.js';
 import resenaRoutes from './resena.routes.js';
+import dashboardRoutes from './dashboard.routes.js';
 import municipioRoutes from './municipio.routes.js';
 import colorGlaseadoRoutes from './colorGlaseado.routes.js';
 
@@ -46,6 +47,8 @@ router.use('/pedidos', pedidoRoutes);
 router.use('/ventas', ventaRoutes);
 // Reseñas: panel de administración y creación de reseñas autenticadas.
 router.use('/resenas', resenaRoutes);
+// Dashboard administrativo: resumen de ventas, pedidos y reseñas.
+router.use('/dashboard', dashboardRoutes);
 // Datos maestros del panel (con permisos). La tienda los lee, solo activos,
 // desde /catalogo/municipios y /catalogo/glaseados.
 router.use('/municipios', municipioRoutes);
@@ -54,7 +57,6 @@ router.use('/glaseados', colorGlaseadoRoutes);
 // ---------------------------------------------------------------------------
 // Módulos pendientes:
 //   router.use('/entregas', entregaRoutes);
-//   router.use('/dashboard', dashboardRoutes);
 // ---------------------------------------------------------------------------
 
 export default router;
