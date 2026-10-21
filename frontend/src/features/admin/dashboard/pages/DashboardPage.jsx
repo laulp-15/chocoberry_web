@@ -1,100 +1,34 @@
 // src/features/admin/dashboard/pages/DashboardPage.jsx
-import React, { useMemo } from "react";
 import KpiCard from "../../../../shared/components/KpiCard";
 import BarChart from "../../../../shared/components/BarChart";
 import DonutChart from "../../../../shared/components/DonutChart";
 import PieChart from "../../../../shared/components/PieChart";
 import TopProductsList from "../components/TopProductsList";
 import { formatPrice } from "../../../../shared/utils/formatPrice";
-import { MUNICIPIOS } from "../../../cart/data/Shipping";
-import { ORDER_STATUSES } from "../../orders/data/orderStatus";
-import { INITIAL_ORDERS } from "../../orders/data/MockOrders";
+import useDashboard from "../hooks/useDashboard";
 import "./DashboardPage.css";
 
-// TODO: reemplazar todo por datos reales del backend (features/admin/dashboard/services)
-const KPIS = [
-  { icon: "fa-clock", iconColor: "#F49505", value: "12", label: "Pedidos pendientes" },
-  {
-    icon: "fa-circle-check",
-    iconColor: "#24943C",
-    value: "48",
-    label: "Pedidos entregados",
-  },
-  {
-    icon: "fa-sack-dollar",
-    iconColor: "var(--primario)",
-    value: formatPrice(7850000),
-    label: "Ingresos del mes",
-    delta: { text: "10% más respecto al mes anterior", positive: true },
-  },
-  { icon: "fa-star", iconColor: "var(--primario)", value: "Caja Amor de Fresa", label: "Producto más vendido" },
-];
+const formatoVariacion = new Intl.NumberFormat("es-CO", {
+  maximumFractionDigits: 2,
+});
 
-const SALES_BY_WEEKDAY = [
-  { label: "Lun", value: 42 },
-  { label: "Mar", value: 58 },
-  { label: "Mié", value: 30 },
-  { label: "Jue", value: 74 },
-  { label: "Vie", value: 50 },
-  { label: "Sáb", value: 68 },
-  { label: "Dom", value: 60 },
-];
+function construirDelta(variacion) {
+  if (!Number.isFinite(variacion) || variacion === 0) return undefined;
 
-const SALES_BY_MONTH = [
-  { label: "Ene", value: 20 }, { label: "Feb", value: 24 }, { label: "Mar", value: 18 },
-  { label: "Abr", value: 22 }, { label: "May", value: 16 }, { label: "Jun", value: 40 },
-  { label: "Jul", value: 38 }, { label: "Ago", value: 36 }, { label: "Sep", value: 42 },
-  { label: "Oct", value: 39 }, { label: "Nov", value: 44 }, { label: "Dic", value: 41 },
-];
+  return {
+    text: `${formatoVariacion.format(Math.abs(variacion))}% ${
+      variacion > 0 ? "más" : "menos"
+    } respecto al mes anterior`,
+    positive: variacion > 0,
+  };
+}
 
-const TOP_PRODUCTS = [
-  { name: "Caja Amor de Fresa", sold: 86 },
-  { name: "Corazón de Chocolate", sold: 64 },
-  { name: "Dulce Antojo", sold: 51 },
-  { name: "Fresas Rosadas", sold: 37 },
-  { name: "Caja Especial Cumpleaños", sold: 29 },
-];
-
-// Mock ratings data (1-5 estrellas) - constante fuera del componente
-const RATINGS_DATA = [
-  { label: "5 estrellas", value: 42, color: "var(--success-100)" },
-  { label: "4 estrellas", value: 28, color: "var(--success-80)" },
-  { label: "3 estrellas", value: 15, color: "var(--warning-80)" },
-  { label: "2 estrellas", value: 5, color: "var(--error-80)" },
-  { label: "1 estrella", value: 3, color: "var(--error-100)" },
-];
-const RATINGS_TOTAL = RATINGS_DATA.reduce((s, r) => s + r.value, 0);
-const RATINGS_AVG = (
-  [5, 4, 3, 2, 1].reduce((s, star, i) => s + star * RATINGS_DATA[i].value, 0) / RATINGS_TOTAL
-).toFixed(1);
+function subtituloCalificaciones(total) {
+  return `${total} ${total === 1 ? "reseña" : "reseñas"}`;
+}
 
 export default function DashboardPage() {
-  // Datos para las nuevas gráficas (useMemo DENTRO del componente)
-  const ORDERS_BY_MUNICIPIO = useMemo(() => {
-    const counts = {};
-    INITIAL_ORDERS.forEach((o) => {
-      if (o.municipio) {
-        counts[o.municipio] = (counts[o.municipio] || 0) + 1;
-      }
-    });
-    return MUNICIPIOS.map((m) => ({
-      label: m.label,
-      value: counts[m.value] || 0,
-    })).filter((m) => m.value > 0)
-      .sort((a, b) => b.value - a.value);
-  }, []);
-
-  const ORDERS_BY_STATUS = useMemo(() => {
-    const counts = {};
-    INITIAL_ORDERS.forEach((o) => {
-      counts[o.estado] = (counts[o.estado] || 0) + 1;
-    });
-    return ORDER_STATUSES.map((s) => ({
-      label: s.label,
-      value: counts[s.value] || 0,
-      color: s.color,
-    })).filter((s) => s.value > 0);
-  }, []);
+  const { resumen, loading, error, reload } = useDashboard();
 
   const handleGenerate = () => {
     console.log("TODO: generar reporte");
@@ -104,12 +38,45 @@ export default function DashboardPage() {
     console.log("TODO: exportar reporte (PDF/Excel)");
   };
 
+  const kpis = resumen
+    ? [
+        {
+          icon: "fa-clock",
+          iconColor: "#F49505",
+          value: resumen.kpis.pedidosPendientes,
+          label: "Pedidos pendientes",
+        },
+        {
+          icon: "fa-circle-check",
+          iconColor: "#24943C",
+          value: resumen.kpis.pedidosEntregados,
+          label: "Pedidos entregados",
+        },
+        {
+          icon: "fa-sack-dollar",
+          iconColor: "var(--primario)",
+          value: resumen.kpis.ingresosMes,
+          formatValue: formatPrice,
+          label: "Ingresos del mes",
+          delta: construirDelta(resumen.kpis.variacionPorcentual),
+        },
+        {
+          icon: "fa-star",
+          iconColor: "var(--primario)",
+          value: resumen.kpis.productoMasVendido || "Sin ventas",
+          label: "Producto más vendido",
+        },
+      ]
+    : [];
+
   return (
-    <div className="dashboard-page">
+    <div className="dashboard-page" aria-busy={loading}>
       <div className="dashboard-header">
         <div>
           <h1 className="dashboard-title">¡Bienvenida a ChocoBerry!</h1>
-          <p className="dashboard-subtitle">Aquí tienes un resumen del comportamiento de tu negocio.</p>
+          <p className="dashboard-subtitle">
+            Aquí tienes un resumen del comportamiento de tu negocio.
+          </p>
         </div>
         <div className="dashboard-header-actions">
           <button type="button" className="btn-generate-report" onClick={handleGenerate}>
@@ -123,56 +90,99 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="row dashboard-kpis">
-        {KPIS.map((kpi) => (
-          <div key={kpi.label} className="col-12 col-sm-6 col-lg-3 dashboard-col">
-            <KpiCard {...kpi} />
+      {loading && !resumen && (
+        <div className="dashboard-state" role="status" aria-live="polite">
+          <i className="fa-solid fa-spinner fa-spin" aria-hidden="true" />
+          <p>Cargando dashboard...</p>
+        </div>
+      )}
+
+      {!loading && !resumen && error && (
+        <div className="dashboard-state dashboard-state--error" role="alert">
+          <i className="fa-solid fa-triangle-exclamation" aria-hidden="true" />
+          <p>{error}</p>
+          <button type="button" className="dashboard-retry" onClick={reload}>
+            Reintentar
+          </button>
+        </div>
+      )}
+
+      {resumen && (
+        <>
+          {error && (
+            <p className="dashboard-inline-error" role="alert">
+              <i className="fa-solid fa-triangle-exclamation" aria-hidden="true" />
+              {error}
+              <button type="button" className="dashboard-retry" onClick={reload}>
+                Reintentar
+              </button>
+            </p>
+          )}
+
+          <div className="row dashboard-kpis">
+            {kpis.map((kpi) => (
+              <div key={kpi.label} className="col-12 col-sm-6 col-lg-3 dashboard-col">
+                <KpiCard {...kpi} />
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
-      <div className="row dashboard-row">
-        <div className="col-12 col-lg-7 dashboard-col">
-          <BarChart title="Ventas por semana" data={SALES_BY_WEEKDAY} />
-        </div>
-        <div className="col-12 col-lg-5 dashboard-col">
-          <TopProductsList products={TOP_PRODUCTS} />
-        </div>
-      </div>
+          <div className="row dashboard-row">
+            <div className="col-12 col-lg-7 dashboard-col">
+              <BarChart
+                title="Ventas por semana"
+                data={resumen.ventasSemana}
+                formatValue={formatPrice}
+              />
+            </div>
+            <div className="col-12 col-lg-5 dashboard-col">
+              <TopProductsList products={resumen.topProductos} />
+            </div>
+          </div>
 
-      <div className="row dashboard-row">
-        <div className="col-12 dashboard-col">
-          <BarChart title="Ventas por mes" data={SALES_BY_MONTH} />
-        </div>
-      </div>
+          <div className="row dashboard-row">
+            <div className="col-12 dashboard-col">
+              <BarChart
+                title="Ventas por mes"
+                data={resumen.ventasMes}
+                formatValue={formatPrice}
+              />
+            </div>
+          </div>
 
-      <div className="row dashboard-row">
-        <div className="col-12 col-lg-4 dashboard-col">
-          <DonutChart
-            title="Pedidos por municipio"
-            subtitle="Dónde se concentran las entregas"
-            data={ORDERS_BY_MUNICIPIO}
-            unit="pedidos"
-          />
-        </div>
-        <div className="col-12 col-lg-4 dashboard-col">
-          <PieChart
-            title="Pedidos por estado"
-            subtitle="Avance de los pedidos actuales"
-            data={ORDERS_BY_STATUS}
-            unit="pedidos"
-          />
-        </div>
-        <div className="col-12 col-lg-4 dashboard-col">
-          <DonutChart
-            title="Calificaciones de los clientes"
-            subtitle={`${RATINGS_TOTAL} reseñas`}
-            data={RATINGS_DATA}
-            centerValue={RATINGS_AVG}
-            centerCaption="promedio"
-          />
-        </div>
-      </div>
+          <div className="row dashboard-row">
+            <div className="col-12 col-lg-4 dashboard-col">
+              <DonutChart
+                title="Pedidos por municipio"
+                subtitle="Dónde se concentran las entregas"
+                data={resumen.pedidosPorMunicipio}
+                unit="pedidos"
+              />
+            </div>
+            <div className="col-12 col-lg-4 dashboard-col">
+              <PieChart
+                title="Pedidos por estado"
+                subtitle="Avance de los pedidos actuales"
+                data={resumen.pedidosPorEstado}
+                unit="pedidos"
+              />
+            </div>
+            <div className="col-12 col-lg-4 dashboard-col">
+              <DonutChart
+                title="Calificaciones de los clientes"
+                subtitle={subtituloCalificaciones(resumen.calificaciones.total)}
+                data={resumen.calificaciones.data}
+                centerValue={
+                  resumen.calificaciones.total
+                    ? resumen.calificaciones.promedio.toFixed(1)
+                    : "—"
+                }
+                centerCaption="promedio"
+              />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -53,7 +53,7 @@ npm run dev            # desarrollo con recarga automática (nodemon)
 npm start              # producción (node src/server.js)
 npm test               # pruebas con Jest + Supertest
 npm run seed:catalogo  # carga el catálogo inicial (categorías, productos, etc.)
-npm run seed:pedidos   # crea 15 pedidos de demostración con el catálogo real
+npm run seed:pedidos   # crea ~49 pedidos de demostración (recientes + históricos)
 npm run seed:resenas   # crea 10 reseñas de demostración con clientes reales
 ```
 
@@ -66,11 +66,13 @@ npm run seed:pedidos -- --reset
 ```
 
 Ese `--reset` solo elimina los pedidos del manifiesto y los seeds antiguos
-marcados con `[SEED-xx]`; no toca pedidos reales. El lote incluye pedidos
-recientes en `Pendiente`, pedidos antiguos `Entregado` y algunos casos
-`Rechazado`/`Cancelado`. Varios pedidos quedan sin comprobante para simular
-pagos pendientes; los entregados se crean sin evidencia, porque esa carga es
-exclusiva del repartidor.
+marcados con `[SEED-xx]`; no toca pedidos reales. El lote incluye 15 pedidos
+recientes y pedidos históricos repartidos en los últimos 12 meses, con refuerzo
+en las semanas anteriores para que las gráficas del Dashboard tengan datos. Los
+pedidos antiguos quedan en estados finales (`Entregado`, `Cancelado` o
+`Rechazado`) y los recientes mezclan estados activos y finales. No se generan
+archivos de comprobante: `comprobante_pago` queda en `NULL` en todos los pedidos
+del seed.
 
 El seed de reseñas usa clientes activos, preferiblemente con pedidos entregados,
 y reparte 10 comentarios en los últimos meses. Guarda sus IDs en

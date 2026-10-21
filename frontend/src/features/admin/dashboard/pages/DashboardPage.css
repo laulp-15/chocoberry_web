@@ -78,3 +78,61 @@
 .dashboard-col {
   margin-bottom: 20px;
 }
+
+/* ---------- Estados de carga y error ---------- */
+.dashboard-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 280px;
+  padding: 32px;
+  text-align: center;
+  background: var(--blanco);
+  border: 1px solid var(--borde);
+  border-radius: 16px;
+  color: var(--texto-muted);
+}
+
+.dashboard-state i {
+  font-size: 28px;
+  color: var(--primario);
+}
+
+.dashboard-state p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.dashboard-state--error {
+  border-color: var(--error-100);
+}
+
+.dashboard-state--error i {
+  color: var(--error-100);
+}
+
+.dashboard-inline-error {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 16px;
+  color: var(--error-100);
+  font-size: 0.9rem;
+}
+
+.dashboard-retry {
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  border-radius: 8px;
+  padding: 0.2rem 0.6rem;
+  cursor: pointer;
+  font: inherit;
+}
+
+.dashboard-retry:hover {
+  background: rgba(0, 0, 0, 0.05);
+}

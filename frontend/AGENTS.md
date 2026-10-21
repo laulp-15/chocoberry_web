@@ -22,8 +22,10 @@ conexión se está haciendo **módulo por módulo**, de forma incremental:
   pendientes). **Reseñas** (`features/reviews` contra
   `/api/catalogo/resenas` para lectura y `/api/resenas` para publicar;
   `features/admin/admin-reviews` contra `/api/resenas` para listado y cambio
-  de estado).
-- **Aún simulado:** entregas y dashboard. Siguen usando datos mock en
+  de estado). **Dashboard** (`features/admin/dashboard` contra
+  `/api/dashboard/resumen`: KPIs, ventas semanales/mensuales, productos,
+  municipios, estados y calificaciones).
+- **Aún simulado:** entregas. Sigue usando datos mock en
   memoria/localStorage.
 
 No asumas que un `services/` existe porque el módulo esté conectado: revisa
