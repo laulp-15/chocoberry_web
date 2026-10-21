@@ -1,14 +1,15 @@
 // scripts/seed-pedidos.mjs
-// Genera un lote de 15 pedidos de demostración con los catálogos reales.
+// Genera un lote de pedidos de demostración con los catálogos reales:
+// 15 pedidos recientes + pedidos históricos repartidos en los últimos 12 meses.
 //
 // - Usa los services de pedidos para calcular precios, domicilios y estados.
 // - Ajusta la fecha de creación para que el listado quede ordenado como una
 //   línea de tiempo real: los más recientes primero.
-// - Deja varios pedidos sin comprobante para simular pagos pendientes.
+// - No genera archivos de comprobante: `comprobante_pago` queda en NULL.
 // - No escribe etiquetas [SEED] en los pedidos. El lote se identifica con el
 //   manifiesto local scripts/.seed-pedidos.json (ignorado por git).
 // - `npm run seed:pedidos -- --reset` elimina el lote anterior (incluidos los
-//   seeds viejos con etiqueta [SEED-xx]) y vuelve a crear los 15 pedidos.
+//   seeds viejos con etiqueta [SEED-xx]) y vuelve a crear el lote completo.
 //
 // Uso:
 //   npm run seed:pedidos
@@ -29,20 +30,9 @@ const DIR_SCRIPT = path.dirname(fileURLToPath(import.meta.url));
 const MANIFIESTO_ARCHIVO = path.join(DIR_SCRIPT, '.seed-pedidos.json');
 const PATRON_LEGACY = /\[SEED-\d{2}\]/;
 
-const COMPROBANTE_GENERICO_RUTA = '/uploads/comprobante-pago.svg';
-const COMPROBANTE_GENERICO_ARCHIVO = path.join(uploadsDir, 'comprobante-pago.svg');
-const COMPROBANTE_LEGACY_ARCHIVO = path.join(uploadsDir, 'seed-comprobante.svg');
-
-const COMPROBANTE_GENERICO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="720" height="960" viewBox="0 0 720 960">
-  <rect width="720" height="960" fill="#F8FAFC"/>
-  <rect x="40" y="40" width="640" height="880" rx="28" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="3"/>
-  <text x="360" y="150" text-anchor="middle" font-family="Arial, sans-serif" font-size="44" font-weight="700" fill="#0F172A">ChocoBerry</text>
-  <text x="360" y="205" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#64748B">Comprobante de pago</text>
-  <line x1="105" y1="280" x2="615" y2="280" stroke="#E2E8F0" stroke-width="2"/>
-  <text x="360" y="390" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" font-weight="700" fill="#24943C">Transferencia aprobada</text>
-  <text x="360" y="450" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#64748B">Documento generado automáticamente</text>
-</svg>
-`;
+// `pedidoService.crear` exige un comprobante. El seed no genera archivos: usa
+// una ruta ficticia y después deja `comprobante_pago` en NULL.
+const COMPROBANTE_DUMMY = '/uploads/seed-sin-comprobante.svg';
 
 // Catálogos resueltos por correo/nombre/cantidad, no por IDs.
 // Los pedidos están ordenados de más reciente a más antiguo.
@@ -128,7 +118,7 @@ const PEDIDOS_SEED = [
     hora: '11:26:51',
     diasEntrega: 3,
     estado: 'en_preparacion',
-    comprobante: true,
+    comprobante: false,
     mensajeTarjeta: 'Que cumplas muchos más.',
     instrucciones: 'Confirmar horario de entrega.',
     lineas: [
@@ -160,7 +150,7 @@ const PEDIDOS_SEED = [
     hora: '08:55:37',
     diasEntrega: 1,
     estado: 'despachado',
-    comprobante: true,
+    comprobante: false,
     mensajeTarjeta: '¡Mucha fuerza!',
     instrucciones: 'Entregar después de las 3 p. m.',
     lineas: [
@@ -174,7 +164,7 @@ const PEDIDOS_SEED = [
     hora: '14:12:06',
     diasEntrega: -7,
     estado: 'entregado',
-    comprobante: true,
+    comprobante: false,
     mensajeTarjeta: 'Feliz día, papá.',
     instrucciones: null,
     lineas: [
@@ -190,7 +180,7 @@ const PEDIDOS_SEED = [
     hora: '10:41:29',
     diasEntrega: -11,
     estado: 'entregado',
-    comprobante: true,
+    comprobante: false,
     mensajeTarjeta: 'Con todo mi cariño.',
     instrucciones: null,
     lineas: [
@@ -204,7 +194,7 @@ const PEDIDOS_SEED = [
     hora: '19:03:15',
     diasEntrega: -16,
     estado: 'entregado',
-    comprobante: true,
+    comprobante: false,
     mensajeTarjeta: 'Feliz día, mamá.',
     instrucciones: null,
     lineas: [
@@ -218,7 +208,7 @@ const PEDIDOS_SEED = [
     hora: '13:27:44',
     diasEntrega: -21,
     estado: 'entregado',
-    comprobante: true,
+    comprobante: false,
     mensajeTarjeta: 'Por muchos momentos juntos.',
     instrucciones: null,
     lineas: [
@@ -234,7 +224,7 @@ const PEDIDOS_SEED = [
     hora: '16:58:02',
     diasEntrega: -26,
     estado: 'entregado',
-    comprobante: true,
+    comprobante: false,
     mensajeTarjeta: 'Dos detalles para una persona especial.',
     instrucciones: 'Entregar en la portería principal.',
     lineas: [
@@ -269,7 +259,7 @@ const PEDIDOS_SEED = [
     hora: '18:11:53',
     diasEntrega: -32,
     estado: 'cancelado',
-    comprobante: true,
+    comprobante: false,
     mensajeTarjeta: 'Una sorpresa para consentirte.',
     instrucciones: 'El cliente canceló la entrega.',
     lineas: [
@@ -292,15 +282,6 @@ function obtener(mapa, clave, mensaje) {
   const valor = mapa.get(clave);
   if (!valor) throw new Error(mensaje);
   return valor;
-}
-
-function escaparXml(valor) {
-  return String(valor ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
 }
 
 function formatearFecha(fecha) {
@@ -333,6 +314,225 @@ function fechaCreacion(dias, hora) {
   return `${sumarDias(dias)} ${hora}`;
 }
 
+const CLIENTES_HISTORICOS = [
+  'carla.restrepo@gmail.com',
+  'paula.jimenez@gmail.com',
+  'miguel.suarez@gmail.com',
+  'carlos.ruiz@gmail.com',
+  'carolina.duarte@gmail.com',
+  'felipe.castro@hotmail.com',
+  'isabella.morales@gmail.com',
+  'daniel.vargas@outlook.com',
+  'camila.torres@gmail.com',
+  'santiago.ramirez@hotmail.com',
+  'valentina.lopez@gmail.com',
+  'carlos.hernandez@outlook.com',
+  'ana.martinez@gmail.com',
+  'juan.rodriguez@hotmail.com',
+  'maria.gonzalez@gmail.com',
+];
+
+const MUNICIPIOS_HISTORICOS = [
+  'medellin',
+  'medellin',
+  'bello',
+  'itagui',
+  'envigado',
+  'medellin',
+  'copacabana',
+  'sabaneta',
+  'la estrella',
+  'barbosa',
+];
+
+// Combinaciones producto/presentación que ya usa el lote reciente.
+const PRODUCTOS_HISTORICOS = [
+  ['detalle sorpresa', 8],
+  ['caja aniversario', 12],
+  ['combo antojo doble', 16],
+  ['mini antojo', 6],
+  ['caja fiesta', 30],
+  ['torre cumpleanos', 16],
+  ['fresas elegancia', 12],
+  ['detalle poder', 8],
+  ['caja clasica papa', 16],
+  ['set fuerza papa', 12],
+  ['ramo dulce mama', 30],
+  ['caja romance', 16],
+  ['detalle sorpresa', 6],
+  ['mini antojo', 8],
+  ['caja aniversario', 30],
+  ['combo antojo doble', 8],
+  ['caja fiesta', 16],
+  ['detalle poder', 6],
+];
+
+const COLORES_HISTORICOS = ['amarillo', 'azul', 'blanco', 'chocolate', 'morado', 'rosa', 'verde'];
+const HORAS_HISTORICAS = ['09:15:22', '11:40:10', '14:05:45', '16:30:18', '18:55:03', '20:10:37'];
+const MENSAJES_HISTORICOS = [
+  'Con cariño.',
+  'Para consentirte.',
+  'Un detalle especial.',
+  'Gracias por tanto.',
+  'Para compartir.',
+];
+const INSTRUCCIONES_HISTORICAS = [
+  null,
+  null,
+  'Entregar en portería.',
+  'Llamar al llegar.',
+  'Dejar en recepción.',
+];
+
+function diferenciaEnDias(desde, hasta) {
+  const MS_DIA = 24 * 60 * 60 * 1000;
+  return Math.round((desde.getTime() - hasta.getTime()) / MS_DIA);
+}
+
+function fechaEnMesAtras(hoy, mesesAtras, dia) {
+  return new Date(hoy.getFullYear(), hoy.getMonth() - mesesAtras, dia, 12, 0, 0, 0);
+}
+
+function lunesDeSemana(hoy) {
+  const lunes = new Date(hoy);
+  const desplazamiento = (hoy.getDay() + 6) % 7;
+  lunes.setDate(hoy.getDate() - desplazamiento);
+  return lunes;
+}
+
+function fechaDeSemanaAtras(hoy, semanasAtras, diaSemana) {
+  const fecha = lunesDeSemana(hoy);
+  fecha.setDate(fecha.getDate() - semanasAtras * 7 + diaSemana);
+  return fecha;
+}
+
+function fechaDeSemanaActual(hoy, diaSemana) {
+  const fecha = lunesDeSemana(hoy);
+  fecha.setDate(fecha.getDate() + diaSemana);
+  return fecha;
+}
+
+function lineasHistoricas(indice) {
+  const cantidadLineas = indice % 6 === 0 ? 2 : 1;
+  return Array.from({ length: cantidadLineas }, (_, variante) => {
+    const [producto, presentacion] = PRODUCTOS_HISTORICOS[
+      (indice * 2 + variante) % PRODUCTOS_HISTORICOS.length
+    ];
+    return {
+      producto,
+      presentacion,
+      color: COLORES_HISTORICOS[(indice + variante) % COLORES_HISTORICOS.length],
+      cantidad: 1 + ((indice + variante * 2) % 4),
+      mensaje: (indice + variante) % 3 === 0 ? 'AMOR' : null,
+      extra: null,
+    };
+  });
+}
+
+function estadoHistorico(diasCreacion, indice) {
+  if (Math.abs(diasCreacion) > 14) {
+    const resto = indice % 12;
+    if (resto === 0) return 'cancelado';
+    if (resto === 1) return 'rechazado';
+    return 'entregado';
+  }
+
+  const resto = indice % 10;
+  if (resto <= 1) return 'pendiente';
+  if (resto <= 3) return 'en_preparacion';
+  if (resto <= 5) return 'despachado';
+  if (resto <= 8) return 'entregado';
+  return 'cancelado';
+}
+
+function definicionHistorica({ fecha, indice, estado, hoy }) {
+  const diasCreacion = diferenciaEnDias(fecha, hoy);
+  const enCurso = estado === 'en_preparacion' || estado === 'despachado';
+  const diasEntrega = estado === 'pendiente'
+    ? diasCreacion + 7
+    : enCurso
+      ? Math.max(diasCreacion + 3, 1)
+      : diasCreacion + 3;
+  const definicion = {
+    cliente: CLIENTES_HISTORICOS[indice % CLIENTES_HISTORICOS.length],
+    municipio: MUNICIPIOS_HISTORICOS[indice % MUNICIPIOS_HISTORICOS.length],
+    diasCreacion,
+    hora: HORAS_HISTORICAS[indice % HORAS_HISTORICAS.length],
+    diasEntrega,
+    estado,
+    comprobante: false,
+    mensajeTarjeta: MENSAJES_HISTORICOS[indice % MENSAJES_HISTORICOS.length],
+    instrucciones: INSTRUCCIONES_HISTORICAS[indice % INSTRUCCIONES_HISTORICAS.length],
+    lineas: lineasHistoricas(indice),
+  };
+  if (estado === 'rechazado') {
+    definicion.motivoRechazo = 'No se confirmó el pago.';
+  }
+  return definicion;
+}
+
+function crearPedidosHistoricos() {
+  const hoy = new Date();
+  hoy.setHours(12, 0, 0, 0);
+
+  const pedidos = [];
+  let indice = 0;
+
+  // Meses anteriores: 3 pedidos en los últimos 6 meses y 2 en los 5 más antiguos.
+  for (let mesesAtras = 1; mesesAtras <= 11; mesesAtras += 1) {
+    const dias = mesesAtras <= 6 ? [5, 14, 23] : [8, 20];
+    for (const dia of dias) {
+      const fecha = fechaEnMesAtras(hoy, mesesAtras, dia);
+      pedidos.push(
+        definicionHistorica({
+          fecha,
+          indice,
+          estado: estadoHistorico(diferenciaEnDias(fecha, hoy), indice),
+          hoy,
+        })
+      );
+      indice += 1;
+    }
+  }
+
+  // Refuerzo de las semanas 6 y 7 para que la navegación semanal tenga datos.
+  for (const semanasAtras of [6, 7]) {
+    for (const diaSemana of [2, 5]) {
+      const fecha = fechaDeSemanaAtras(hoy, semanasAtras, diaSemana);
+      pedidos.push(
+        definicionHistorica({
+          fecha,
+          indice,
+          estado: estadoHistorico(diferenciaEnDias(fecha, hoy), indice),
+          hoy,
+        })
+      );
+      indice += 1;
+    }
+  }
+
+  // Dos pedidos de la semana actual, sin superar el día de hoy.
+  const diaActual = diferenciaEnDias(hoy, lunesDeSemana(hoy));
+  const diasSemanaActual = [...new Set([0, Math.min(6, diaActual)])];
+  for (const diaSemana of diasSemanaActual) {
+    const fecha = fechaDeSemanaActual(hoy, diaSemana);
+    pedidos.push(
+      definicionHistorica({
+        fecha,
+        indice,
+        estado: diaSemana === 0 ? 'despachado' : 'en_preparacion',
+        hoy,
+      })
+    );
+    indice += 1;
+  }
+
+  return pedidos;
+}
+
+PEDIDOS_SEED.push(...crearPedidosHistoricos());
+PEDIDOS_SEED.sort((a, b) => b.diasCreacion - a.diasCreacion);
+
 function leerManifiesto() {
   if (!fs.existsSync(MANIFIESTO_ARCHIVO)) return null;
   try {
@@ -358,45 +558,6 @@ function borrarArchivoSubido(ruta) {
     fs.unlinkSync(archivo);
     console.log(`[reset] Archivo eliminado: ${ruta}`);
   }
-}
-
-function crearComprobanteGenerico() {
-  fs.writeFileSync(COMPROBANTE_GENERICO_ARCHIVO, COMPROBANTE_GENERICO_SVG, 'utf8');
-}
-
-function crearComprobanteSvg({ id, fecha, cliente, municipio, total }) {
-  const valor = new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
-    maximumFractionDigits: 0,
-  }).format(total);
-  const fechaMostrar = String(fecha).slice(0, 10).split('-').reverse().join('/');
-  const referencia = `CB-${String(id).padStart(6, '0')}`;
-
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="720" height="960" viewBox="0 0 720 960">
-  <rect width="720" height="960" fill="#F8FAFC"/>
-  <rect x="40" y="40" width="640" height="880" rx="28" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="3"/>
-  <text x="360" y="140" text-anchor="middle" font-family="Arial, sans-serif" font-size="44" font-weight="700" fill="#0F172A">ChocoBerry</text>
-  <text x="360" y="190" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" fill="#64748B">Comprobante de transferencia</text>
-  <line x1="105" y1="245" x2="615" y2="245" stroke="#E2E8F0" stroke-width="2"/>
-  <text x="105" y="305" font-family="Arial, sans-serif" font-size="18" fill="#64748B">Referencia</text>
-  <text x="615" y="305" text-anchor="end" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#0F172A">${escaparXml(referencia)}</text>
-  <text x="105" y="360" font-family="Arial, sans-serif" font-size="18" fill="#64748B">Pedido</text>
-  <text x="615" y="360" text-anchor="end" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#0F172A">#${id}</text>
-  <text x="105" y="415" font-family="Arial, sans-serif" font-size="18" fill="#64748B">Cliente</text>
-  <text x="615" y="415" text-anchor="end" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#0F172A">${escaparXml(cliente)}</text>
-  <text x="105" y="470" font-family="Arial, sans-serif" font-size="18" fill="#64748B">Municipio</text>
-  <text x="615" y="470" text-anchor="end" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#0F172A">${escaparXml(municipio)}</text>
-  <text x="105" y="525" font-family="Arial, sans-serif" font-size="18" fill="#64748B">Fecha</text>
-  <text x="615" y="525" text-anchor="end" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#0F172A">${escaparXml(fechaMostrar)}</text>
-  <line x1="105" y1="580" x2="615" y2="580" stroke="#E2E8F0" stroke-width="2"/>
-  <text x="105" y="650" font-family="Arial, sans-serif" font-size="18" fill="#64748B">Valor</text>
-  <text x="615" y="650" text-anchor="end" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#0F172A">${escaparXml(valor)}</text>
-  <rect x="105" y="700" width="510" height="62" rx="14" fill="#ECFDF5"/>
-  <text x="360" y="739" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#24943C">Transferencia aprobada</text>
-  <text x="360" y="850" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#94A3B8">Documento generado automáticamente por ChocoBerry.</text>
-</svg>
-`;
 }
 
 function coincideManifiesto(pedido, item) {
@@ -535,8 +696,7 @@ async function main() {
   }
 
   borrarArchivoSubido('/uploads/seed-comprobante.svg');
-  borrarArchivoSubido(COMPROBANTE_GENERICO_RUTA);
-  crearComprobanteGenerico();
+  borrarArchivoSubido('/uploads/comprobante-pago.svg');
 
   const nuevoManifiesto = {
     version: 1,
@@ -607,29 +767,12 @@ async function main() {
 
     let pedidoCreado;
     try {
-      pedidoCreado = await pedidoService.crear(datos, admin, COMPROBANTE_GENERICO_RUTA);
+      pedidoCreado = await pedidoService.crear(datos, admin, COMPROBANTE_DUMMY);
       await aplicarEstado(pedidoCreado.id, definicion.estado, definicion.motivoRechazo);
 
-      let comprobante = null;
-      if (definicion.comprobante) {
-        comprobante = `/uploads/comprobante-${pedidoCreado.id}.svg`;
-        const archivoComprobante = path.join(uploadsDir, `comprobante-${pedidoCreado.id}.svg`);
-        fs.writeFileSync(
-          archivoComprobante,
-          crearComprobanteSvg({
-            id: pedidoCreado.id,
-            fecha,
-            cliente: datos.nombreReceptor,
-            municipio: municipio.nombre,
-            total: pedidoCreado.total,
-          }),
-          'utf8'
-        );
-      }
-
-      await query('UPDATE pedido SET fecha = ?, comprobante_pago = ? WHERE id = ?', [
+      // El seed no genera archivos: el comprobante queda siempre en blanco.
+      await query('UPDATE pedido SET fecha = ?, comprobante_pago = NULL WHERE id = ?', [
         fecha,
-        comprobante,
         pedidoCreado.id,
       ]);
 
@@ -637,7 +780,7 @@ async function main() {
         id: pedidoCreado.id,
         clienteId: cliente.id,
         fecha,
-        comprobante,
+        comprobante: null,
       };
       nuevoManifiesto.orders.push(item);
       guardarManifiesto(nuevoManifiesto);
@@ -646,13 +789,12 @@ async function main() {
       console.log(
         `[ok] #${pedidoCreado.id} | ${fecha} | entrega ${datos.fechaEntrega} | ` +
           `${definicion.estado} | ${datos.nombreReceptor} | ${municipio.nombre} | ` +
-          `${comprobante ? 'con comprobante' : 'sin comprobante'}`
+          'sin comprobante'
       );
     } catch (error) {
       if (pedidoCreado?.id) {
         try {
           await pedidoService.eliminar(pedidoCreado.id);
-          borrarArchivoSubido(`/uploads/comprobante-${pedidoCreado.id}.svg`);
           console.error(`[rollback] Se eliminó el pedido parcial #${pedidoCreado.id}.`);
         } catch (rollbackError) {
           console.error(
@@ -663,8 +805,6 @@ async function main() {
       throw new Error(`${datos.nombreReceptor}: ${error.message}`, { cause: error });
     }
   }
-
-  borrarArchivoSubido(COMPROBANTE_GENERICO_RUTA);
 
   const pedidosFinales = await pedidoService.listar({}, admin);
   const idsNuevos = new Set(nuevoManifiesto.orders.map((item) => item.id));
@@ -677,7 +817,9 @@ async function main() {
   }
 
   const conComprobante = nuevos.filter((pedido) => pedido.comprobantePago).length;
-  const sinComprobante = nuevos.length - conComprobante;
+  if (conComprobante > 0) {
+    throw new Error(`El seed no debe generar comprobantes y hay ${conComprobante} pedido(s) con archivo.`);
+  }
 
   const clientesUsados = new Set(nuevos.map((pedido) => pedido.cliente?.id));
   const municipiosUsados = new Set(nuevos.map((pedido) => pedido.municipio?.id));
@@ -695,8 +837,7 @@ async function main() {
   console.log(`  Pedidos creados:              ${creados}`);
   console.log(`  Pedidos nuevos en la base:    ${nuevos.length}`);
   console.log(`  Pedidos totales en la base:   ${pedidosFinales.length}`);
-  console.log(`  Con comprobante:              ${conComprobante}`);
-  console.log(`  Sin comprobante:              ${sinComprobante}`);
+  console.log(`  Comprobantes de pago:         ${conComprobante} (todos en blanco)`);
   console.log('  Estados:');
   for (const [estado, total] of Object.entries(resumenEstados)) {
     console.log(`    - ${estado}: ${total}`);
