@@ -1,82 +1,95 @@
-import { useState, useCallback } from 'react';
-import { mockReviews } from '../services/reviewService';
+// src/features/admin/admin-reviews/hooks/useReviews.js
+//
+// Listado de reseñas del panel contra /api/resenas. La búsqueda y la
+// paginación las maneja DataTable; aquí solo se filtra por estado y se
+// sincroniza el switch con el API.
 
-function delay(ms = 350) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+import { useEffect, useState } from "react";
+import * as reviewService from "../services/reviewService";
 
 export const useReviews = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('todos');
+  const [statusFilter, setStatusFilter] = useState("todos");
 
-  // Paginación
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
-
-  // Modales
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedReview, setSelectedReview] = useState(null);
-  const [reviews, setReviews] = useState(mockReviews);
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [reloadToken, setReloadToken] = useState(0);
+  const [togglingId, setTogglingId] = useState(null);
 
-  // Filtrado por búsqueda y estado
-  const filteredReviews = reviews.filter(rev => {
-    const matchesSearch = rev.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          rev.comentario.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'todos' || rev.estado.toLowerCase() === statusFilter.toLowerCase();
-    return matchesSearch && matchesStatus;
+  useEffect(() => {
+    let activo = true;
+
+    reviewService
+      .listar()
+      .then((data) => {
+        if (!activo) return;
+        setReviews(data);
+        setError("");
+      })
+      .catch((err) => {
+        if (!activo) return;
+        setError(err?.message || "No se pudieron cargar las reseñas.");
+      })
+      .finally(() => {
+        if (activo) setLoading(false);
+      });
+
+    return () => {
+      activo = false;
+    };
+  }, [reloadToken]);
+
+  const filteredReviews = reviews.filter((review) => {
+    if (statusFilter === "todos") return true;
+    return statusFilter === "activo" ? review.activo : !review.activo;
   });
-
-  // Paginación
-  const totalPages = Math.ceil(filteredReviews.length / itemsPerPage) || 1;
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentReviews = filteredReviews.slice(indexOfFirstItem, indexOfLastItem);
-
-  const handlePageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-      setCurrentPage(newPage);
-    }
-  };
-
-  const handleSearchChange = (value) => {
-    setSearchTerm(value);
-    setCurrentPage(1);
-  };
 
   const handleStatusFilterChange = (value) => {
     setStatusFilter(value);
-    setCurrentPage(1);
   };
 
-  // Switch de Estado
-  const handleToggleStatus = useCallback(async (id) => {
-    await delay();
-    setReviews(prev =>
-      prev.map(item =>
-        item.id === id ? { ...item, estado: item.estado === 'Activo' ? 'Inactivo' : 'Activo' } : item
-      )
-    );
-  }, []);
+  const handleToggleStatus = async (review) => {
+    setTogglingId(review.id);
+
+    try {
+      const actualizada = await reviewService.cambiarEstado(review.id, !review.activo);
+      setReviews((prev) =>
+        prev.map((item) => (item.id === review.id ? actualizada : item))
+      );
+      setSelectedReview((prev) => (prev?.id === actualizada.id ? actualizada : prev));
+      setError("");
+    } catch (err) {
+      setError(err?.message || "No se pudo actualizar el estado de la reseña.");
+    } finally {
+      setTogglingId(null);
+    }
+  };
 
   const handleOpenDetail = (review) => {
     setSelectedReview(review);
     setIsDetailOpen(true);
   };
 
+  const reload = () => {
+    setError("");
+    setLoading(true);
+    setReloadToken((valor) => valor + 1);
+  };
+
   return {
-    searchTerm,
-    handleSearchChange,
     statusFilter,
     handleStatusFilterChange,
-    currentPage,
-    totalPages,
-    handlePageChange,
     isDetailOpen,
     setIsDetailOpen,
     selectedReview,
-    currentReviews,
-    totalReviewsCount: filteredReviews.length,
+    reviews: filteredReviews,
+    loading,
+    error,
+    reload,
+    togglingId,
     handleToggleStatus,
-    handleOpenDetail
+    handleOpenDetail,
   };
 };

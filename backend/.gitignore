@@ -8,8 +8,9 @@ node_modules/
 uploads/*
 !uploads/.gitkeep
 
-# Manifiesto local del seed de pedidos (IDs para poder recrear el lote)
+# Manifiestos locales de los seeds (IDs para poder recrear los lotes)
 scripts/.seed-pedidos.json
+scripts/.seed-resenas.json
 
 # Cobertura de pruebas
 coverage/

@@ -117,6 +117,23 @@ export function serializarColorGlaseado(row) {
   };
 }
 
+/** Convierte una fila de `resena` (con datos del usuario) al objeto público. */
+export function serializarResena(row) {
+  if (!row) return null;
+
+  const cliente = `${row.nombres ?? ''} ${row.apellidos ?? ''}`.trim();
+
+  return {
+    id: row.id,
+    calificacion: Number(row.calificacion),
+    comentario: row.comentario ?? '',
+    fecha: formatearFecha(row.fecha),
+    estado: Boolean(row.estado),
+    usuarioId: row.id_usuario,
+    cliente: cliente || 'Cliente ChocoBerry',
+  };
+}
+
 /** Fecha (Date de MySQL o texto) en formato YYYY-MM-DD. */
 function formatearFecha(valor) {
   if (!valor) return null;

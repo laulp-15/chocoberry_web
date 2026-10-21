@@ -29,6 +29,11 @@
   background-color: var(--borde);
 }
 
+.status-toggle:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
 .status-toggle-knob {
   width: 20px;
   height: 20px;

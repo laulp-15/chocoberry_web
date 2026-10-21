@@ -1,5 +1,5 @@
 // src/features/reviews/components/ReviewFormModal.jsx
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom";
 import "./ReviewFormModal.css";
 
@@ -12,7 +12,7 @@ const RATING_COPY = {
 };
 
 const MAX_COMMENT = 300;
-const EMPTY_FORM = { clientName: "", rating: 1, comment: "" };
+const EMPTY_FORM = { rating: 1, comment: "" };
 
 /**
  * Modal para publicar una reseña.
@@ -21,20 +21,23 @@ const EMPTY_FORM = { clientName: "", rating: 1, comment: "" };
  * - Al publicar muestra una pantalla de agradecimiento y se cierra sola.
  * - Se renderiza en un portal sobre el <body>, así queda por encima de todo.
  *
- * onSubmit recibe: { clientName, rating, comment, date, tag }
+ * onSubmit recibe: { calificacion, comentario } y devuelve una promesa.
  *
  * @param {object} props
  * @param {boolean} props.isOpen
  * @param {() => void} props.onClose
- * @param {(review: object) => void} props.onSubmit
+ * @param {(datos: { calificacion: number, comentario: string }) => Promise<object>} props.onSubmit
+ * @param {string} [props.userName] - Nombre del usuario autenticado para el saludo.
  */
-export default function ReviewFormModal({ isOpen, onClose, onSubmit }) {
+export default function ReviewFormModal({ isOpen, onClose, onSubmit, userName }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [touched, setTouched] = useState(false); // ¿ya eligió una calificación?
   const [errors, setErrors] = useState({});
   const [hoverRating, setHoverRating] = useState(0);
   const [selectTick, setSelectTick] = useState(0);
   const [sent, setSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const cardRef = useRef(null);
   const onCloseRef = useRef(onClose);
@@ -46,11 +49,6 @@ export default function ReviewFormModal({ isOpen, onClose, onSubmit }) {
   useEffect(() => {
     if (!isOpen) return undefined;
 
-    setForm(EMPTY_FORM);
-    setTouched(false);
-    setErrors({});
-    setHoverRating(0);
-    setSent(false);
     cardRef.current?.focus();
 
     const handleKey = (e) => {
@@ -75,9 +73,16 @@ export default function ReviewFormModal({ isOpen, onClose, onSubmit }) {
 
   if (!isOpen) return null;
 
+  const handleClose = () => {
+    if (submitting) return;
+    setSubmitError("");
+    onCloseRef.current();
+  };
+
   const update = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     setErrors((prev) => ({ ...prev, [field]: undefined }));
+    setSubmitError("");
   };
 
   const selectRating = (star) => {
@@ -89,24 +94,31 @@ export default function ReviewFormModal({ isOpen, onClose, onSubmit }) {
   const validate = () => {
     const newErrors = {};
     if (!touched) newErrors.rating = "Elige cuántas estrellas le das a tu experiencia.";
-    if (!form.clientName.trim()) newErrors.clientName = "Cuéntanos tu nombre.";
-    if (!form.comment.trim()) newErrors.comment = "Escribe un comentario sobre tu pedido.";
+    if (!form.comment.trim()) newErrors.comment = "Escribe un comentario sobre tu experiencia.";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e?.preventDefault();
-    if (!validate()) return;
+    if (submitting || !validate()) return;
 
-    onSubmit({
-      clientName: form.clientName.trim(),
-      rating: form.rating,
-      comment: form.comment.trim(),
-      date: "Hoy",
-      tag: "Cliente Satisfecho",
-    });
-    setSent(true);
+    setSubmitting(true);
+    setSubmitError("");
+
+    try {
+      await onSubmit({
+        calificacion: form.rating,
+        comentario: form.comment.trim(),
+      });
+      setSent(true);
+    } catch (error) {
+      setSubmitError(
+        error?.message || "No se pudo publicar tu reseña. Intenta de nuevo."
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const shownRating = hoverRating || form.rating;
@@ -116,10 +128,10 @@ export default function ReviewFormModal({ isOpen, onClose, onSubmit }) {
     ? RATING_COPY[form.rating]
     : { label: "¿Cómo fue tu experiencia?", hint: "Toca una estrella para calificar." };
 
-  const firstName = form.clientName.trim().split(" ")[0];
+  const firstName = String(userName ?? "").trim().split(" ")[0];
 
   const modalContent = (
-    <div className="review-modal-overlay" onClick={onClose}>
+    <div className="review-modal-overlay" onClick={handleClose}>
       <div
         ref={cardRef}
         tabIndex={-1}
@@ -142,7 +154,7 @@ export default function ReviewFormModal({ isOpen, onClose, onSubmit }) {
               <p className="review-success-text">
                 Tu reseña ya está publicada y nos ayuda a seguir endulzando momentos.
               </p>
-              <button type="button" className="review-submit" onClick={onClose}>
+              <button type="button" className="review-submit" onClick={handleClose}>
                 Cerrar
               </button>
             </div>
@@ -153,7 +165,7 @@ export default function ReviewFormModal({ isOpen, onClose, onSubmit }) {
                 <button
                   type="button"
                   className="review-modal-close"
-                  onClick={onClose}
+                  onClick={handleClose}
                   aria-label="Cerrar"
                 >
                   <i className="fa-solid fa-xmark" aria-hidden="true" />
@@ -223,28 +235,6 @@ export default function ReviewFormModal({ isOpen, onClose, onSubmit }) {
                   )}
                 </div>
 
-                {/* Nombre */}
-                <div className="review-field">
-                  <label className="review-label" htmlFor="review-name">
-                    Tu nombre
-                  </label>
-                  <input
-                    id="review-name"
-                    type="text"
-                    className={`review-input ${errors.clientName ? "has-error" : ""}`}
-                    placeholder="Ej. María Camila"
-                    value={form.clientName}
-                    onChange={(e) => update("clientName", e.target.value)}
-                    autoComplete="name"
-                  />
-                  {errors.clientName && (
-                    <p className="review-error">
-                      <i className="fa-solid fa-circle-exclamation" aria-hidden="true" />
-                      {errors.clientName}
-                    </p>
-                  )}
-                </div>
-
                 {/* Comentario */}
                 <div className="review-field">
                   <label className="review-label" htmlFor="review-comment">
@@ -255,7 +245,7 @@ export default function ReviewFormModal({ isOpen, onClose, onSubmit }) {
                     rows={4}
                     maxLength={MAX_COMMENT}
                     className={`review-input review-textarea ${errors.comment ? "has-error" : ""}`}
-                    placeholder="¿Qué fue lo que más te gustó de tu pedido?"
+                    placeholder="¿Qué fue lo que más te gustó de tu experiencia?"
                     value={form.comment}
                     onChange={(e) => update("comment", e.target.value)}
                   />
@@ -279,13 +269,24 @@ export default function ReviewFormModal({ isOpen, onClose, onSubmit }) {
                 </div>
 
                 {/* Acciones */}
+                {submitError && (
+                  <p className="review-error review-error--center" role="alert">
+                    <i className="fa-solid fa-circle-exclamation" aria-hidden="true" />
+                    {submitError}
+                  </p>
+                )}
                 <div className="review-actions">
-                  <button type="button" className="review-cancel" onClick={onClose}>
+                  <button
+                    type="button"
+                    className="review-cancel"
+                    onClick={handleClose}
+                    disabled={submitting}
+                  >
                     Cancelar
                   </button>
-                  <button type="submit" className="review-submit">
-                    Publicar reseña
-                    <i className="fa-solid fa-paper-plane" aria-hidden="true" />
+                  <button type="submit" className="review-submit" disabled={submitting}>
+                    {submitting ? "Publicando..." : "Publicar reseña"}
+                    {!submitting && <i className="fa-solid fa-paper-plane" aria-hidden="true" />}
                   </button>
                 </div>
               </form>

@@ -1,25 +1,24 @@
-// src/admin/admin-reviews/pages/ReviewsListPage.jsx
-import React from 'react';
+// src/features/admin/admin-reviews/pages/ReviewsListPage.jsx
 import { useReviews } from '../hooks/useReviews';
 import ReviewDetailModal from '../components/ReviewDetailModal';
 import DataTable from '../../../../shared/components/DataTable';
 import FormSelect from '../../../../shared/components/FormSelect';
+import { formatDisplayDate } from '../../orders/utils/orderDisplay';
+import '../../../../shared/css/adminCrud.css';
 import './ReviewsListPage.css';
 
 export default function ReviewsListPage() {
   const {
-    searchTerm,
-    handleSearchChange,
     statusFilter,
     handleStatusFilterChange,
-    currentPage,
-    totalPages,
-    handlePageChange,
     isDetailOpen,
     setIsDetailOpen,
     selectedReview,
-    currentReviews,
-    totalReviewsCount,
+    reviews,
+    loading,
+    error,
+    reload,
+    togglingId,
     handleToggleStatus,
     handleOpenDetail
   } = useReviews();
@@ -62,22 +61,36 @@ export default function ReviewsListPage() {
     {
       key: 'fecha',
       label: 'FECHA',
-      render: (review) => <span style={{ color: 'var(--texto-muted)', fontSize: '0.85rem' }}>{review.fecha}</span>
+      render: (review) => (
+        <span style={{ color: 'var(--texto-muted)', fontSize: '0.85rem' }}>
+          {formatDisplayDate(review.fecha)}
+        </span>
+      )
     },
     {
       key: 'estado',
       label: 'ESTADO',
       align: 'center',
-      render: (review) => (
-        <button
-          type="button"
-          onClick={() => handleToggleStatus(review.id)}
-          className={`status-toggle ${review.estado === 'Activo' ? 'active' : 'inactive'}`}
-          title={`Estado: ${review.estado}. Clic para cambiar.`}
-        >
-          <div className={`status-toggle-knob ${review.estado === 'Activo' ? 'active' : 'inactive'}`} />
-        </button>
-      )
+      render: (review) => {
+        const isToggling = togglingId === review.id;
+        return (
+          <button
+            type="button"
+            onClick={() => handleToggleStatus(review)}
+            className={`status-toggle ${review.estado === 'Activo' ? 'active' : 'inactive'}`}
+            title={
+              isToggling
+                ? 'Actualizando estado...'
+                : `Estado: ${review.estado}. Clic para cambiar.`
+            }
+            aria-label={`Cambiar estado de la reseña de ${review.cliente}`}
+            aria-pressed={review.estado === 'Activo'}
+            disabled={isToggling}
+          >
+            <div className={`status-toggle-knob ${review.estado === 'Activo' ? 'active' : 'inactive'}`} />
+          </button>
+        );
+      }
     },
     {
       key: 'actions',
@@ -104,10 +117,15 @@ export default function ReviewsListPage() {
         title="Reseñas"
         description="Consulta y gestiona las calificaciones y comentarios enviados por los clientes."
         columns={columns}
-        data={currentReviews}
+        data={reviews}
         searchPlaceholder="Buscar por cliente o comentario..."
-        searchTerm={searchTerm}
-        onSearchChange={handleSearchChange}
+        emptyMessage={
+          loading
+            ? "Cargando reseñas..."
+            : error
+              ? "No se pudieron cargar las reseñas."
+              : "No hay reseñas para mostrar."
+        }
         extraFilter={
           <FormSelect
             value={statusFilter}
@@ -121,6 +139,15 @@ export default function ReviewsListPage() {
           />
         }
       />
+
+      {error && (
+        <p className="crud-error-hint" role="alert">
+          <i className="fa-solid fa-triangle-exclamation" /> {error}
+          <button type="button" className="crud-retry" onClick={reload}>
+            Reintentar
+          </button>
+        </p>
+      )}
 
       {/* MODAL VER DETALLE */}
       <ReviewDetailModal

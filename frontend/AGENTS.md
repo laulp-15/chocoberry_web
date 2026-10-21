@@ -19,8 +19,11 @@ conexión se está haciendo **módulo por módulo**, de forma incremental:
   exclusiva del repartidor; el panel solo la muestra en el detalle, sin subirla
   ni actualizarla. **Ventas** (`features/admin/sales` contra `/api/ventas`:
   listado y detalle de pedidos confirmados; los botones de comprobante siguen
-  pendientes).
-- **Aún simulado:** entregas, reseñas y dashboard. Siguen usando datos mock en
+  pendientes). **Reseñas** (`features/reviews` contra
+  `/api/catalogo/resenas` para lectura y `/api/resenas` para publicar;
+  `features/admin/admin-reviews` contra `/api/resenas` para listado y cambio
+  de estado).
+- **Aún simulado:** entregas y dashboard. Siguen usando datos mock en
   memoria/localStorage.
 
 No asumas que un `services/` existe porque el módulo esté conectado: revisa
@@ -94,8 +97,8 @@ Config flat, ignora `dist/`. Solo lintea `js`/`jsx`.
 Existen dos situaciones y hay que distinguirlas:
 
 - **Módulo conectado** (hoy: acceso, usuarios del panel, catálogo, maestros
-  de municipios/glaseados, pedidos de la tienda, pedidos del panel y ventas):
-  el hook o la página delega en su `services/*.js`, que usa
+  de municipios/glaseados, pedidos de la tienda, pedidos del panel, ventas y
+  reseñas): el hook o la página delega en su `services/*.js`, que usa
   `shared/api/client.js`.
 - **Módulo aún simulado:** archivos `services/` que existen de relleno
   (ej. `categoryService.js`) mientras el hook usa estado inline o mocks en
