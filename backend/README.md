@@ -54,6 +54,7 @@ npm start              # producción (node src/server.js)
 npm test               # pruebas con Jest + Supertest
 npm run seed:catalogo  # carga el catálogo inicial (categorías, productos, etc.)
 npm run seed:pedidos   # crea 15 pedidos de demostración con el catálogo real
+npm run seed:resenas   # crea 10 reseñas de demostración con clientes reales
 ```
 
 El seed de pedidos no escribe etiquetas visibles en los pedidos. Guarda los IDs
@@ -70,6 +71,14 @@ recientes en `Pendiente`, pedidos antiguos `Entregado` y algunos casos
 `Rechazado`/`Cancelado`. Varios pedidos quedan sin comprobante para simular
 pagos pendientes; los entregados se crean sin evidencia, porque esa carga es
 exclusiva del repartidor.
+
+El seed de reseñas usa clientes activos, preferiblemente con pedidos entregados,
+y reparte 10 comentarios en los últimos meses. Guarda sus IDs en
+`scripts/.seed-resenas.json` (ignorado por git). Para reemplazar el lote:
+
+```bash
+npm run seed:resenas -- --reset
+```
 
 ## Estructura
 
@@ -222,8 +231,8 @@ Base: `/api`
 > - No se elimina una categoría con productos (`409`), ni un producto o
 >   presentación que aparezca en algún pedido (`409`). Se sugiere desactivarlos.
 
-> Los módulos de entregas, reseñas y dashboard se agregan
-> progresivamente en `src/routes/index.js`.
+> Los módulos de entregas y dashboard se agregan progresivamente en
+> `src/routes/index.js`.
 
 ### Pedidos (`/api/pedidos`)
 
@@ -299,6 +308,34 @@ Base: `/api`
 > Hoy el permiso **Ventas · Ver** solo lo tiene el rol **Administrador**. Los
 > reportes (`Generar reporte` y `Exportar reporte`) y la generación de
 > comprobantes quedan para una fase posterior.
+
+### Reseñas (`/api/resenas`, `/api/catalogo/resenas`)
+
+| Método | Ruta | Descripción | Acceso |
+| --- | --- | --- | --- |
+| GET | `/catalogo/resenas` | Reseñas activas para la tienda; filtro opcional `calificacion` | Público |
+| GET | `/resenas` | Panel: todas las reseñas; filtros `cliente`, `calificacion`, `estado` | Administrador + Reseñas · Ver |
+| GET | `/resenas/:id` | Detalle de una reseña | Administrador + Reseñas · Ver |
+| POST | `/resenas` | Crea una reseña con `{ calificacion, comentario }` | Reseñas · Crear |
+| PATCH | `/resenas/:id/estado` | Activa/desactiva (`{ estado: true }`) | Administrador + Reseñas · Cambiar estado |
+
+> **La reseña es general:** no está asociada a un producto ni a un pedido. El
+> esquema permite varias reseñas por usuario (1:N), así que no se impone una
+> sola por persona.
+
+> **El servidor controla los campos sensibles:** `id_usuario` sale del token de
+> sesión, `fecha` la define la BD y `estado` nace activo. Si el cliente envía
+> `clientName`, `fecha` o `estado`, se ignoran. El nombre que se muestra es el
+> del usuario autenticado.
+
+> **Reglas:** `calificacion` debe ser un entero entre 1 y 5; `comentario` es
+> obligatorio y admite hasta 300 caracteres. La vista pública solo devuelve
+> reseñas activas; el panel incluye activas e inactivas.
+
+> **Panel:** por ahora no existen endpoints para editar el contenido ni para
+> eliminar reseñas. El panel actual solo consulta el detalle y cambia el estado.
+> La creación está disponible para **Cliente** y **Administrador**; el
+> **Repartidor** no tiene el permiso.
 
 ### Municipios y glaseados (`/api/municipios`, `/api/glaseados`)
 
@@ -391,6 +428,6 @@ Base: `/api`
 - [x] Categorías, productos y presentaciones (+ catálogo público)
 - [x] Pedidos + maestros (municipios y glaseados, con CRUD)
 - [x] Ventas (vista de solo lectura de pedidos confirmados)
+- [x] Reseñas (lectura pública, creación autenticada y moderación)
 - [ ] Entregas
-- [ ] Reseñas
 - [ ] Dashboard

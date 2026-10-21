@@ -8,6 +8,7 @@ import * as catalogoController from '../controllers/catalogo.controller.js';
 import { validar } from '../middlewares/validate.js';
 import { idParamSchema } from '../validators/common.validator.js';
 import { filtrosProductoSchema } from '../validators/producto.validator.js';
+import { filtrosResenaPublicaSchema } from '../validators/resena.validator.js';
 
 const router = Router();
 
@@ -27,5 +28,12 @@ router.get('/productos/:id', validar(idParamSchema, 'params'), catalogoControlle
 router.get('/municipios', catalogoController.listarMunicipios);
 
 router.get('/glaseados', catalogoController.listarGlaseados);
+
+// Reseñas activas para la página pública de la tienda.
+router.get(
+  '/resenas',
+  validar(filtrosResenaPublicaSchema, 'query'),
+  catalogoController.listarResenas
+);
 
 export default router;

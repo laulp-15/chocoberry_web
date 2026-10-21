@@ -1,10 +1,17 @@
-// La reseña es general (no va dirigida a un producto puntual), por eso no
-// se guarda un campo "producto".
-export const mockReviews = [
-  { id: 1, cliente: 'María Lucía Gómez', calificacion: 5, comentario: '¡Hermosa presentación y las fresas estaban super frescas y deliciosas!', fecha: '2026-03-01', estado: 'Activo' },
-  { id: 2, cliente: 'Carlos Eduardo Pérez', calificacion: 4, comentario: 'Muy buen producto, a mi papá le encantó la cerveza artesanal.', fecha: '2026-03-02', estado: 'Activo' },
-  { id: 3, cliente: 'Ana Isabel Rodríguez', calificacion: 5, comentario: 'Excelente atención al cliente y el empaque muy elegante.', fecha: '2026-03-03', estado: 'Activo' },
-  { id: 4, cliente: 'Juan David Morales', calificacion: 2, comentario: 'El paquete llegó con 20 minutos de retraso, aunque las fresas estaban ricas.', fecha: '2026-03-04', estado: 'Inactivo' },
-  { id: 5, cliente: 'Laura Sofia Restrepo', calificacion: 5, comentario: 'El chocolate caliente sobre las fresas es espectacular 10/10.', fecha: '2026-03-05', estado: 'Activo' },
-  { id: 6, cliente: 'Andrés Felipe Castro', calificacion: 3, comentario: 'El producto es bueno pero esperaba que la caja fuera un poco más grande.', fecha: '2026-03-06', estado: 'Activo' },
-];
+// src/features/admin/admin-reviews/services/reviewService.js
+//
+// Reseñas del panel: listado completo y cambio de estado. Solo el rol
+// Administrador puede acceder a estas rutas.
+
+import { api } from "../../../../shared/api/client";
+import { mapResenaAdmin, mapResenasAdmin } from "./reviewMappers";
+
+export async function listar() {
+  const resenas = await api.get("/resenas");
+  return mapResenasAdmin(resenas);
+}
+
+export async function cambiarEstado(id, estado) {
+  const resena = await api.patch(`/resenas/${id}/estado`, { estado });
+  return mapResenaAdmin(resena);
+}

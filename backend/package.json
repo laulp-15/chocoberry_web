@@ -12,6 +12,7 @@
     "dev": "nodemon src/server.js",
     "seed:catalogo": "node scripts/seed-catalogo.mjs",
     "seed:pedidos": "node scripts/seed-pedidos.mjs",
+    "seed:resenas": "node scripts/seed-resenas.mjs",
     "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest",
     "test:watch": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --watch",
     "test:coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --coverage"
