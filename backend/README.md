@@ -231,7 +231,7 @@ Base: `/api`
 > - No se elimina una categoría con productos (`409`), ni un producto o
 >   presentación que aparezca en algún pedido (`409`). Se sugiere desactivarlos.
 
-> Los módulos de entregas y dashboard se agregan progresivamente en
+> El módulo de entregas se agregará progresivamente en
 > `src/routes/index.js`.
 
 ### Pedidos (`/api/pedidos`)
@@ -337,6 +337,40 @@ Base: `/api`
 > La creación está disponible para **Cliente** y **Administrador**; el
 > **Repartidor** no tiene el permiso.
 
+### Dashboard (`/api/dashboard`)
+
+| Método | Ruta | Descripción | Acceso |
+| --- | --- | --- | --- |
+| GET | `/dashboard/resumen` | Resumen de KPIs, ventas, pedidos y calificaciones | Administrador + Dashboard · Ver |
+
+> **Parámetros opcionales:** `semana=YYYY-MM-DD` elige la semana que contiene esa
+> fecha (lunes a domingo) y `mes=YYYY-MM` elige el mes final de una ventana de
+> 12 meses. Sin parámetros se usa la semana actual y los últimos 12 meses.
+
+> **Navegación:** la respuesta incluye `ventasSemana.anterior`,
+> `ventasSemana.siguiente`, `ventasMes.anterior` y `ventasMes.siguiente` para que
+> el frontend no calcule fechas. `siguiente` es `null` cuando el período
+> siguiente sería futuro. `disponibilidad` indica el primer y el último pedido
+> registrados.
+
+> **KPIs:** son una foto actual. `pedidosPendientes` cuenta solo el estado
+> `Pendiente`; `pedidosEntregados` cuenta `Entregado`; `ingresosMes` y su
+> variación usan el mes actual; `productoMasVendido` se calcula por unidades.
+
+> **Ventas:** igual que en el módulo Ventas, cuentan los pedidos en
+> `En preparación`, `Despachado`, `Entregado` y `Cancelado`. Se excluyen
+> `Pendiente` y `Rechazado`. El ingreso se calcula con
+> `SUM(productoPedido.subtotal) + pedido.precio_domicilio`, sumando el domicilio
+> una sola vez por pedido. Las gráficas semanales y mensuales siguen esta regla.
+
+> **Otras métricas:** el ranking de productos usa unidades y también incluye
+> pedidos cancelados. `pedidosPorMunicipio` cuenta todos los pedidos;
+> `pedidosPorEstado` es la foto actual; `calificaciones` incluye reseñas activas
+> e inactivas.
+
+> **Permisos:** la ruta exige `Dashboard · Ver` y además el rol
+> **Administrador**, porque expone ingresos y métricas del negocio.
+
 ### Municipios y glaseados (`/api/municipios`, `/api/glaseados`)
 
 | Método | Ruta | Descripción | Permiso |
@@ -430,4 +464,4 @@ Base: `/api`
 - [x] Ventas (vista de solo lectura de pedidos confirmados)
 - [x] Reseñas (lectura pública, creación autenticada y moderación)
 - [ ] Entregas
-- [ ] Dashboard
+- [x] Dashboard
