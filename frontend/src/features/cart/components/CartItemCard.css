@@ -161,11 +161,29 @@
   color: var(--primario);
   font-size: 11px;
 }
-.cart-item-units {
-  min-width: 22px;
-  text-align: center;
-  font-weight: 600;
+.cart-item-units-input {
+  width: 46px;
+  height: 28px;
+  padding: 0 4px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: var(--blanco);
+  color: var(--texto);
+  font-family: "Poppins", sans-serif;
   font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  outline: none;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.cart-item-units-input:focus {
+  border-color: var(--primario-claro);
+}
+.cart-item-units-input::-webkit-outer-spin-button,
+.cart-item-units-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .cart-item-prices {

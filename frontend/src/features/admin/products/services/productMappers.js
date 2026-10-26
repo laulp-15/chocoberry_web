@@ -8,11 +8,20 @@
 export function mapProductoAdmin(producto) {
   if (!producto) return null;
 
+  const imagenes = Array.isArray(producto.imagenes)
+    ? producto.imagenes.map((imagen) => ({
+        id: imagen.id,
+        url: imagen.url,
+        orden: imagen.orden,
+      }))
+    : [];
+
   return {
     id: producto.id,
     nombre: producto.nombre ?? "",
     descripcion: producto.descripcion ?? "",
     imagen: producto.imagen ?? "",
+    imagenes,
     estado: producto.estado ? "Activo" : "Inactivo",
     categoriaId: producto.categoria?.id ?? "",
     categoriaNombre: producto.categoria?.nombre ?? "",
@@ -23,7 +32,33 @@ export function mapProductosAdmin(productos) {
   return Array.isArray(productos) ? productos.map(mapProductoAdmin) : [];
 }
 
-/** Alta: multipart con la foto (el backend la guarda y devuelve su ruta). */
+/**
+ * Agrega las imágenes al FormData. `imagenes` es la lista final en orden:
+ * - { tipo: "existente", url }
+ * - { tipo: "nueva", file }
+ * Los archivos nuevos van en el campo "imagenes" y el orden final en
+ * "ordenImagenes", usando tokens "nueva:N" para referenciarlos.
+ */
+function appendImagenes(formData, datos) {
+  if (!Array.isArray(datos.imagenes)) return;
+
+  let indiceNueva = 0;
+  const orden = datos.imagenes
+    .map((imagen) => {
+      if (imagen?.tipo === "nueva" && imagen.file instanceof File) {
+        const token = `nueva:${indiceNueva}`;
+        formData.append("imagenes", imagen.file);
+        indiceNueva += 1;
+        return token;
+      }
+      return imagen?.url ?? "";
+    })
+    .filter(Boolean);
+
+  formData.append("ordenImagenes", JSON.stringify(orden));
+}
+
+/** Alta: multipart con una o varias fotos (el backend las guarda). */
 export function toCrearProductoPayload(datos = {}) {
   const formData = new FormData();
   formData.append("nombre", String(datos.nombre ?? "").trim());
@@ -31,16 +66,19 @@ export function toCrearProductoPayload(datos = {}) {
   formData.append("idCategoria", String(datos.categoriaId ?? ""));
   formData.append("estado", "true");
 
-  if (datos.imagenFile instanceof File) {
-    formData.append("imagen", datos.imagenFile);
+  appendImagenes(formData, datos);
+
+  // Compatibilidad con el flujo anterior de una sola imagen.
+  if (!Array.isArray(datos.imagenes) && datos.imagenFile instanceof File) {
+    formData.append("imagenes", datos.imagenFile);
   }
 
   return formData;
 }
 
 /**
- * Edición: la imagen solo se envía si hay una nueva o si el usuario la quitó.
- * Si no se envía, el backend conserva la actual.
+ * Edición: se envía la lista final de imágenes (existentes y nuevas en orden).
+ * Si no se envía `imagenes`, el backend conserva las actuales.
  */
 export function toActualizarProductoPayload(datos = {}) {
   const formData = new FormData();
@@ -48,11 +86,10 @@ export function toActualizarProductoPayload(datos = {}) {
   formData.append("descripcion", String(datos.descripcion ?? "").trim());
   formData.append("idCategoria", String(datos.categoriaId ?? ""));
 
-  if (datos.imagenFile instanceof File) {
-    formData.append("imagen", datos.imagenFile);
-  } else if (datos.quitarImagen) {
-    // Cadena vacía = borrar la imagen (el backend la guarda como NULL).
-    formData.append("imagen", "");
+  appendImagenes(formData, datos);
+
+  if (!Array.isArray(datos.imagenes) && datos.imagenFile instanceof File) {
+    formData.append("imagenes", datos.imagenFile);
   }
 
   return formData;

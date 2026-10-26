@@ -305,6 +305,13 @@ export default function RegisterPage() {
             error.message ||
             "Este correo electrónico ya está registrado.",
         }));
+      } else if (error?.code === "DOCUMENT_TAKEN") {
+        setErrors((current) => ({
+          ...current,
+          idNumber:
+            error.message ||
+            "Este número de identificación ya está registrado.",
+        }));
       } else {
         setServerError(
           error?.message ||
@@ -329,8 +336,10 @@ export default function RegisterPage() {
 
       <AuthLayout
         variant="split"
+        wide
         image="/img/Login/login.jpeg"
         imageAlt="Caja de fresas cubiertas de chocolate Chocoberry"
+        visualTitle="Crea momentos dulces."
         title="¡Regístrate!"
         subtitle="Completa tus datos para comenzar"
         footer={

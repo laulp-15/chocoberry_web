@@ -166,6 +166,15 @@ const PersonalInfo = () => {
       await updateUser({ ...userInfo, fullName });
       setEditingSection(null);
     } catch (error) {
+      if (error.code === 'DOCUMENT_TAKEN') {
+        setProfileErrors((current) => ({
+          ...current,
+          idNumber:
+            error.message || 'Este número de documento ya está registrado.',
+        }));
+        return;
+      }
+
       setProfileMessage({
         type: 'error',
         text: error.message || 'No se pudieron guardar los cambios.',

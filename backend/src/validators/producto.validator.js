@@ -15,13 +15,43 @@ const descripcionField = z
   .max(255, 'La descripción no puede superar los 255 caracteres.')
   .optional();
 
-// Ruta o URL de la imagen. El archivo subido (multipart) se resuelve en el
-// controlador, así que aquí solo se valida el caso de una ruta enviada como texto.
+// Ruta o URL de la imagen. Los archivos subidos (multipart) se resuelven en el
+// controlador, así que aquí solo se valida el caso de rutas enviadas como texto.
 const imagenField = z
   .string()
   .trim()
   .max(255, 'La ruta de la imagen no puede superar los 255 caracteres.')
   .optional();
+
+// Máximo de imágenes por producto (coincide con el CHECK de la tabla).
+const MAX_IMAGENES = 4;
+
+/**
+ * Lista de rutas que puede llegar como arreglo (JSON) o como texto JSON
+ * (multipart). Se usa para `imagenesUrl` y `ordenImagenes`.
+ */
+const rutasField = z.preprocess(
+  (valor) => {
+    if (typeof valor !== 'string') return valor;
+    const texto = valor.trim();
+    if (!texto) return undefined;
+    try {
+      return JSON.parse(texto);
+    } catch {
+      return valor;
+    }
+  },
+  z
+    .array(
+      z
+        .string()
+        .trim()
+        .min(1, 'La ruta de la imagen no puede estar vacía.')
+        .max(255, 'La ruta de la imagen no puede superar los 255 caracteres.')
+    )
+    .max(MAX_IMAGENES, `Puedes subir hasta ${MAX_IMAGENES} imágenes por producto.`)
+    .optional()
+);
 
 // Acepta el id de la categoría como número o como texto numérico (multipart),
 // y trata la cadena vacía como "no enviado".
@@ -47,6 +77,8 @@ export const crearProductoSchema = z
     nombre: nombreField,
     descripcion: descripcionField,
     imagen: imagenField,
+    imagenesUrl: rutasField,
+    ordenImagenes: rutasField,
     estado: booleanoFlexible.optional(),
     idCategoria: idCategoriaField,
     id_categoria: idCategoriaField,
@@ -62,6 +94,8 @@ export const actualizarProductoSchema = z.object({
   nombre: nombreField.optional(),
   descripcion: descripcionField,
   imagen: imagenField,
+  imagenesUrl: rutasField,
+  ordenImagenes: rutasField,
   estado: booleanoFlexible.optional(),
   idCategoria: idCategoriaField,
   id_categoria: idCategoriaField,

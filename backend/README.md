@@ -22,6 +22,31 @@ Node.js + Express (JavaScript, ES Modules) y MySQL.
   1. `../database/chocoberry_bd.sql` (estructura)
   2. `../database/chocoberry_datos_iniciales.sql` (datos mínimos)
 
+## Actualizar una base existente
+
+La unicidad del número de documento se agregó con la restricción
+`uq_usuario_numero_documento`. Si tu base ya estaba creada antes de este
+cambio, ejecuta una sola vez:
+
+```bash
+mysql -u TU_USUARIO -p chocoberry < ../database/migrations/001_usuario_numero_documento_unique.sql
+```
+
+Las bases nuevas creadas desde `chocoberry_bd.sql` ya incluyen la restricción.
+
+Las imágenes de producto ahora viven en la tabla `imagenProducto` (entre 1 y 4
+por producto). Si tu base ya estaba creada antes de este cambio, ejecuta:
+
+```bash
+mysql -u TU_USUARIO -p chocoberry < ../database/migrations/002_producto_imagenes.sql
+```
+
+La migración es repetible: copia la antigua columna `producto.imagen` como
+portada sin duplicarla y solo elimina la columna si todavía existe. Las bases
+nuevas creadas desde `chocoberry_bd.sql` ya incluyen la nueva tabla. Los
+productos heredados que queden sin ninguna imagen deben editarse y recibir al
+menos una.
+
 ## Instalación
 
 ```bash
@@ -180,17 +205,25 @@ Base: `/api`
 | --- | --- | --- | --- |
 | GET | `/productos` | Lista con filtros `nombre`, `idCategoria`/`id_categoria`, `categoria`, `estado` | Productos · Ver |
 | GET | `/productos/:id` | Detalle de un producto | Productos · Ver |
-| POST | `/productos` | Crea un producto (ver nota de imagen) | Productos · Crear |
+| POST | `/productos` | Crea un producto (ver nota de imágenes) | Productos · Crear |
 | PUT | `/productos/:id` | Actualiza un producto | Productos · Editar |
 | PATCH | `/productos/:id/estado` | Activa/desactiva (`{ estado: true }`) | Productos · Cambiar estado |
 | DELETE | `/productos/:id` | Elimina (bloqueado con `409` si está en pedidos) | Productos · Eliminar |
 
-> **Imagen del producto:** se envía como archivo con `Content-Type:
-> multipart/form-data` en el campo `imagen` (PNG, JPG o WEBP, máx. 5 MB). El
-> archivo se guarda en `backend/uploads` y se sirve como estático en
-> `GET /uploads/<archivo>`; en `producto.imagen` solo se persiste la **ruta**
-> (`/uploads/...`). También se acepta un cuerpo JSON con `imagen` como texto
-> (ruta o URL) para no obligar a un archivo.
+> **Imágenes del producto:** cada producto debe tener entre 1 y 4 imágenes.
+>
+> - **Archivos nuevos:** `Content-Type: multipart/form-data`, campo `imagenes`
+>   (hasta 4 archivos PNG, JPG o WEBP, máx. 5 MB cada uno). Se guardan en
+>   `backend/uploads` y se sirven como estáticos en `GET /uploads/<archivo>`.
+> - **Rutas existentes:** `imagenesUrl` como arreglo JSON de rutas o URLs
+>   (también se acepta el JSON como texto).
+> - **Orden:** la respuesta incluye `imagen` (portada, por compatibilidad) e
+>   `imagenes: [{ id, url, orden }]`; `orden = 1` es la portada. Al editar,
+>   `ordenImagenes` define la lista final: cada elemento es una URL existente o
+>   el token `nueva:N` para el archivo N de `imagenes`. Si se omite, se
+>   conservan las actuales y las nuevas se agregan al final.
+> - **Compatibilidad:** también se acepta `imagen` como texto (ruta o URL) al
+>   crear o editar.
 >
 > El campo de categoría acepta `id_categoria` / `idCategoria` (id) o `categoria`
 > (nombre). La respuesta devuelve `categoria: { id, nombre }`.
@@ -245,7 +278,7 @@ Base: `/api`
 | GET | `/pedidos/mios` | Pedidos del usuario autenticado | Pedidos · Ver |
 | GET | `/pedidos/mios/:id` | Detalle de un pedido propio | Pedidos · Ver |
 | POST | `/pedidos` | Crea un pedido con su comprobante (multipart) | Pedidos · Crear |
-| PUT | `/pedidos/:id` | Edita la cabecera (no las líneas) | Pedidos · Editar |
+| PUT | `/pedidos/:id` | Edita cabecera y líneas de un pedido Pendiente | Pedidos · Editar |
 | PATCH | `/pedidos/:id/estado` | Cambia el estado (`{ estado }`) | Pedidos · Cambiar estado |
 | PATCH | `/pedidos/:id/rechazar` | Rechaza con motivo (`{ motivo }`) | Pedidos · Cambiar estado |
 | PATCH | `/pedidos/:id/entrega` | Evidencia y observaciones del repartidor | Pedidos · Editar + solo Repartidor |
@@ -253,8 +286,8 @@ Base: `/api`
 
 > **Alcance por rol:** un **Cliente** solo ve sus propios pedidos (tanto en
 > `/pedidos` como en `/pedidos/mios`); el **Repartidor** ve todos pero solo
-> puede registrar la evidencia de entrega, nunca cambiar el estado ni editar la
-> cabecera. El panel (Administrador) gestiona todo el ciclo, pero **no sube ni
+> puede registrar la evidencia de entrega, nunca cambiar el estado ni editar el
+> pedido. El panel (Administrador) gestiona todo el ciclo, pero **no sube ni
 > actualiza evidencia de entrega**: esa acción es exclusiva del Repartidor.
 
 > **Estados y transiciones:**
@@ -264,6 +297,14 @@ Base: `/api`
 > `Pendiente` y exige `motivo`; para rechazar se usa su endpoint, no el de
 > cambio de estado.
 
+> **Edición:** solo se permite mientras el pedido está en `Pendiente`; después
+> responde `409`. Si se envía `lineas`, se interpreta como la lista completa
+> resultante del pedido (agregar, editar o eliminar). Cada línea existente
+> envía su `id`; las que conservan producto, presentación y glaseado mantienen
+> su `precio_unitario` histórico. Las líneas nuevas o con cambios en esos datos
+> se calculan con el precio actual del catálogo. Cabecera y líneas se guardan en
+> una sola transacción. El comprobante no se modifica desde la edición.
+
 > **Creación (multipart/form-data):** campo `comprobante`
 > (PNG/JPG/WEBP, máx. 5 MB) + `fechaEntrega` (`YYYY-MM-DD`, se guarda a las
 > 00:00), `direccion`, `barrio`, `idMunicipio`, `nombreReceptor`,
@@ -272,7 +313,9 @@ Base: `/api`
 > crear a nombre de otro usuario). Cada línea es
 > `{ idProducto, idPresentacion, cantidadProductos, idColorGlaseado, mensajePersonalizado?, personalizacionAdicional? }`.
 
-> **Precios:** se calculan siempre en el servidor con `presentacion.precio`.
+> **Precios:** se calculan siempre en el servidor; al crear se usa el
+> `presentacion.precio` actual y al editar se conserva el `precio_unitario`
+> histórico de las líneas que no cambian de producto, presentación ni glaseado.
 > `pedido.precio_domicilio` es un **snapshot** del precio del municipio al
 > momento de crear el pedido; el total es derivado (`subtotal + domicilio`) y
 > no existe como columna.

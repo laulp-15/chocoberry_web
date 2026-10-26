@@ -8,7 +8,12 @@ const SELECT_BASE = `SELECT pp.id, pp.id_pedido, pp.id_producto, pp.id_presentac
                             pp.cantidad_productos, pp.precio_unitario, pp.subtotal,
                             pp.mensaje_personalizado, pp.id_color_glaseado,
                             pp.personalizacion_adicional,
-                            pr.nombre AS producto, pr.imagen AS producto_imagen,
+                            pr.nombre AS producto,
+                            (SELECT ip.url
+                               FROM imagenProducto ip
+                              WHERE ip.id_producto = pr.id
+                              ORDER BY ip.orden ASC
+                              LIMIT 1) AS producto_imagen,
                             pres.cantidad_fresas, pres.precio AS presentacion_precio,
                             cg.nombre AS color_nombre, cg.codigo_hex AS color_hex
                        FROM productoPedido pp
@@ -27,6 +32,14 @@ export async function listarPorPedidos(ids) {
   if (!ids || ids.length === 0) return [];
   const marcadores = ids.map(() => '?').join(', ');
   return query(`${SELECT_BASE} WHERE pp.id_pedido IN (${marcadores}) ${ORDEN}`, ids);
+}
+
+/**
+ * Elimina todas las líneas de un pedido dentro de una transacción. Se usa al
+ * reemplazar la lista completa de productos durante la edición de un pedido.
+ */
+export async function eliminarPorPedido(conexion, idPedido) {
+  await conexion.execute('DELETE FROM productoPedido WHERE id_pedido = ?', [idPedido]);
 }
 
 /** Inserta todas las líneas de un pedido dentro de una transacción. */

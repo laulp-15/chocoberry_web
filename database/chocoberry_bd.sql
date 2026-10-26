@@ -11,7 +11,6 @@ USE chocoberry;
 CREATE TABLE rol (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre_rol VARCHAR(50) NOT NULL UNIQUE
-    -- Orden esperado de inserción: Administrador (1), Repartidor (2), Cliente (3)
 ) ENGINE=InnoDB;
 
 CREATE TABLE modulo (
@@ -60,9 +59,10 @@ CREATE TABLE usuario (
     telefono VARCHAR(20),
     barrio VARCHAR(100),
     direccion VARCHAR(200),
-    fecha DATE NOT NULL DEFAULT (CURRENT_DATE),        -- fecha de registro
-    estado BOOLEAN NOT NULL DEFAULT TRUE,            -- TRUE = activo, FALSE = inactivo
-    id_rol INT NOT NULL DEFAULT 3,                   -- por defecto: Cliente (id 3)
+    fecha DATE NOT NULL DEFAULT (CURRENT_DATE),
+    estado BOOLEAN NOT NULL DEFAULT TRUE,
+    id_rol INT NOT NULL DEFAULT 3, -- por defecto: Cliente (id 3)
+    CONSTRAINT uq_usuario_numero_documento UNIQUE (numero_documento),
     CONSTRAINT fk_usuario_rol
         FOREIGN KEY (id_rol) REFERENCES rol(id)
 ) ENGINE=InnoDB;
@@ -80,10 +80,22 @@ CREATE TABLE producto (
     nombre VARCHAR(100) NOT NULL,
     descripcion VARCHAR(255),
     estado BOOLEAN NOT NULL DEFAULT TRUE,
-    imagen VARCHAR(255),
     id_categoria INT NOT NULL,
     CONSTRAINT fk_producto_categoria
         FOREIGN KEY (id_categoria) REFERENCES categoria(id)
+) ENGINE=InnoDB;
+
+-- Hasta 4 imágenes por producto. `orden = 1` es la portada.
+CREATE TABLE imagenProducto (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_producto INT NOT NULL,
+    url VARCHAR(255) NOT NULL,
+    orden INT NOT NULL,
+    CONSTRAINT fk_imagenProducto_producto
+        FOREIGN KEY (id_producto) REFERENCES producto(id)
+        ON DELETE CASCADE,
+    CONSTRAINT uq_imagenProducto_orden UNIQUE (id_producto, orden),
+    CONSTRAINT ck_imagenProducto_orden CHECK (orden BETWEEN 1 AND 4)
 ) ENGINE=InnoDB;
 
 CREATE TABLE presentacion (
@@ -121,7 +133,7 @@ CREATE TABLE pedido (
     fecha_entrega DATETIME,
     direccion VARCHAR(200) NOT NULL,
     barrio VARCHAR(100) NOT NULL,
-    precio_domicilio DECIMAL(10,2) NOT NULL,         -- histórico: no depende del valor actual en municipio
+    precio_domicilio DECIMAL(10,2) NOT NULL,
     nombre_receptor VARCHAR(100) NOT NULL,
     telefono_receptor VARCHAR(20) NOT NULL,
     comprobante_pago VARCHAR(255),
@@ -147,10 +159,10 @@ CREATE TABLE productoPedido (
     id_producto INT NOT NULL,
     id_presentacion INT NOT NULL,
     cantidad_productos INT NOT NULL,
-    precio_unitario DECIMAL(10,2) NOT NULL,          -- histórico
+    precio_unitario DECIMAL(10,2) NOT NULL,
     subtotal DECIMAL(10,2) NOT NULL,
-    mensaje_personalizado VARCHAR(255),              -- longitud validada en backend (= cantidad_fresas)
-    id_color_glaseado INT,                           -- obligatorio por regla de negocio (backend)
+    mensaje_personalizado VARCHAR(255),
+    id_color_glaseado INT,
     personalizacion_adicional VARCHAR(255),
     CONSTRAINT fk_prodPedido_pedido
         FOREIGN KEY (id_pedido) REFERENCES pedido(id)
@@ -171,7 +183,7 @@ CREATE TABLE resena (
     comentario VARCHAR(500),
     fecha DATE NOT NULL DEFAULT (CURRENT_DATE),
     estado BOOLEAN NOT NULL DEFAULT TRUE,
-    id_usuario INT NOT NULL,                         -- sin UNIQUE: un usuario puede dejar varias reseñas (1:N)
+    id_usuario INT NOT NULL,
     CONSTRAINT fk_resena_usuario
         FOREIGN KEY (id_usuario) REFERENCES usuario(id)
 ) ENGINE=InnoDB;

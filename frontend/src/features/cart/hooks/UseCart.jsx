@@ -1,7 +1,12 @@
 // src/features/cart/hooks/useCart.jsx
-import React, { createContext, useContext, useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { createContext, useContext, useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useAuth } from "../../login/hooks/useAuth";
 import { useNavigate, useLocation } from "react-router-dom";
+import {
+  MAX_CART_UNITS,
+  normalizarCantidad,
+  totalUnidades,
+} from "../../../shared/utils/orderRules";
 
 const CartContext = createContext(null);
 
@@ -22,6 +27,11 @@ export function CartProvider({ children }) {
   // Función interna para añadir item al carrito (sin verificación de auth)
   const doAddItem = useCallback(
     (item) => {
+      // El pedido de la tienda no puede superar 20 unidades en total.
+      if (totalUnidades(items) >= MAX_CART_UNITS) {
+        return { merged: false, limitReached: true };
+      }
+
       const existing = items.find(
         (it) => it.productId === item.productId && it.quantity === item.quantity && it.color === item.color
       );
@@ -125,12 +135,14 @@ export function CartProvider({ children }) {
     setCardMessage("");
   }, []);
 
-  const updateUnits = useCallback((cartItemId, delta) => {
+  // `nextUnits` es la cantidad absoluta escrita o calculada por el stepper.
+  // Se normaliza a un entero >= 1; el tope de 20 se valida sobre el total del
+  // carrito para poder mostrar el aviso al usuario.
+  const updateUnits = useCallback((cartItemId, nextUnits) => {
+    const unidades = normalizarCantidad(nextUnits);
     setItems((prev) =>
       prev.map((it) =>
-        it.cartItemId === cartItemId
-          ? { ...it, units: Math.max(1, it.units + delta) }
-          : it
+        it.cartItemId === cartItemId ? { ...it, units: unidades } : it
       )
     );
   }, []);
@@ -196,6 +208,8 @@ export function CartProvider({ children }) {
   );
 }
 
+// El hook se exporta junto al provider porque comparten el mismo contexto.
+// eslint-disable-next-line react-refresh/only-export-components
 export function useCart() {
   const ctx = useContext(CartContext);
   if (!ctx) throw new Error("useCart debe usarse dentro de <CartProvider>");

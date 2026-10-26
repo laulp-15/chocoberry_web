@@ -41,7 +41,7 @@ export async function crear(datos) {
   return mapPedidoAdmin(pedido);
 }
 
-/** PUT /pedidos/:id (solo cabecera). */
+/** PUT /pedidos/:id (cabecera y, opcionalmente, lista completa de líneas). */
 export async function actualizar(id, datos) {
   const pedido = await api.put(
     `/pedidos/${id}`,

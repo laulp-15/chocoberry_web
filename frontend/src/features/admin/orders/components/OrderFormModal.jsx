@@ -1,5 +1,5 @@
 // src/features/admin/orders/components/OrderFormModal.jsx
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Modal from "../../../../shared/components/Modal";
 import FormTextField from "../../../../shared/components/FormTextField";
 import FormSelect from "../../../../shared/components/FormSelect";
@@ -12,6 +12,12 @@ import OrderProductLineItem from "./OrderProductLineItem";
 import { getStatusMeta } from "../data/orderStatus";
 import { getProofUrl } from "../utils/orderDisplay";
 import { formatPrice } from "../../../../shared/utils/formatPrice";
+import {
+  LARGE_ORDER_UNITS,
+  fechaMinimaEntrega,
+  formatearFechaISO,
+  totalUnidades,
+} from "../../../../shared/utils/orderRules";
 import { IMAGE_ACCEPT } from "../../../../shared/utils/fileValidation";
 import { validatePhone } from "../../../login/utils/validators";
 import "./OrderFormModal.css";
@@ -60,7 +66,8 @@ function toFormValues(order) {
  * Modal de Crear/Editar pedido en una sola vista continua.
  *
  * Crear: exige cliente registrado, comprobante y al menos una línea.
- * Editar: solo cabecera (el backend no permite cambiar líneas ni comprobante).
+ * Editar: solo pedidos pendientes; permite cabecera y líneas. El comprobante
+ * no se cambia.
  *
  * @param {object} props
  * @param {boolean} props.open
@@ -86,6 +93,8 @@ export default function OrderFormModal({
 }) {
   const isEditing = Boolean(initialData);
   const [formError, setFormError] = useState("");
+  const [editingLine, setEditingLine] = useState(null);
+  const nextLineId = useRef(0);
 
   const {
     values: order,
@@ -99,7 +108,16 @@ export default function OrderFormModal({
     validators: {
       clienteId: (o) =>
         isEditing || o.clienteId ? "" : "Selecciona un cliente registrado.",
-      fecha: (o) => (o.fecha ? "" : "La fecha de entrega es obligatoria."),
+      fecha: (o) => {
+        if (!o.fecha) return "La fecha de entrega es obligatoria.";
+        if (totalUnidades(o.lineas ?? []) > LARGE_ORDER_UNITS) {
+          const minima = fechaMinimaEntrega(o.lineas ?? []);
+          if (o.fecha < minima) {
+            return `Con más de 10 unidades en total, la entrega más próxima es el ${formatearFechaISO(minima)}.`;
+          }
+        }
+        return "";
+      },
       direccion: (o) => {
         const valor = o.direccion.trim();
         if (!valor) return "La dirección es obligatoria.";
@@ -145,7 +163,6 @@ export default function OrderFormModal({
           ? "El mensaje de la tarjeta no puede superar los 255 caracteres."
           : "",
       lineas: (o) => {
-        if (isEditing) return "";
         if (o.lineas.length === 0) return "Agrega al menos un producto.";
         if (o.lineas.length > MAX_LINEAS) {
           return `Puedes agregar hasta ${MAX_LINEAS} productos por pedido.`;
@@ -153,6 +170,7 @@ export default function OrderFormModal({
         return "";
       },
     },
+    dependents: { lineas: ["fecha"] },
     immediate: [
       "clienteId",
       "fecha",
@@ -227,6 +245,13 @@ export default function OrderFormModal({
   }
 
   const lineas = order.lineas ?? [];
+  const totalPedido = totalUnidades(lineas);
+  const pedidoGrande = totalPedido > LARGE_ORDER_UNITS;
+  const minFechaEntrega = pedidoGrande
+    ? fechaMinimaEntrega(lineas)
+    : isEditing
+      ? undefined
+      : addDaysISO(1);
   const subtotal = lineas.reduce(
     (suma, linea) =>
       suma + Number(linea.precioUnitario) * Number(linea.unidades),
@@ -234,22 +259,56 @@ export default function OrderFormModal({
   );
   const total = subtotal + shippingCost;
 
+  const lineKey = (linea) => String(linea.lineId ?? linea.id);
+
   const addLine = (linea) => {
     if (lineas.length >= MAX_LINEAS) {
       setFormError(`Puedes agregar hasta ${MAX_LINEAS} productos por pedido.`);
       return;
     }
     setFormError("");
-    setField("lineas", [...lineas, linea]);
+    setField("lineas", [
+      ...lineas,
+      { ...linea, lineId: `nueva-${nextLineId.current++}` },
+    ]);
   };
-  const removeLine = (lineId) =>
+
+  const updateLine = (linea) => {
+    if (!editingLine) return;
+
+    const key = lineKey(editingLine);
+    setFormError("");
     setField(
       "lineas",
-      lineas.filter((linea) => String(linea.lineId ?? linea.id) !== String(lineId))
+      lineas.map((actual) =>
+        lineKey(actual) === key
+          ? {
+              ...actual,
+              ...linea,
+              // La identidad de la línea se conserva para que el backend
+              // pueda mantener su precio histórico.
+              id: actual.id,
+              lineId: actual.lineId,
+            }
+          : actual
+      )
     );
+    setEditingLine(null);
+  };
+
+  const removeLine = (lineId) => {
+    setField(
+      "lineas",
+      lineas.filter((linea) => lineKey(linea) !== String(lineId))
+    );
+    if (editingLine && lineKey(editingLine) === String(lineId)) {
+      setEditingLine(null);
+    }
+  };
 
   const handleClose = () => {
     setFormError("");
+    setEditingLine(null);
     onClose();
   };
 
@@ -270,6 +329,7 @@ export default function OrderFormModal({
           telefonoReceptor: order.recipientPhone.trim(),
           instruccionesEntrega: order.instrucciones.trim(),
           mensajeTarjeta: order.cardMessage.trim(),
+          lineas,
         });
       } else {
         await onSubmit({
@@ -323,7 +383,15 @@ export default function OrderFormModal({
               className="btn-save"
               onClick={handleSave}
               disabled={
-                submitting || optionsLoading || Boolean(optionsError)
+                submitting ||
+                optionsLoading ||
+                Boolean(optionsError) ||
+                Boolean(editingLine)
+              }
+              title={
+                editingLine
+                  ? "Guarda o cancela la edición del producto antes de guardar el pedido."
+                  : undefined
               }
             >
               {submitting ? "Guardando..." : "Guardar"}
@@ -424,8 +492,15 @@ export default function OrderFormModal({
               value={order.fecha}
               onChange={(v) => setField("fecha", v)}
               error={errors.fecha}
-              minDate={isEditing ? undefined : addDaysISO(1)}
+              minDate={minFechaEntrega}
               maxDate={isEditing ? undefined : addDaysISO(15)}
+              hint={
+                pedidoGrande
+                  ? `Con más de 10 unidades en total, la entrega más próxima es el ${formatearFechaISO(minFechaEntrega)}.`
+                  : isEditing
+                    ? undefined
+                    : "Disponible desde mañana y hasta 15 días a futuro."
+              }
             />
             <FormTextField
               label="Estado del pedido"
@@ -517,22 +592,24 @@ export default function OrderFormModal({
             2. Productos {lineas.length > 0 && `(${lineas.length})`}
           </h3>
 
-          {isEditing ? (
-            <div className="order-form-note">
-              Los productos y sus precios no se editan desde este formulario.
-              Si necesitas cambiarlos, crea un pedido nuevo.
-            </div>
-          ) : (
-            <OrderProductLineForm onAdd={addLine} options={options} />
-          )}
+          <OrderProductLineForm
+            key={editingLine ? `editar-${lineKey(editingLine)}` : "nueva"}
+            initialLine={editingLine}
+            onAdd={addLine}
+            onUpdate={updateLine}
+            onCancelEdit={() => setEditingLine(null)}
+            options={options}
+          />
 
           {lineas.length > 0 ? (
             <div className="order-lines-list">
               {lineas.map((linea) => (
                 <OrderProductLineItem
-                  key={linea.lineId ?? linea.id}
+                  key={lineKey(linea)}
                   line={linea}
-                  onRemove={isEditing ? undefined : removeLine}
+                  active={Boolean(editingLine) && lineKey(editingLine) === lineKey(linea)}
+                  onEdit={setEditingLine}
+                  onRemove={removeLine}
                 />
               ))}
             </div>

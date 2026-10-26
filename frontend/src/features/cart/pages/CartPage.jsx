@@ -6,6 +6,11 @@ import CartItemCard from "../components/CartItemCard";
 import CartSummary from "../components/CartSummary";
 import CartNotification from "../components/CartNotification";
 import ConfirmModal from "../../../shared/components/ConfirmModal";
+import {
+  MAX_CART_UNITS,
+  excedeLimiteCarrito,
+  totalUnidades,
+} from "../../../shared/utils/orderRules";
 import "./CartPage.css";
 
 export default function CartPage() {
@@ -26,8 +31,13 @@ export default function CartPage() {
   }, [location.state, location.pathname, navigate]);
 
   const handleCheckout = () => {
+    // El botón ya se deshabilita, pero se valida de nuevo por si el estado
+    // cambia justo antes de navegar.
+    if (excedeLimiteCarrito(items)) return;
     navigate("/carrito/pago");
   };
+
+  const puedeAumentar = totalUnidades(items) < MAX_CART_UNITS;
 
   const handleConfirmClear = () => {
     clearCart();
@@ -68,6 +78,7 @@ export default function CartPage() {
                   onUnitsChange={updateUnits}
                   onFieldChange={updateField}
                   onRemove={removeItem}
+                  canIncrease={puedeAumentar}
                 />
               ))}
             </div>

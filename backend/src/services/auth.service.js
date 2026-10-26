@@ -8,6 +8,7 @@ import {
   AppError,
   BadRequestError,
   ConflictError,
+  DocumentTakenError,
   ForbiddenError,
   NotFoundError,
   UnauthorizedError,
@@ -31,6 +32,11 @@ const firmarToken = (usuario) =>
 export async function registrarCliente(datos) {
   const existente = await usuarioModel.buscarPorCorreo(datos.correo);
   if (existente) throw new ConflictError('Ya existe una cuenta registrada con ese correo.');
+
+  const documentoExistente = await usuarioModel.buscarPorNumeroDocumento(datos.numeroDocumento);
+  if (documentoExistente) {
+    throw new DocumentTakenError('Ya existe una cuenta registrada con ese número de documento.');
+  }
 
   const rolCliente = await rolModel.buscarPorNombreOSlug(ROL_CLIENTE);
   if (!rolCliente) throw new AppError(`No existe el rol "${ROL_CLIENTE}" en la base de datos.`, 500);

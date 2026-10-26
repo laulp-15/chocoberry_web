@@ -9,6 +9,18 @@ import { imageUrl } from '../../../shared/utils/imageUrl';
 export function mapProducto(producto) {
   if (!producto) return null;
 
+  const imagenes = Array.isArray(producto.imagenes) ? producto.imagenes : [];
+  const images = imagenes
+    .slice()
+    .sort((a, b) => Number(a.orden ?? 0) - Number(b.orden ?? 0))
+    .map((imagen) => imageUrl(imagen.url))
+    .filter(Boolean);
+
+  // `imagen` sigue siendo la portada para tarjetas y carrito; si la API vieja
+  // no envía `imagenes`, la galería usa la portada como única imagen.
+  const portada = images[0] ?? imageUrl(producto.imagen);
+  const todas = images.length ? images : portada ? [portada] : [];
+
   return {
     id: producto.id,
     name: producto.nombre ?? '',
@@ -18,7 +30,8 @@ export function mapProducto(producto) {
         : '',
     catLabel: producto.categoria?.nombre ?? '',
     desc: producto.descripcion ?? '',
-    image: imageUrl(producto.imagen),
+    image: portada,
+    images: todas,
   };
 }
 

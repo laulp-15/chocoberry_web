@@ -32,6 +32,13 @@ export class ConflictError extends AppError {
   }
 }
 
+/** El número de documento ya está registrado por otro usuario. */
+export class DocumentTakenError extends AppError {
+  constructor(message = 'Ya existe un usuario registrado con ese número de documento.') {
+    super(message, 409, 'DOCUMENT_TAKEN');
+  }
+}
+
 export class UnprocessableEntityError extends AppError {
   constructor(message = 'No se pudo procesar la solicitud.', details = null) {
     super(message, 422, 'UNPROCESSABLE_ENTITY', details);

@@ -50,7 +50,21 @@ function subirArchivo(campo) {
   }).single(campo);
 }
 
-/** Imagen del producto (campo "imagen"). */
+function subirArchivos(campo, maximo) {
+  return multer({
+    storage,
+    fileFilter,
+    limits: { fileSize: MAX_BYTES, files: maximo },
+  }).array(campo, maximo);
+}
+
+/** Máximo de imágenes por producto (coincide con el CHECK de la tabla). */
+export const MAX_IMAGENES_PRODUCTO = 4;
+
+/** Imágenes del producto (campo "imagenes", hasta 4 archivos). */
+export const subirImagenes = subirArchivos('imagenes', MAX_IMAGENES_PRODUCTO);
+
+/** Imagen única (compatibilidad con otros módulos que suben una sola foto). */
 export const subirImagen = subirArchivo('imagen');
 
 /** Comprobante de pago del pedido (campo "comprobante"). */
@@ -59,9 +73,14 @@ export const subirComprobante = subirArchivo('comprobante');
 /** Evidencia fotográfica de la entrega (campo "evidencia"). */
 export const subirEvidencia = subirArchivo('evidencia');
 
+/** Ruta pública ("/uploads/archivo.png") de un archivo de multer. */
+export function rutaDeArchivo(file) {
+  return file ? `/uploads/${file.filename}` : undefined;
+}
+
 /** Ruta pública ("/uploads/archivo.png") del archivo subido, si vino alguno. */
 export function rutaArchivoSubido(req) {
-  return req.file ? `/uploads/${req.file.filename}` : undefined;
+  return rutaDeArchivo(req.file);
 }
 
 /** Alias histórico para la imagen del producto. */

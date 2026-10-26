@@ -8,8 +8,29 @@ import env from '../config/env.js';
 /** Traduce los errores más comunes de MySQL a respuestas HTTP claras. */
 function mapMysqlError(err) {
   switch (err.code) {
-    case 'ER_DUP_ENTRY':
+    case 'ER_DUP_ENTRY': {
+      const detalle = String(err.sqlMessage ?? err.message ?? '');
+
+      // Respaldo ante una carrera: la restricción única de documento es la
+      // última barrera, aunque el service ya valida antes de insertar.
+      if (detalle.includes('uq_usuario_numero_documento')) {
+        return {
+          statusCode: 409,
+          message: 'Ya existe un usuario registrado con ese número de documento.',
+          code: 'DOCUMENT_TAKEN',
+        };
+      }
+
+      if (detalle.includes('correo')) {
+        return {
+          statusCode: 409,
+          message: 'Ya existe un usuario registrado con ese correo.',
+          code: 'EMAIL_TAKEN',
+        };
+      }
+
       return { statusCode: 409, message: 'Ya existe un registro con esos datos.', code: 'DUPLICATE_ENTRY' };
+    }
     case 'ER_ROW_IS_REFERENCED':
     case 'ER_ROW_IS_REFERENCED_2':
       return {

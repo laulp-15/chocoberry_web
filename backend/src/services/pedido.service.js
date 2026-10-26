@@ -18,6 +18,12 @@ import * as productoPedidoModel from '../models/productoPedido.model.js';
 import * as usuarioModel from '../models/usuario.model.js';
 import * as municipioService from './municipio.service.js';
 import { redondear2 } from '../utils/number.js';
+import {
+  fechaActualLocal,
+  formatearFecha,
+  parseFecha,
+  sumarDias,
+} from '../utils/dates.js';
 import { serializarPedido } from '../utils/serializers.js';
 
 const ROL_CLIENTE = 'Cliente';
@@ -27,6 +33,12 @@ const ESTADO_PENDIENTE = 'Pendiente';
 const ESTADO_RECHAZADO = 'Rechazado';
 const ESTADO_DESPACHADO = 'Despachado';
 const ESTADO_ENTREGADO = 'Entregado';
+
+// Reglas de volumen de la tienda. El panel queda exento del tope total para
+// poder registrar los pedidos grandes que llegan por teléfono.
+const MAX_UNIDADES_POR_PEDIDO = 20;
+const UMBRAL_PEDIDO_GRANDE = 10;
+const TELEFONO_PEDIDOS_GRANDES = '317 217 5887';
 
 // Transiciones permitidas. Los estados que no aparecen (Entregado, Rechazado,
 // Cancelado) son finales: no se puede salir de ellos.
@@ -75,6 +87,66 @@ function limpiarTexto(valor) {
 /** La fecha de entrega se guarda a las 00:00 (el checkout solo pide el día). */
 function normalizarFechaEntrega(fecha) {
   return `${fecha} 00:00:00`;
+}
+
+/** Convierte un Date de MySQL o un texto a `YYYY-MM-DD`; null si no hay. */
+function fechaISO(valor) {
+  if (!valor) return null;
+  if (typeof valor === 'string') return valor.slice(0, 10);
+
+  const anio = valor.getFullYear();
+  const mes = String(valor.getMonth() + 1).padStart(2, '0');
+  const dia = String(valor.getDate()).padStart(2, '0');
+  return `${anio}-${mes}-${dia}`;
+}
+
+/** `Date` UTC -> `DD/MM/YYYY` para los mensajes de validación. */
+function fechaCorta(fecha) {
+  const [anio, mes, dia] = formatearFecha(fecha).split('-');
+  return `${dia}/${mes}/${anio}`;
+}
+
+/**
+ * Reglas de volumen del pedido:
+ * - Un cliente no puede superar 20 unidades en total (el panel sí puede,
+ *   para registrar pedidos telefónicos).
+ * - Con más de 10 unidades en total, la entrega no puede ser para mañana:
+ *   se exige desde pasado mañana.
+ */
+function validarLimitesPedido(lineas, fechaEntrega, usuario) {
+  const total = lineas.reduce(
+    (suma, linea) => suma + Number(linea.cantidad_productos ?? 0),
+    0
+  );
+
+  if (esRol(usuario, ROL_CLIENTE) && total > MAX_UNIDADES_POR_PEDIDO) {
+    throw new UnprocessableEntityError(
+      `El pedido no puede superar las ${MAX_UNIDADES_POR_PEDIDO} unidades en total. Si quieres un pedido más grande puedes contactarte al teléfono: ${TELEFONO_PEDIDOS_GRANDES}.`,
+      [
+        {
+          campo: 'lineas',
+          mensaje: `Máximo ${MAX_UNIDADES_POR_PEDIDO} unidades por pedido.`,
+        },
+      ]
+    );
+  }
+
+  if (total <= UMBRAL_PEDIDO_GRANDE) return;
+
+  const fecha = parseFecha(fechaISO(fechaEntrega));
+  const minima = sumarDias(fechaActualLocal(), 2);
+
+  if (!fecha || fecha < minima) {
+    throw new UnprocessableEntityError(
+      `Para pedidos de más de ${UMBRAL_PEDIDO_GRANDE} unidades, la entrega más próxima es el ${fechaCorta(minima)}.`,
+      [
+        {
+          campo: 'fechaEntrega',
+          mensaje: `La entrega más próxima es el ${fechaCorta(minima)}.`,
+        },
+      ]
+    );
+  }
 }
 
 async function resolverEstado(nombre) {
@@ -175,12 +247,85 @@ async function resolverUsuarioPedido(idUsuario, usuario) {
   return cliente.id;
 }
 
-/** Valida cada línea y calcula los precios históricos con datos de la BD. */
-async function prepararLineas(lineas) {
+/** Valida la regla de las letras de chocolate (una letra por fresa). */
+function validarMensajeLinea(mensaje, fresas, numero, indice) {
+  const caracteres = mensaje ? Array.from(mensaje).length : 0;
+
+  if (mensaje && caracteres > fresas) {
+    throw new UnprocessableEntityError(
+      `Línea ${numero}: el mensaje personalizado tiene ${caracteres} caracteres y la presentación solo admite ${fresas} (una letra de chocolate por fresa).`,
+      [
+        {
+          campo: `lineas.${indice}.mensajePersonalizado`,
+          mensaje: `Máximo ${fresas} caracteres para esta presentación.`,
+        },
+      ]
+    );
+  }
+}
+
+/**
+ * Determina si una línea existente conserva producto, presentación y glaseado.
+ * En ese caso se mantiene su precio unitario histórico; si cambia cualquiera
+ * de esos datos, la línea se valida contra el catálogo y se recalcula.
+ */
+function conservaDatosDePrecio(existente, linea) {
+  return (
+    Number(existente.id_producto) === Number(linea.idProducto) &&
+    Number(existente.id_presentacion) === Number(linea.idPresentacion) &&
+    Number(existente.id_color_glaseado) === Number(linea.idColorGlaseado)
+  );
+}
+
+/**
+ * Valida cada línea y calcula sus precios. En edición recibe las líneas
+ * actuales del pedido para identificar las existentes por `id` y conservar el
+ * precio histórico de las que no cambian de producto/presentación/glaseado.
+ */
+async function prepararLineas(lineas, existentes = []) {
   const preparadas = [];
+  const existentesPorId = new Map(
+    existentes.map((linea) => [Number(linea.id), linea])
+  );
+  const idsVistos = new Set();
 
   for (const [indice, linea] of lineas.entries()) {
     const numero = indice + 1;
+    const idLinea = linea.id ? Number(linea.id) : null;
+    const existente = idLinea ? existentesPorId.get(idLinea) : null;
+
+    if (idLinea) {
+      if (!existente) {
+        throw new BadRequestError(`Línea ${numero}: no pertenece a este pedido.`);
+      }
+      if (idsVistos.has(idLinea)) {
+        throw new BadRequestError(`Línea ${numero}: está repetida en la solicitud.`);
+      }
+      idsVistos.add(idLinea);
+    }
+
+    const mensaje = limpiarTexto(linea.mensajePersonalizado);
+    const cantidad = linea.cantidadProductos;
+
+    // Línea existente que conserva producto, presentación y glaseado: se
+    // mantiene el precio unitario guardado al crear el pedido.
+    if (existente && conservaDatosDePrecio(existente, linea)) {
+      const fresas = Number(existente.cantidad_fresas);
+      validarMensajeLinea(mensaje, fresas, numero, indice);
+
+      const precioUnitario = redondear2(existente.precio_unitario);
+      preparadas.push({
+        id_producto: existente.id_producto,
+        id_presentacion: existente.id_presentacion,
+        cantidad_productos: cantidad,
+        precio_unitario: precioUnitario,
+        subtotal: redondear2(precioUnitario * cantidad),
+        mensaje_personalizado: mensaje,
+        id_color_glaseado: existente.id_color_glaseado,
+        personalizacion_adicional: limpiarTexto(linea.personalizacionAdicional),
+      });
+      continue;
+    }
 
     const producto = await productoModel.buscarPorId(linea.idProducto);
     if (!producto || !producto.estado) {
@@ -197,26 +342,10 @@ async function prepararLineas(lineas) {
       throw new BadRequestError(`Línea ${numero}: el color de glaseado no existe o está inactivo.`);
     }
 
-    const mensaje = limpiarTexto(linea.mensajePersonalizado);
     const fresas = Number(presentacion.cantidad_fresas);
-    const caracteres = mensaje ? Array.from(mensaje).length : 0;
-
-    // Regla de las letras de chocolate: una letra por fresa de la caja.
-    if (mensaje && caracteres > fresas) {
-      throw new UnprocessableEntityError(
-        `Línea ${numero}: el mensaje personalizado tiene ${caracteres} caracteres y la presentación solo admite ${fresas} (una letra de chocolate por fresa).`,
-        [
-          {
-            campo: `lineas.${indice}.mensajePersonalizado`,
-            mensaje: `Máximo ${fresas} caracteres para esta presentación.`,
-          },
-        ]
-      );
-    }
+    validarMensajeLinea(mensaje, fresas, numero, indice);
 
     const precioUnitario = redondear2(presentacion.precio);
-    const cantidad = linea.cantidadProductos;
-
     preparadas.push({
       id_producto: producto.id,
       id_presentacion: presentacion.id,
@@ -241,6 +370,7 @@ export async function crear(datos, usuario, comprobante) {
   const municipio = await municipioService.resolverActivo(datos.idMunicipio);
   const estado = await resolverEstado(ESTADO_PENDIENTE);
   const lineas = await prepararLineas(datos.lineas);
+  validarLimitesPedido(lineas, datos.fechaEntrega, usuario);
 
   const id = await pedidoModel.crearConLineas({
     pedido: {
@@ -264,7 +394,11 @@ export async function crear(datos, usuario, comprobante) {
   return obtenerPedidoCompleto(id);
 }
 
-/** Edita solo la cabecera (las líneas no se modifican). */
+/**
+ * Edita un pedido pendiente. Se puede actualizar la cabecera y, si llega
+ * `lineas`, reemplazar la lista completa de productos conservando el precio
+ * histórico de las líneas que no cambian de producto/presentación/glaseado.
+ */
 export async function actualizar(id, datos, usuario) {
   if (esRol(usuario, ROL_REPARTIDOR)) {
     throw new ForbiddenError('El repartidor solo puede registrar la evidencia de entrega.');
@@ -272,6 +406,12 @@ export async function actualizar(id, datos, usuario) {
 
   const actual = await pedidoModel.buscarPorId(id);
   if (!actual) throw new NotFoundError('Pedido no encontrado.');
+
+  if (actual.estado !== ESTADO_PENDIENTE) {
+    throw new ConflictError(
+      `Solo se puede editar un pedido en estado "${ESTADO_PENDIENTE}".`
+    );
+  }
 
   const campos = {};
 
@@ -291,7 +431,23 @@ export async function actualizar(id, datos, usuario) {
     campos.precio_domicilio = redondear2(municipio.precio_domicilio);
   }
 
-  await pedidoModel.actualizar(id, campos);
+  if (datos.lineas !== undefined) {
+    const lineasActuales = await productoPedidoModel.listarPorPedido(id);
+    const lineas = await prepararLineas(datos.lineas, lineasActuales);
+    validarLimitesPedido(
+      lineas,
+      datos.fechaEntrega !== undefined ? datos.fechaEntrega : actual.fecha_entrega,
+      usuario
+    );
+    await pedidoModel.actualizarConLineas(id, campos, lineas);
+  } else {
+    if (datos.fechaEntrega !== undefined) {
+      const lineasActuales = await productoPedidoModel.listarPorPedido(id);
+      validarLimitesPedido(lineasActuales, datos.fechaEntrega, usuario);
+    }
+    await pedidoModel.actualizar(id, campos);
+  }
+
   return obtenerPedidoCompleto(id);
 }
 

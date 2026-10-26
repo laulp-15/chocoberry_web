@@ -15,7 +15,8 @@ conexión se está haciendo **módulo por módulo**, de forma incremental:
   crea contra `/api/pedidos` y “Mis pedidos” lista `/api/pedidos/mios` a
   través de `features/orders/services`) y **pedidos del panel**
   (`features/admin/orders` contra `/api/pedidos`: listado, detalle, alta,
-  edición de cabecera, transiciones y rechazo). La evidencia de entrega es
+  edición de cabecera y líneas solo en pedidos pendientes, transiciones y
+  rechazo). La evidencia de entrega es
   exclusiva del repartidor; el panel solo la muestra en el detalle, sin subirla
   ni actualizarla. **Ventas** (`features/admin/sales` contra `/api/ventas`:
   listado y detalle de pedidos confirmados; los botones de comprobante siguen

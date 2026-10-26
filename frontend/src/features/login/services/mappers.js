@@ -147,9 +147,12 @@ export function mapLoginError(error) {
 export function mapRegisterError(error) {
   if (!(error instanceof Error)) return error;
 
-  // 409: ya existe una cuenta con ese correo.
+  // 409: ya existe una cuenta con ese correo o con ese documento.
   if (error.status === 409) {
-    return errorConCodigo(error, "EMAIL_TAKEN");
+    return errorConCodigo(
+      error,
+      error.code === "DOCUMENT_TAKEN" ? "DOCUMENT_TAKEN" : "EMAIL_TAKEN"
+    );
   }
 
   return error;
@@ -169,9 +172,12 @@ export function mapChangePasswordError(error) {
 export function mapProfileError(error) {
   if (!(error instanceof Error)) return error;
 
-  // 409: el correo nuevo ya está en uso por otra cuenta.
+  // 409: el correo o el documento nuevo ya está en uso por otra cuenta.
   if (error.status === 409) {
-    return errorConCodigo(error, "EMAIL_TAKEN");
+    return errorConCodigo(
+      error,
+      error.code === "DOCUMENT_TAKEN" ? "DOCUMENT_TAKEN" : "EMAIL_TAKEN"
+    );
   }
 
   return error;

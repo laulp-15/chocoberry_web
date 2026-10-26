@@ -4,7 +4,9 @@
 html, body {
   margin: 0;
   padding: 0;
-  overflow-x: hidden;
+  /* clip recorta el desbordamiento horizontal sin crear un contenedor de
+     scroll, para no romper position: sticky en carrito y checkout. */
+  overflow-x: clip;
   width: 100%;
   background-color: var(--bg-main);
   color: var(--texto);

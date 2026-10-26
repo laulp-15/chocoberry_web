@@ -5,7 +5,18 @@
   border-radius: 16px;
   padding: 28px 24px;
   position: sticky;
-  top: 24px;
+  /* El navbar es fijo: el resumen debe quedar por debajo de él. */
+  top: calc(var(--navbar-height) + 24px);
+  z-index: 2;
+}
+
+/* En móvil el resumen va debajo del formulario; sticky causaría saltos. */
+@media (max-width: 991px) {
+  .order-summary {
+    position: static;
+    top: auto;
+    z-index: auto;
+  }
 }
 
 .order-summary-title {
