@@ -11,6 +11,15 @@
   border-bottom: none;
 }
 
+.order-line-item--editing {
+  background: var(--secundario-3);
+  border-radius: 10px;
+  padding-left: 12px;
+  padding-right: 12px;
+  margin-left: -12px;
+  margin-right: -12px;
+}
+
 .order-line-item-info {
   flex: 1;
   min-width: 0;
@@ -63,6 +72,25 @@
   font-weight: 700;
   color: var(--primario);
   padding-top: 2px;
+}
+
+.order-line-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.order-line-item-actions .MuiIconButton-root {
+  padding: 6px;
+}
+
+.order-line-item-edit.MuiIconButton-root {
+  color: var(--texto-muted);
+  font-size: 13px;
+}
+.order-line-item-edit.MuiIconButton-root:hover {
+  color: var(--primario);
 }
 
 .order-line-item-remove.MuiIconButton-root {

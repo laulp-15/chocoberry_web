@@ -1,11 +1,12 @@
 // src/models/producto.model.js
-// Acceso a la tabla `producto` (con la categoría asociada).
-import { query } from '../config/db.js';
+// Acceso a la tabla `producto` (con la categoría asociada) y a sus imágenes.
+import { query, withTransaction } from '../config/db.js';
+import * as imagenProductoModel from './imagenProducto.model.js';
 
 // Columnas que se pueden actualizar (lista blanca para evitar inyección).
-const CAMPOS_ACTUALIZABLES = ['nombre', 'descripcion', 'imagen', 'estado', 'id_categoria'];
+const CAMPOS_ACTUALIZABLES = ['nombre', 'descripcion', 'estado', 'id_categoria'];
 
-const SELECT_BASE = `SELECT p.id, p.nombre, p.descripcion, p.imagen, p.estado,
+const SELECT_BASE = `SELECT p.id, p.nombre, p.descripcion, p.estado,
                             p.id_categoria, c.nombre AS categoria
                        FROM producto p
                        JOIN categoria c ON c.id = p.id_categoria`;
@@ -51,33 +52,59 @@ export async function existeNombre(nombre, excluirId = null) {
   return (await query(sql, params)).length > 0;
 }
 
-/** Inserta un producto y devuelve su id. */
-export async function crear({ nombre, descripcion, imagen, estado, id_categoria }) {
-  const resultado = await query(
-    `INSERT INTO producto (nombre, descripcion, imagen, estado, id_categoria)
-     VALUES (?, ?, ?, ?, ?)`,
-    [nombre, descripcion ?? null, imagen ?? null, estado ? 1 : 0, id_categoria]
+/** Inserta la cabecera del producto usando una conexión de transacción. */
+async function insertar(conexion, { nombre, descripcion, estado, id_categoria }) {
+  const [resultado] = await conexion.execute(
+    `INSERT INTO producto (nombre, descripcion, estado, id_categoria)
+     VALUES (?, ?, ?, ?)`,
+    [nombre, descripcion ?? null, estado ? 1 : 0, id_categoria]
   );
   return resultado.insertId;
 }
 
-/** Actualiza solo las columnas presentes en `campos`. */
-export async function actualizar(id, campos) {
-  const asignaciones = [];
-  const valores = [];
+/**
+ * Crea el producto y sus imágenes de forma atómica.
+ * `imagenes` es un arreglo de `{ url }` en el orden final (1..4).
+ */
+export async function crearConImagenes(datos, imagenes = []) {
+  return withTransaction(async (conexion) => {
+    const id = await insertar(conexion, datos);
+    await imagenProductoModel.reemplazar(conexion, id, imagenes);
+    return id;
+  });
+}
 
-  for (const columna of CAMPOS_ACTUALIZABLES) {
-    if (campos[columna] !== undefined) {
-      asignaciones.push(`${columna} = ?`);
-      valores.push(campos[columna]);
+/**
+ * Actualiza solo las columnas presentes en `campos`. Si `imagenes` viene
+ * definido, reemplaza la lista completa de imágenes; si es `undefined`, las
+ * conserva tal cual.
+ */
+export async function actualizarConImagenes(id, campos, imagenes) {
+  return withTransaction(async (conexion) => {
+    const asignaciones = [];
+    const valores = [];
+
+    for (const columna of CAMPOS_ACTUALIZABLES) {
+      if (campos[columna] !== undefined) {
+        asignaciones.push(`${columna} = ?`);
+        valores.push(campos[columna]);
+      }
     }
-  }
 
-  if (asignaciones.length === 0) return buscarPorId(id);
+    if (asignaciones.length > 0) {
+      valores.push(id);
+      await conexion.execute(
+        `UPDATE producto SET ${asignaciones.join(', ')} WHERE id = ?`,
+        valores
+      );
+    }
 
-  valores.push(id);
-  await query(`UPDATE producto SET ${asignaciones.join(', ')} WHERE id = ?`, valores);
-  return buscarPorId(id);
+    if (imagenes !== undefined) {
+      await imagenProductoModel.reemplazar(conexion, id, imagenes);
+    }
+
+    return id;
+  });
 }
 
 /** Cambia el estado (activo/inactivo) de un producto. */

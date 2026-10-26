@@ -29,82 +29,94 @@ const PRODUCTOS = [
   {
     nombre: 'Caja Romance',
     categoria: 'Fechas especiales',
-    imagen: '/img/Productos/Regalo_1.webp',
+    imagenes: [
+      '/img/Productos/Regalo_1.webp',
+      '/img/Productos/Romance_2.webp',
+      '/img/Productos/Romance_3.webp',
+    ],
     descripcion:
       'Un detalle dulce y especial para el Día de la Madre, perfecto para sorprender con amor.',
   },
   {
     nombre: 'Ramo Dulce Mamá',
     categoria: 'Fechas especiales',
-    imagen: '/img/Productos/Romance_7.webp',
+    imagenes: [
+      '/img/Productos/Romance_7.webp',
+      '/img/Productos/Romance_5.webp',
+    ],
     descripcion:
       'Para el Día de la Madre: una dulce forma de celebrar a mamá y hacerla sentir especial.',
   },
   {
     nombre: 'Set Fuerza Papá',
     categoria: 'Fechas especiales',
-    imagen: '/img/Productos/Diaespe_2.jpg',
+    imagenes: ['/img/Productos/Diaespe_2.jpg'],
     descripcion:
       'Ideal para el Día del Padre: un regalo con personalidad para celebrar a ese papá increíble.',
   },
   {
     nombre: 'Caja Clásica Papá',
     categoria: 'Fechas especiales',
-    imagen: '/img/Productos/Diaespe_3.webp',
+    imagenes: ['/img/Productos/Diaespe_3.webp'],
     descripcion:
       'Pensada para el Día del Padre, un detalle delicioso y especial para celebrar a papá.',
   },
   {
     nombre: 'Detalle Poder',
     categoria: 'Fechas especiales',
-    imagen: '/img/Productos/img5.png',
+    imagenes: ['/img/Productos/img5.png'],
     descripcion:
       'Para el Día de la Mujer: un detalle especial para celebrar su esencia, fuerza y elegancia.',
   },
   {
     nombre: 'Fresas Elegancia',
     categoria: 'Fechas especiales',
-    imagen: '/img/Productos/img9.png',
+    imagenes: ['/img/Productos/img9.png'],
     descripcion:
       'Ideal para el Día de la Mujer, un detalle sofisticado y delicioso para sorprender a una mujer especial.',
   },
   {
     nombre: 'Torre Cumpleaños',
     categoria: 'Cumpleaños',
-    imagen: '/img/Productos/5.jpg',
+    imagenes: ['/img/Productos/5.jpg', '/img/Productos/FCA_2.webp'],
     descripcion:
       'Una sorpresa deliciosa para hacer de su cumpleaños un momento inolvidable.',
   },
   {
     nombre: 'Caja Fiesta',
     categoria: 'Cumpleaños',
-    imagen: '/img/Productos/FCA_4.webp',
+    imagenes: [
+      '/img/Productos/FCA_4.webp',
+      '/img/Productos/FCA_5.webp',
+      '/img/Productos/FCA_6.webp',
+      '/img/Productos/FCA_8.webp',
+    ],
     descripcion: 'Color, dulzura y alegría en un detalle perfecto para celebrar.',
   },
   {
     nombre: 'Mini Antojo',
     categoria: 'Regalos',
-    imagen: '/img/Productos/Diaespe_1.jpg',
+    imagenes: ['/img/Productos/Diaespe_1.jpg'],
     descripcion: 'El detalle perfecto para consentirte o disfrutar un dulce momento.',
   },
   {
     nombre: 'Combo Antojo Doble',
     categoria: 'Regalos',
-    imagen: '/img/Productos/img8.png',
+    imagenes: ['/img/Productos/img8.png'],
     descripcion:
       'Una combinación irresistible para disfrutar y compartir un momento delicioso.',
   },
   {
     nombre: 'Caja Aniversario',
     categoria: 'Aniversarios',
-    imagen: '/img/Productos/img7.png',
+    imagenes: ['/img/Productos/img7.png'],
     descripcion:
       'Un detalle romántico para celebrar juntos una historia llena de momentos especiales.',
   },
   {
     nombre: 'Detalle Sorpresa',
     categoria: 'Regalos',
-    imagen: '/img/Productos/Regalo_2.webp',
+    imagenes: ['/img/Productos/Regalo_2.webp'],
     descripcion:
       'Personaliza un detalle único para sorprender a esa persona especial.',
   },
@@ -150,13 +162,15 @@ async function main() {
       continue;
     }
 
-    await productoModel.crear({
-      nombre: producto.nombre,
-      descripcion: producto.descripcion,
-      imagen: producto.imagen,
-      estado: true,
-      id_categoria: idCategoria.get(producto.categoria),
-    });
+    await productoModel.crearConImagenes(
+      {
+        nombre: producto.nombre,
+        descripcion: producto.descripcion,
+        estado: true,
+        id_categoria: idCategoria.get(producto.categoria),
+      },
+      producto.imagenes.map((url) => ({ url }))
+    );
     resumen.productosCreados += 1;
   }
 

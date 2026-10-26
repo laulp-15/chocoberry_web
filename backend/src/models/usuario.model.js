@@ -33,6 +33,23 @@ export async function buscarPorId(id) {
   return rows[0] ?? null;
 }
 
+/**
+ * Busca un usuario por número de documento. `excluirId` permite ignorar al
+ * propio usuario al validar una edición.
+ */
+export async function buscarPorNumeroDocumento(numeroDocumento, excluirId = null) {
+  const params = [numeroDocumento];
+  let sql = `${SELECT_BASE} WHERE u.numero_documento = ?`;
+
+  if (excluirId !== null && excluirId !== undefined) {
+    sql += ' AND u.id <> ?';
+    params.push(excluirId);
+  }
+
+  const rows = await query(`${sql} LIMIT 1`, params);
+  return rows[0] ?? null;
+}
+
 /** Lista usuarios con filtros opcionales: nombre, correo, rol/id_rol y estado. */
 export async function listar({ nombre, correo, rol, idRol, estado } = {}) {
   const where = [];

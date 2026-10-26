@@ -56,6 +56,27 @@ const mensajeField = (maximo, etiqueta) =>
     .optional();
 
 /**
+ * Una línea de pedido. En creación el `id` no se usa; al actualizar identifica
+ * una línea existente para conservar su precio histórico.
+ */
+const lineaPedidoSchema = z.object({
+  id: idOpcional('El id de la línea debe ser un número entero positivo.'),
+  idProducto: enteroPositivo('El producto es obligatorio.'),
+  idPresentacion: enteroPositivo('La presentación es obligatoria.'),
+  cantidadProductos: z.coerce
+    .number({
+      required_error: 'La cantidad de productos es obligatoria.',
+      invalid_type_error: 'La cantidad de productos debe ser un número.',
+    })
+    .int('La cantidad de productos debe ser un número entero.')
+    .positive('La cantidad de productos debe ser mayor que cero.')
+    .max(100, 'La cantidad de productos es demasiado alta.'),
+  mensajePersonalizado: mensajeField(255, 'El mensaje personalizado'),
+  idColorGlaseado: enteroPositivo('El color del glaseado es obligatorio.'),
+  personalizacionAdicional: mensajeField(255, 'La personalización adicional'),
+});
+
+/**
  * Las líneas llegan como un array (JSON) o como texto JSON cuando el pedido se
  * envía en multipart (para adjuntar el comprobante).
  */
@@ -68,27 +89,10 @@ const lineasField = z.preprocess((valor) => {
     }
   }
   return valor;
-}, z.array(
-  z.object({
-    idProducto: enteroPositivo('El producto es obligatorio.'),
-    idPresentacion: enteroPositivo('La presentación es obligatoria.'),
-    cantidadProductos: z.coerce
-      .number({
-        required_error: 'La cantidad de productos es obligatoria.',
-        invalid_type_error: 'La cantidad de productos debe ser un número.',
-      })
-      .int('La cantidad de productos debe ser un número entero.')
-      .positive('La cantidad de productos debe ser mayor que cero.')
-      .max(100, 'La cantidad de productos es demasiado alta.'),
-    mensajePersonalizado: mensajeField(255, 'El mensaje personalizado'),
-    idColorGlaseado: enteroPositivo('El color del glaseado es obligatorio.'),
-    personalizacionAdicional: mensajeField(255, 'La personalización adicional'),
-  }),
-  {
-    required_error: 'El pedido debe tener al menos un producto.',
-    invalid_type_error: 'El formato de las líneas del pedido no es válido.',
-  }
-)
+}, z.array(lineaPedidoSchema, {
+  required_error: 'El pedido debe tener al menos un producto.',
+  invalid_type_error: 'El formato de las líneas del pedido no es válido.',
+})
   .min(1, 'El pedido debe tener al menos un producto.')
   .max(50, 'El pedido no puede tener más de 50 líneas.'));
 
@@ -118,8 +122,9 @@ export const crearPedidoSchema = z.object({
   idUsuario: idOpcional('El usuario debe ser un id numérico.'),
 });
 
-// Al actualizar, todos los campos de cabecera son opcionales (parcial).
-// Las líneas NO se editan: se elimina el pedido y se crea uno nuevo.
+// Al actualizar, todos los campos de cabecera son opcionales (parcial). Si
+// llega `lineas`, se interpreta como la lista completa resultante del pedido y
+// reemplaza a las líneas anteriores. Cada línea existente envía su `id`.
 export const actualizarPedidoSchema = z.object({
   mensajeTarjeta: mensajeField(255, 'El mensaje de la tarjeta'),
   fechaEntrega: fechaEntregaField.optional(),
@@ -134,6 +139,7 @@ export const actualizarPedidoSchema = z.object({
     .optional(),
   telefonoReceptor: telefonoReceptorField.optional(),
   instruccionesEntrega: mensajeField(255, 'Las instrucciones de entrega'),
+  lineas: lineasField.optional(),
 });
 
 export const cambiarEstadoPedidoSchema = z.object({

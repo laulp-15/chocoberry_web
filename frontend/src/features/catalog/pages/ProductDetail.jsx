@@ -10,6 +10,7 @@ import FeatureHighlights from "../components/FeatureHighlights";
 import RelatedProducts from "../components/RelatedProducts";
 import useProducto from "../hooks/useProducto";
 import { formatPrice } from "../../../shared/utils/formatPrice";
+import { CONTACT_MESSAGE } from "../../../shared/utils/orderRules";
 import "./ProductDetail.css";
 
 export default function ProductDetail() {
@@ -23,6 +24,7 @@ export default function ProductDetail() {
   // Cantidad de fresas elegida; se ajusta a las presentaciones disponibles.
   const [quantity, setQuantity] = useState(12);
   const [color, setColor] = useState("");
+  const [limitAlertOpen, setLimitAlertOpen] = useState(false);
 
   if (error) {
     return (
@@ -88,7 +90,7 @@ export default function ProductDetail() {
   const handleAddToCart = () => {
     if (!canAddToCart) return;
 
-    const { merged } = addItem(
+    const resultado = addItem(
       {
         productId: producto.id,
         name: producto.name,
@@ -102,9 +104,14 @@ export default function ProductDetail() {
       },
       { fromPath: location.pathname }
     );
+    // El carrito ya suma 20 unidades: no se agrega y se muestra el contacto.
+    if (resultado?.limitReached) {
+      setLimitAlertOpen(true);
+      return;
+    }
     // Si el usuario ya estaba logueado y se añadió al carrito, navegar al carrito
-    if (merged !== undefined) {
-      navigate("/carrito", merged ? { state: { merged: true } } : undefined);
+    if (resultado?.merged !== undefined) {
+      navigate("/carrito", resultado.merged ? { state: { merged: true } } : undefined);
     }
     // Si no estaba logueado, addItem ya redirigió a login; el flush ocurrirá tras login
   };
@@ -123,7 +130,8 @@ export default function ProductDetail() {
         <div className="row detail-top">
           <div className="col-12 col-lg-6">
             <ProductGallery
-              images={producto.image ? [producto.image] : []}
+              key={producto.id}
+              images={producto.images}
               alt={producto.name}
             />
           </div>
@@ -176,6 +184,20 @@ export default function ProductDetail() {
           onViewDetail={handleRelatedViewDetail}
         />
       </div>
+
+      {limitAlertOpen && (
+        <div className="product-limit-alert" role="alert">
+          <i className="fa-solid fa-circle-exclamation" aria-hidden="true" />
+          <span>{CONTACT_MESSAGE}</span>
+          <button
+            type="button"
+            aria-label="Cerrar aviso"
+            onClick={() => setLimitAlertOpen(false)}
+          >
+            <i className="fa-solid fa-xmark" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

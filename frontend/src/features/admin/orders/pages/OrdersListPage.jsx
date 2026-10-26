@@ -18,10 +18,10 @@ import { formatDisplayDate } from "../utils/orderDisplay";
 import { formatPrice } from "../../../../shared/utils/formatPrice";
 import "../../../../shared/css/adminCrud.css";
 
-// Las cinco columnas de datos comparten el mismo ancho; Acciones se reserva
+// Las seis columnas de datos comparten el mismo ancho; Acciones se reserva
 // aparte para que el encabezado y los iconos queden juntos a la derecha.
 const EQUAL_COLUMN_STYLE = {
-  width: "calc((100% - 112px) / 5)",
+  width: "calc((100% - 112px) / 6)",
   boxSizing: "border-box",
 };
 
@@ -68,7 +68,10 @@ export default function OrdersListPage() {
     (order) => !statusFilter || order.estado === statusFilter
   );
 
+  // El estado final bloquea el selector; la edición solo está permitida
+  // mientras el pedido siga pendiente (todavía no es una venta).
   const isLocked = (order) => isFinalStatus(order.estado);
+  const canEdit = (order) => order.estado === "pendiente";
   const canReject = (order) => order.estado === "pendiente";
 
   const handleCreate = () => {
@@ -78,7 +81,7 @@ export default function OrdersListPage() {
   };
 
   const handleEdit = (order) => {
-    if (isLocked(order)) return;
+    if (!canEdit(order)) return;
     reloadOptions();
     setEditingOrder(order);
     setFormOpen(true);
@@ -149,6 +152,12 @@ export default function OrdersListPage() {
       render: (row) => row.direccion || "—",
     },
     {
+      key: "fecha",
+      label: "Fecha de creación",
+      style: EQUAL_COLUMN_STYLE,
+      render: (row) => formatDisplayDate(row.fecha),
+    },
+    {
       key: "fechaEntrega",
       label: "Fecha de entrega",
       style: EQUAL_COLUMN_STYLE,
@@ -191,7 +200,8 @@ export default function OrdersListPage() {
         paddingRight: "2rem",
       },
       render: (row) => {
-        const locked = isLocked(row);
+        const editable = canEdit(row);
+        const saving = String(statusSavingId) === String(row.id);
         const rejectable = canReject(row);
 
         return (
@@ -208,12 +218,14 @@ export default function OrdersListPage() {
               type="button"
               className="table-action-btn"
               title={
-                locked
-                  ? "Ya no se puede editar este pedido"
-                  : "Editar cabecera del pedido"
+                editable
+                  ? "Editar pedido"
+                  : saving
+                    ? "Actualizando estado..."
+                    : "Solo se puede editar un pedido pendiente"
               }
-              disabled={locked}
-              style={{ opacity: locked ? 0.35 : 1 }}
+              disabled={!editable || saving}
+              style={{ opacity: editable && !saving ? 1 : 0.35 }}
               onClick={() => handleEdit(row)}
             >
               <i className="fa-solid fa-pen" />

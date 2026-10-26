@@ -28,6 +28,18 @@ const MES = {
   hasta: '1999-03',
 };
 
+/** Fecha ISO local de hoy + N días, para que la entrega sea válida. */
+function fechaISO(dias) {
+  const fecha = new Date();
+  fecha.setHours(0, 0, 0, 0);
+  fecha.setDate(fecha.getDate() + dias);
+
+  const anio = fecha.getFullYear();
+  const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+  const dia = String(fecha.getDate()).padStart(2, '0');
+  return `${anio}-${mes}-${dia}`;
+}
+
 describe('Módulo de dashboard', () => {
   let tokenAdmin;
   let tokenCliente;
@@ -77,7 +89,7 @@ describe('Módulo de dashboard', () => {
   async function crearPedido({ cantidad = 1 } = {}) {
     const res = await auth(request(app).post('/api/pedidos'))
       .field('mensajeTarjeta', 'Dashboard de prueba')
-      .field('fechaEntrega', '1999-03-15')
+      .field('fechaEntrega', fechaISO(2))
       .field('direccion', 'Calle 10 # 20-30')
       .field('barrio', 'Centro')
       .field('idMunicipio', String(municipio.id))

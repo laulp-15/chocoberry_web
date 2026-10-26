@@ -1,7 +1,7 @@
 // src/shared/utils/imageUrl.js
 // Resuelve la ruta de una imagen guardada en la base de datos.
 //
-// En `producto.imagen` conviven dos tipos de rutas:
+// En las rutas de imágenes de producto conviven dos tipos:
 //   - "/uploads/..." -> las sube el panel y las sirve el BACKEND.
 //   - "/img/..."     -> assets que viven en el FRONT (catálogo inicial).
 //   - URLs absolutas -> se respetan tal cual.

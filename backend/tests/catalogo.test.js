@@ -7,6 +7,7 @@
 // que la base de datos queda como estaba.
 import request from 'supertest';
 import app from '../src/app.js';
+import { query } from '../src/config/db.js';
 
 const ADMIN = { correo: 'admin@chocoberry.com', contrasena: 'Admin123!' };
 
@@ -14,12 +15,19 @@ describe('Módulo de catálogo (categorías, productos y presentaciones)', () =>
   let token;
   let categoriaId;
   let productoId;
+  let productoArchivoId;
+  let productoTokenId;
   let presentacionId;
 
   // Sufijo único por corrida para no chocar con datos existentes.
   const s = Date.now().toString().slice(-7);
   const nombreCategoria = `Bebidas ${s}`;
   const nombreProducto = `Fresas con chocolate ${s}`;
+  const IMAGENES_PRODUCTO = [
+    '/img/Productos/prueba-a.png',
+    '/img/Productos/prueba-b.png',
+  ];
+  const IMAGEN_NUEVA = '/img/Productos/prueba-c.png';
 
   const auth = (peticion) => peticion.set('Authorization', `Bearer ${token}`);
 
@@ -30,6 +38,12 @@ describe('Módulo de catálogo (categorías, productos y presentaciones)', () =>
 
   afterAll(async () => {
     if (productoId) await auth(request(app).delete(`/api/productos/${productoId}`));
+    if (productoArchivoId) {
+      await auth(request(app).delete(`/api/productos/${productoArchivoId}`));
+    }
+    if (productoTokenId) {
+      await auth(request(app).delete(`/api/productos/${productoTokenId}`));
+    }
     if (categoriaId) await auth(request(app).delete(`/api/categorias/${categoriaId}`));
     if (presentacionId) await auth(request(app).delete(`/api/presentaciones/${presentacionId}`));
   });
@@ -67,17 +81,40 @@ describe('Módulo de catálogo (categorías, productos y presentaciones)', () =>
   });
 
   describe('Productos', () => {
-    it('POST /api/productos crea un producto con su categoría', async () => {
+    it('POST /api/productos crea un producto con su categoría y sus imágenes', async () => {
       const res = await auth(request(app).post('/api/productos')).send({
         nombre: nombreProducto,
         descripcion: 'Producto de prueba',
         id_categoria: categoriaId,
+        imagenesUrl: IMAGENES_PRODUCTO,
       });
 
       expect(res.status).toBe(201);
       expect(res.body.data.categoria).toEqual({ id: categoriaId, nombre: nombreCategoria });
-      expect(res.body.data.imagen).toBeNull();
+      expect(res.body.data.imagen).toBe(IMAGENES_PRODUCTO[0]);
+      expect(res.body.data.imagenes.map((imagen) => imagen.url)).toEqual(IMAGENES_PRODUCTO);
+      expect(res.body.data.imagenes.map((imagen) => imagen.orden)).toEqual([1, 2]);
       productoId = res.body.data.id;
+    });
+
+    it('POST /api/productos sin imágenes devuelve 422', async () => {
+      const res = await auth(request(app).post('/api/productos')).send({
+        nombre: `Sin imagen ${s}`,
+        id_categoria: categoriaId,
+      });
+
+      expect(res.status).toBe(422);
+      expect(res.body.message).toContain('al menos una imagen');
+    });
+
+    it('POST /api/productos con más de 4 imágenes devuelve 422', async () => {
+      const res = await auth(request(app).post('/api/productos')).send({
+        nombre: `Demasiadas imágenes ${s}`,
+        id_categoria: categoriaId,
+        imagenesUrl: [1, 2, 3, 4, 5].map((n) => `/img/Productos/prueba-${n}.png`),
+      });
+
+      expect(res.status).toBe(422);
     });
 
     it('POST /api/productos sin categoría devuelve 422', async () => {
@@ -97,19 +134,126 @@ describe('Módulo de catálogo (categorías, productos y presentaciones)', () =>
       const res = await auth(request(app).post('/api/productos')).send({
         nombre: nombreProducto,
         id_categoria: categoriaId,
+        imagenesUrl: [IMAGENES_PRODUCTO[0]],
       });
       expect(res.status).toBe(409);
     });
 
-    it('PUT /api/productos/:id actualiza la descripción y resuelve la categoría por nombre', async () => {
+    it('PUT /api/productos/:id actualiza la descripción y reordena las imágenes', async () => {
       const res = await auth(request(app).put(`/api/productos/${productoId}`)).send({
         descripcion: 'Descripción editada',
         categoria: nombreCategoria,
+        ordenImagenes: [IMAGENES_PRODUCTO[1], IMAGENES_PRODUCTO[0]],
       });
 
       expect(res.status).toBe(200);
       expect(res.body.data.descripcion).toBe('Descripción editada');
       expect(res.body.data.categoria.id).toBe(categoriaId);
+      expect(res.body.data.imagen).toBe(IMAGENES_PRODUCTO[1]);
+      expect(res.body.data.imagenes.map((imagen) => imagen.url)).toEqual([
+        IMAGENES_PRODUCTO[1],
+        IMAGENES_PRODUCTO[0],
+      ]);
+    });
+
+    it('PUT /api/productos/:id conserva las imágenes si no se envían', async () => {
+      const res = await auth(request(app).put(`/api/productos/${productoId}`)).send({
+        descripcion: 'Otra descripción',
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.imagenes).toHaveLength(2);
+    });
+
+    it('PUT /api/productos/:id rechaza dejar un producto sin imágenes', async () => {
+      const creado = await query(
+        'INSERT INTO producto (nombre, estado, id_categoria) VALUES (?, TRUE, ?)',
+        [`Producto legado sin imagen ${s}`, categoriaId]
+      );
+      const id = creado.insertId;
+
+      try {
+        const res = await auth(request(app).put(`/api/productos/${id}`)).send({
+          descripcion: 'Intento de edición sin imágenes',
+        });
+
+        expect(res.status).toBe(422);
+        expect(res.body.message).toContain('al menos una imagen');
+      } finally {
+        await query('DELETE FROM producto WHERE id = ?', [id]);
+      }
+    });
+
+    it('PUT /api/productos/:id quita las imágenes que no se indican', async () => {
+      const res = await auth(request(app).put(`/api/productos/${productoId}`)).send({
+        ordenImagenes: [IMAGENES_PRODUCTO[1]],
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.imagen).toBe(IMAGENES_PRODUCTO[1]);
+      expect(res.body.data.imagenes).toHaveLength(1);
+    });
+
+    it('PUT /api/productos/:id agrega una imagen nueva al final', async () => {
+      const res = await auth(request(app).put(`/api/productos/${productoId}`)).send({
+        imagenesUrl: [IMAGEN_NUEVA],
+        ordenImagenes: [IMAGENES_PRODUCTO[1], IMAGEN_NUEVA],
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.imagenes.map((imagen) => imagen.url)).toEqual([
+        IMAGENES_PRODUCTO[1],
+        IMAGEN_NUEVA,
+      ]);
+    });
+
+    it('POST /api/productos acepta archivos multipart', async () => {
+      const res = await auth(request(app).post('/api/productos'))
+        .field('nombre', `Producto con archivo ${s}`)
+        .field('descripcion', 'Subida multipart')
+        .field('id_categoria', String(categoriaId))
+        .attach('imagenes', Buffer.from('89504e470d0a1a0a', 'hex'), {
+          filename: 'producto-prueba.png',
+          contentType: 'image/png',
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body.data.imagenes).toHaveLength(1);
+      expect(res.body.data.imagenes[0].url).toMatch(/^\/uploads\//);
+      productoArchivoId = res.body.data.id;
+    });
+
+    it('PUT /api/productos/:id ordena archivos nuevos y rutas existentes con tokens', async () => {
+      const creado = await auth(request(app).post('/api/productos')).send({
+        nombre: `Producto ordenado ${s}`,
+        id_categoria: categoriaId,
+        imagenesUrl: [IMAGENES_PRODUCTO[0]],
+      });
+      expect(creado.status).toBe(201);
+      productoTokenId = creado.body.data.id;
+
+      const res = await auth(request(app).put(`/api/productos/${productoTokenId}`))
+        .field('ordenImagenes', JSON.stringify([IMAGENES_PRODUCTO[0], 'nueva:0']))
+        .attach('imagenes', Buffer.from('89504e470d0a1a0a', 'hex'), {
+          filename: 'segunda.png',
+          contentType: 'image/png',
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.imagenes).toHaveLength(2);
+      expect(res.body.data.imagenes[0].url).toBe(IMAGENES_PRODUCTO[0]);
+      expect(res.body.data.imagenes[1].url).toMatch(/^\/uploads\//);
+      expect(res.body.data.imagen).toBe(IMAGENES_PRODUCTO[0]);
+    });
+
+    it('POST /api/productos rechaza un token de imagen nueva inexistente', async () => {
+      const res = await auth(request(app).post('/api/productos')).send({
+        nombre: `Token inválido ${s}`,
+        id_categoria: categoriaId,
+        ordenImagenes: ['nueva:3'],
+      });
+
+      expect(res.status).toBe(422);
     });
 
     it('GET /api/productos filtra por nombre', async () => {
@@ -117,6 +261,31 @@ describe('Módulo de catálogo (categorías, productos y presentaciones)', () =>
 
       expect(res.status).toBe(200);
       expect(res.body.data[0].id).toBe(productoId);
+    });
+
+    it('al eliminar el producto se eliminan sus imágenes', async () => {
+      const creado = await auth(request(app).post('/api/productos')).send({
+        nombre: `Cascada ${s}`,
+        id_categoria: categoriaId,
+        imagenesUrl: ['/img/Productos/cascada.png'],
+      });
+      expect(creado.status).toBe(201);
+      const id = creado.body.data.id;
+
+      const antes = await query(
+        'SELECT COUNT(*) AS total FROM imagenProducto WHERE id_producto = ?',
+        [id]
+      );
+      expect(antes[0].total).toBe(1);
+
+      const borrado = await auth(request(app).delete(`/api/productos/${id}`));
+      expect(borrado.status).toBe(200);
+
+      const despues = await query(
+        'SELECT COUNT(*) AS total FROM imagenProducto WHERE id_producto = ?',
+        [id]
+      );
+      expect(despues[0].total).toBe(0);
     });
 
     it('DELETE /api/categorias/:id con productos asociados devuelve 409', async () => {
@@ -169,12 +338,20 @@ describe('Módulo de catálogo (categorías, productos y presentaciones)', () =>
       expect(Array.isArray(res.body.data)).toBe(true);
       expect(res.body.data.every((p) => p.estado === true)).toBe(true);
       expect(res.body.data.map((p) => p.id)).toContain(productoId);
+
+      const producto = res.body.data.find((p) => p.id === productoId);
+      expect(producto.imagen).toBe(IMAGENES_PRODUCTO[1]);
+      expect(producto.imagenes.map((imagen) => imagen.url)).toEqual([
+        IMAGENES_PRODUCTO[1],
+        IMAGEN_NUEVA,
+      ]);
     });
 
     it('GET /api/catalogo/productos/:id devuelve el producto activo', async () => {
       const res = await request(app).get(`/api/catalogo/productos/${productoId}`);
       expect(res.status).toBe(200);
       expect(res.body.data.id).toBe(productoId);
+      expect(res.body.data.imagenes).toHaveLength(2);
     });
 
     it('GET /api/catalogo/productos/:id de un producto inactivo devuelve 404', async () => {

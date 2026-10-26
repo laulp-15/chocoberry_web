@@ -7,6 +7,13 @@ import { useCart } from "../hooks/UseCart";
 import useMunicipiosEntrega from "../hooks/useMunicipiosEntrega";
 import useFormValidation from "../../../shared/hooks/useFormValidation";
 import { validatePhone } from "../../login/utils/validators";
+import {
+  esPedidoGrande,
+  excedeLimiteCarrito,
+  fechaMinimaEntrega,
+  formatearFechaISO,
+  mensajeLimiteCarrito,
+} from "../../../shared/utils/orderRules";
 import ShippingForm from "../components/ShippingForm";
 import PaymentSection from "../components/PaymentSection";
 import OrderSummary from "../components/OrderSummary";
@@ -46,6 +53,10 @@ function initialFormForUser(user) {
 function validarLineas(items, cardMessage) {
   if (String(cardMessage ?? "").trim().length > 255) {
     return "El mensaje de la tarjeta no puede superar los 255 caracteres.";
+  }
+
+  if (excedeLimiteCarrito(items)) {
+    return mensajeLimiteCarrito();
   }
 
   for (const item of items) {
@@ -91,7 +102,14 @@ export default function CheckoutPage() {
     initialValues: initialFormForUser(user),
     validators: {
       fullName: (v) => (v.fullName.trim() ? "" : "El nombre completo es obligatorio."),
-      deliveryDate: (v) => (v.deliveryDate ? "" : "Selecciona la fecha de entrega."),
+      deliveryDate: (v) => {
+        if (!v.deliveryDate) return "Selecciona la fecha de entrega.";
+        const minima = fechaMinimaEntrega(items);
+        if (v.deliveryDate >= minima) return "";
+        return esPedidoGrande(items)
+          ? `Con más de 10 unidades en total, la entrega más próxima es el ${formatearFechaISO(minima)}.`
+          : `La entrega más próxima es el ${formatearFechaISO(minima)}.`;
+      },
       municipio: (v) => (v.municipio ? "" : "Selecciona el municipio de entrega."),
       address: (v) => (v.address.trim() ? "" : "Debe escribir una dirección para su entrega."),
       neighborhood: (v) => (v.neighborhood.trim() ? "" : "Debe escribir un barrio para su entrega."),
@@ -107,6 +125,8 @@ export default function CheckoutPage() {
     (municipio) => String(municipio.id) === String(form.municipio)
   );
   const shippingCost = selectedMunicipio?.precioDomicilio ?? 0;
+  const pedidoGrande = esPedidoGrande(items);
+  const minDeliveryDate = fechaMinimaEntrega(items);
 
   const handleFieldChange = (field, value) => setField(field, value);
 
@@ -227,6 +247,8 @@ export default function CheckoutPage() {
               onBlurField={handleBlur}
               municipios={municipios}
               municipiosLoading={loadingMunicipios}
+              minDeliveryDate={minDeliveryDate}
+              largeOrder={pedidoGrande}
               fullNameError={errors.fullName}
               deliveryDateError={errors.deliveryDate}
               municipioError={errors.municipio}

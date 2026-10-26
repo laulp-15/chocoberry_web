@@ -7,6 +7,17 @@ import { useEffect, useState } from "react";
 
 import * as orderService from "../services/orderService";
 
+/**
+ * Ordena por fecha de creación, de la más reciente a la más antigua. El id
+ * desempata los pedidos creados dentro del mismo día.
+ */
+function ordenarPorCreacion(lista) {
+  return [...lista].sort((a, b) => {
+    const porFecha = String(b.fecha ?? "").localeCompare(String(a.fecha ?? ""));
+    return porFecha !== 0 ? porFecha : Number(b.id ?? 0) - Number(a.id ?? 0);
+  });
+}
+
 export default function useOrders({ autoLoad = true } = {}) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(autoLoad);
@@ -26,7 +37,7 @@ export default function useOrders({ autoLoad = true } = {}) {
       .listar()
       .then((lista) => {
         if (!activo) return;
-        setOrders(lista);
+        setOrders(ordenarPorCreacion(lista));
         setError("");
       })
       .catch((err) => {
@@ -50,8 +61,10 @@ export default function useOrders({ autoLoad = true } = {}) {
 
   function reemplazar(actualizado) {
     setOrders((prev) =>
-      prev.map((pedido) =>
-        String(pedido.id) === String(actualizado.id) ? actualizado : pedido
+      ordenarPorCreacion(
+        prev.map((pedido) =>
+          String(pedido.id) === String(actualizado.id) ? actualizado : pedido
+        )
       )
     );
   }
@@ -60,7 +73,7 @@ export default function useOrders({ autoLoad = true } = {}) {
     setSubmitting(true);
     try {
       const creado = await orderService.crear(datos);
-      setOrders((prev) => [creado, ...prev]);
+      setOrders((prev) => ordenarPorCreacion([creado, ...prev]));
       return creado;
     } finally {
       setSubmitting(false);

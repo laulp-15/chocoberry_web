@@ -1,7 +1,9 @@
 // src/features/cart/components/CartItemCard.jsx
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { IconButton, OutlinedInput, Button } from "@mui/material";
 import { formatPrice } from "../../../shared/utils/formatPrice";
+import { normalizarCantidad } from "../../../shared/utils/orderRules";
 import "./CartItemCard.css";
 
 /**
@@ -12,11 +14,18 @@ import "./CartItemCard.css";
  *
  * @param {object} props
  * @param {object} props.item - { cartItemId, productId, name, image, quantity, presentationId, unitPrice, colorId, color, colorHex, units, decorativeMessage, extraCustomization }
- * @param {(cartItemId: string, delta: number) => void} props.onUnitsChange
+ * @param {(cartItemId: string, units: number) => void} props.onUnitsChange
  * @param {(cartItemId: string, field: string, value: string) => void} props.onFieldChange
  * @param {(cartItemId: string) => void} props.onRemove
+ * @param {boolean} [props.canIncrease] - false cuando el carrito ya suma 20
  */
-export default function CartItemCard({ item, onUnitsChange, onFieldChange, onRemove }) {
+export default function CartItemCard({
+  item,
+  onUnitsChange,
+  onFieldChange,
+  onRemove,
+  canIncrease = true,
+}) {
   const navigate = useNavigate();
   const {
     cartItemId,
@@ -34,6 +43,31 @@ export default function CartItemCard({ item, onUnitsChange, onFieldChange, onRem
   const unitPrice = Number(item.unitPrice ?? 0);
   const lineTotal = unitPrice * units;
   const maxDecorative = Math.min(Number(quantity) || 0, 255);
+
+  // Borrador del input: permite escribir libremente (incluso vacío o > 20)
+  // y normaliza al salir del campo. Se sincroniza si la cantidad cambia
+  // desde los botones del stepper.
+  const [draftUnits, setDraftUnits] = useState(String(units));
+  const [lastUnits, setLastUnits] = useState(units);
+
+  // Si la cantidad cambia desde los botones, se refleja en el input. Se ajusta
+  // durante el render (patrón de React) para no encadenar efectos.
+  if (units !== lastUnits) {
+    setLastUnits(units);
+    setDraftUnits(String(units));
+  }
+
+  const commitUnits = () => {
+    const next = normalizarCantidad(draftUnits);
+    setDraftUnits(String(next));
+    if (next !== units) onUnitsChange(cartItemId, next);
+  };
+
+  const handleUnitsKeyDown = (event) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    event.currentTarget.blur();
+  };
 
   return (
     <div className="cart-item-card">
@@ -95,11 +129,32 @@ export default function CartItemCard({ item, onUnitsChange, onFieldChange, onRem
         <div className="cart-item-bottom">
           <div className="cart-item-bottom-left">
             <div className="cart-item-stepper">
-              <IconButton disableRipple onClick={() => onUnitsChange(cartItemId, -1)}>
+              <IconButton
+                disableRipple
+                disabled={units <= 1}
+                aria-label="Disminuir cantidad"
+                onClick={() => onUnitsChange(cartItemId, Math.max(1, units - 1))}
+              >
                 <i className="fa-solid fa-minus" />
               </IconButton>
-              <span className="cart-item-units">{units}</span>
-              <IconButton disableRipple onClick={() => onUnitsChange(cartItemId, 1)}>
+              <input
+                className="cart-item-units-input"
+                type="number"
+                min="1"
+                step="1"
+                inputMode="numeric"
+                aria-label={`Cantidad de ${name}`}
+                value={draftUnits}
+                onChange={(event) => setDraftUnits(event.target.value)}
+                onBlur={commitUnits}
+                onKeyDown={handleUnitsKeyDown}
+              />
+              <IconButton
+                disableRipple
+                disabled={!canIncrease}
+                aria-label="Aumentar cantidad"
+                onClick={() => onUnitsChange(cartItemId, units + 1)}
+              >
                 <i className="fa-solid fa-plus" />
               </IconButton>
             </div>

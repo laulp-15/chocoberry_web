@@ -1,7 +1,12 @@
 // src/services/usuario.service.js
 // Reglas de negocio del módulo de usuarios. Solo esta capa habla con los modelos.
 import bcrypt from 'bcryptjs';
-import { BadRequestError, ConflictError, NotFoundError } from '../errors/index.js';
+import {
+  BadRequestError,
+  ConflictError,
+  DocumentTakenError,
+  NotFoundError,
+} from '../errors/index.js';
 import * as rolModel from '../models/rol.model.js';
 import * as usuarioModel from '../models/usuario.model.js';
 import { serializarUsuario } from '../utils/serializers.js';
@@ -30,6 +35,14 @@ async function resolverRol(valor) {
   const rol = await rolModel.buscarPorNombreOSlug(valor);
   if (!rol) throw new BadRequestError(`El rol "${valor}" no existe.`);
   return rol.id;
+}
+
+/** Impide que dos usuarios compartan el mismo número de documento. */
+async function asegurarDocumentoUnico(numeroDocumento, excluirId = null) {
+  const existente = await usuarioModel.buscarPorNumeroDocumento(numeroDocumento, excluirId);
+  if (existente) {
+    throw new DocumentTakenError('Ya existe un usuario registrado con ese número de documento.');
+  }
 }
 
 /** Construye el objeto de columnas a actualizar a partir de los datos de entrada. */
@@ -65,6 +78,8 @@ export async function crear(datos) {
   const existente = await usuarioModel.buscarPorCorreo(datos.correo);
   if (existente) throw new ConflictError('Ya existe un usuario registrado con ese correo.');
 
+  await asegurarDocumentoUnico(datos.numeroDocumento);
+
   const idRol = await resolverRol(datos.id_rol ?? datos.rol);
   const contrasena = await bcrypt.hash(datos.contrasena, ROUNDS);
 
@@ -88,6 +103,14 @@ export async function actualizar(id, datos) {
     if (existente && existente.id !== actual.id) {
       throw new ConflictError('Ya existe otro usuario con ese correo.');
     }
+  }
+
+  // Unicidad del documento (solo si cambió).
+  if (
+    datos.numeroDocumento &&
+    datos.numeroDocumento !== actual.numero_documento
+  ) {
+    await asegurarDocumentoUnico(datos.numeroDocumento, actual.id);
   }
 
   const campos = mapearCampos(datos);
@@ -133,6 +156,13 @@ export async function actualizarPerfil(id, datos) {
     if (existente && existente.id !== actual.id) {
       throw new ConflictError('Ya existe otro usuario con ese correo.');
     }
+  }
+
+  if (
+    datos.numeroDocumento &&
+    datos.numeroDocumento !== actual.numero_documento
+  ) {
+    await asegurarDocumentoUnico(datos.numeroDocumento, actual.id);
   }
 
   const campos = mapearCampos(datos);

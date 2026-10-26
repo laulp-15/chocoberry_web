@@ -1,13 +1,14 @@
 // src/shared/layouts/AdminLayout.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { IconButton } from "@mui/material";
+import { IconButton, useMediaQuery } from "@mui/material";
 import { useAuth } from "../../features/login/hooks/useAuth";
 import { useTheme } from "../../shared/context/ThemeContext";
-import ThemeToggleBtn from "../components/ThemeToggleBtn"; // <- 1. Importamos el botón del Sol y Luna
+import SidebarTooltip from "../components/SidebarTooltip";
+import ThemeToggleBtn from "../components/ThemeToggleBtn";
 import "./AdminLayout.css";
 
-// Menú del admin sin el módulo de clientes
+// Menú del admin
 const NAV_ITEMS = [
   { to: "/admin", label: "Dashboard", icon: "fa-chart-line", end: true },
   { to: "/admin/roles", label: "Roles", icon: "fa-shield-halved" },
@@ -28,17 +29,44 @@ const NAV_ITEMS = [
   },
 ];
 
+const STORAGE_KEY = "cb_sidebar_collapsed";
+
 export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isGroupOpen, setIsGroupOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem(STORAGE_KEY) === "true";
+    } catch {
+      return false;
+    }
+  });
   const { user, logout } = useAuth();
   const { theme } = useTheme();
   const location = useLocation();
   const isDarkMode = theme === "dark";
 
-  // ¿La ruta actual pertenece a un grupo desplegable? Si sí, se mantiene abierto.
+  const isDesktop = useMediaQuery("(min-width:992px)");
+  const isCollapsed = collapsed && isDesktop;
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, String(collapsed));
+    } catch {
+    }
+  }, [collapsed]);
+
   const isGroupRoute = (group) =>
     group.children.some((child) => location.pathname.startsWith(child.to));
+
+  const handleParentClick = () => {
+    if (isCollapsed) {
+      setCollapsed(false);
+      setIsGroupOpen(true);
+    } else {
+      setIsGroupOpen((prev) => !prev);
+    }
+  };
 
   const handleLogout = (e) => {
     e.preventDefault();
@@ -49,9 +77,25 @@ export default function AdminLayout() {
     window.location.href = "/login";
   };
 
+  const tip = (label) => (isCollapsed ? label : "");
+
   return (
     <div className="admin-layout">
-      <aside className={`admin-sidebar ${sidebarOpen ? "open" : ""}`}>
+      <aside
+        className={`admin-sidebar ${sidebarOpen ? "open" : ""} ${
+          isCollapsed ? "collapsed" : ""
+        }`}
+      >
+        <button
+          type="button"
+          className="admin-sidebar-toggle"
+          onClick={() => setCollapsed((prev) => !prev)}
+          aria-label={isCollapsed ? "Expandir menú" : "Colapsar menú"}
+          aria-expanded={!isCollapsed}
+        >
+          <i className="fa-solid fa-angles-left" />
+        </button>
+
         <div className="admin-brand">
           <img
             src={isDarkMode ? "/img/Logo/LogoDark_1.png" : "/img/Logo/CHOCOBERRY.png"}
@@ -64,24 +108,28 @@ export default function AdminLayout() {
           {NAV_ITEMS.map((item) =>
             item.children ? (
               <div className="admin-nav-group" key={item.label}>
-                <button
-                  type="button"
-                  className={`admin-nav-item admin-nav-parent ${
-                    isGroupRoute(item) ? "admin-nav-parent--active" : ""
-                  }`}
-                  onClick={() => setIsGroupOpen((prev) => !prev)}
-                  aria-expanded={isGroupOpen || isGroupRoute(item)}
-                >
-                  <i className={`fa-solid ${item.icon}`} />
-                  <span className="admin-nav-parent-label">{item.label}</span>
-                  <i
-                    className={`fa-solid fa-chevron-down admin-nav-chevron ${
-                      isGroupOpen || isGroupRoute(item) ? "open" : ""
+                <SidebarTooltip title={tip(item.label)}>
+                  <button
+                    type="button"
+                    className={`admin-nav-item admin-nav-parent ${
+                      isGroupRoute(item) ? "admin-nav-parent--active" : ""
                     }`}
-                  />
-                </button>
+                    onClick={handleParentClick}
+                    aria-expanded={!isCollapsed && (isGroupOpen || isGroupRoute(item))}
+                  >
+                    <i className={`fa-solid ${item.icon}`} />
+                    <span className="admin-nav-label admin-nav-parent-label">
+                      {item.label}
+                    </span>
+                    <i
+                      className={`fa-solid fa-chevron-down admin-nav-chevron ${
+                        isGroupOpen || isGroupRoute(item) ? "open" : ""
+                      }`}
+                    />
+                  </button>
+                </SidebarTooltip>
 
-                {(isGroupOpen || isGroupRoute(item)) && (
+                {!isCollapsed && (isGroupOpen || isGroupRoute(item)) && (
                   <div className="admin-nav-children">
                     {item.children.map((child) => (
                       <NavLink
@@ -93,23 +141,29 @@ export default function AdminLayout() {
                         onClick={() => setSidebarOpen(false)}
                       >
                         <i className={`fa-solid ${child.icon}`} />
-                        {child.label}
+                        <span className="admin-nav-label">{child.label}</span>
                       </NavLink>
                     ))}
                   </div>
                 )}
               </div>
             ) : (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.end}
-                className={({ isActive }) => `admin-nav-item ${isActive ? "active" : ""}`}
-                onClick={() => setSidebarOpen(false)}
-              >
-                <i className={`fa-solid ${item.icon}`} />
-                {item.label}
-              </NavLink>
+              
+              <SidebarTooltip key={item.to} title={tip(item.label)}>
+                <div>
+                  <NavLink
+                    to={item.to}
+                    end={item.end}
+                    className={({ isActive }) =>
+                      `admin-nav-item ${isActive ? "active" : ""}`
+                    }
+                    onClick={() => setSidebarOpen(false)}
+                  >
+                    <i className={`fa-solid ${item.icon}`} />
+                    <span className="admin-nav-label">{item.label}</span>
+                  </NavLink>
+                </div>
+              </SidebarTooltip>
             )
           )}
         </nav>
@@ -119,23 +173,25 @@ export default function AdminLayout() {
             <i className="fa-solid fa-circle-user" />
             <div className="admin-profile-info">
               <span className="admin-profile-name">
-                {user?.email === "admin@chocoberry.com" ? "Leidy Figueroa" : user?.fullName || user?.name || "Leidy Figueroa"}
+                {user?.email === "admin@chocoberry.com"
+                  ? "Leidy Figueroa"
+                  : user?.fullName || user?.name || "Leidy Figueroa"}
               </span>
-              <span className="admin-profile-role">
-                Administradora
-              </span>
+              <span className="admin-profile-role">Administradora</span>
             </div>
           </div>
           <div className="admin-sidebar-actions">
-            <ThemeToggleBtn />
-            <button 
-              type="button" 
-              className="admin-sidebar-action-btn"
-              onClick={handleLogout}
-            >
-              <i className="fa-solid fa-right-to-bracket" />
-              Cerrar sesión
-            </button>
+            <ThemeToggleBtn collapsed={isCollapsed} />
+            <SidebarTooltip title={tip("Cerrar sesión")}>
+              <button
+                type="button"
+                className="admin-sidebar-action-btn"
+                onClick={handleLogout}
+              >
+                <i className="fa-solid fa-right-to-bracket" />
+                <span className="admin-nav-label">Cerrar sesión</span>
+              </button>
+            </SidebarTooltip>
           </div>
         </div>
       </aside>
@@ -145,7 +201,6 @@ export default function AdminLayout() {
       )}
 
       <div className="admin-content">
-        {/* Barra superior con espacio entre el menú hamburguesa y el botón Dark/Light Mode */}
         <header className="admin-topbar">
           <IconButton
             className="admin-menu-toggle"

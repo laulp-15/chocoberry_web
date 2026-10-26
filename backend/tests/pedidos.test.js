@@ -50,6 +50,24 @@ describe('Módulo de pedidos', () => {
     mensajePersonalizado: 'TQM',
   });
 
+  /** Fecha ISO local de hoy + N días, para no depender de fechas fijas. */
+  const fechaISO = (dias) => {
+    const fecha = new Date();
+    fecha.setHours(0, 0, 0, 0);
+    fecha.setDate(fecha.getDate() + dias);
+
+    const anio = fecha.getFullYear();
+    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+    const dia = String(fecha.getDate()).padStart(2, '0');
+    return `${anio}-${mes}-${dia}`;
+  };
+
+  const lineaCon = (cantidad, extra = {}) => ({
+    ...lineaBase(),
+    cantidadProductos: cantidad,
+    ...extra,
+  });
+
   /** Construye el POST multipart de un pedido. */
   function solicitudPedido({
     token = tokenCliente,
@@ -291,6 +309,81 @@ describe('Módulo de pedidos', () => {
     });
   });
 
+  describe('Reglas de volumen y fecha', () => {
+    it('el cliente no puede superar 20 unidades en total', async () => {
+      const res = await solicitudPedido({
+        datos: { fechaEntrega: fechaISO(2) },
+        lineas: [lineaCon(11), lineaCon(10)],
+      });
+
+      expect(res.status).toBe(422);
+      expect(res.body.message).toContain('317 217 5887');
+      expect(res.body.errors?.[0]?.campo).toBe('lineas');
+    });
+
+    it('acepta exactamente 20 unidades con entrega desde pasado mañana', async () => {
+      const pedido = await crearPedido({
+        datos: { fechaEntrega: fechaISO(2) },
+        lineas: [lineaCon(10), lineaCon(10)],
+      });
+
+      const total = pedido.lineas.reduce(
+        (suma, linea) => suma + linea.cantidadProductos,
+        0
+      );
+      expect(total).toBe(20);
+    });
+
+    it('rechaza la entrega para mañana cuando el pedido supera 10 unidades', async () => {
+      const res = await solicitudPedido({
+        datos: { fechaEntrega: fechaISO(1) },
+        lineas: [lineaCon(11)],
+      });
+
+      expect(res.status).toBe(422);
+      expect(res.body.errors?.[0]?.campo).toBe('fechaEntrega');
+    });
+
+    it('acepta la entrega desde pasado mañana cuando el pedido supera 10 unidades', async () => {
+      const pedido = await crearPedido({
+        datos: { fechaEntrega: fechaISO(2) },
+        lineas: [lineaCon(11)],
+      });
+
+      expect(pedido.fechaEntrega).toBe(fechaISO(2));
+    });
+
+    it('permite la entrega para mañana con 10 unidades o menos', async () => {
+      const pedido = await crearPedido({
+        datos: { fechaEntrega: fechaISO(1) },
+        lineas: [lineaCon(10)],
+      });
+
+      expect(pedido.fechaEntrega).toBe(fechaISO(1));
+    });
+
+    it('el administrador puede crear pedidos de más de 20 unidades', async () => {
+      const pedido = await crearPedido({
+        token: tokenAdmin,
+        datos: { idUsuario: clienteId, fechaEntrega: fechaISO(2) },
+        lineas: [lineaCon(25)],
+      });
+
+      expect(pedido.lineas[0].cantidadProductos).toBe(25);
+    });
+
+    it('el administrador también respeta la fecha de los pedidos grandes', async () => {
+      const res = await solicitudPedido({
+        token: tokenAdmin,
+        datos: { idUsuario: clienteId, fechaEntrega: fechaISO(1) },
+        lineas: [lineaCon(11)],
+      });
+
+      expect(res.status).toBe(422);
+      expect(res.body.errors?.[0]?.campo).toBe('fechaEntrega');
+    });
+  });
+
   describe('Consulta y alcance por rol', () => {
     let pedidoPrincipalId;
 
@@ -328,6 +421,25 @@ describe('Módulo de pedidos', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.data.map((p) => p.id)).toContain(pedidoPrincipalId);
+    });
+
+    it('ordena por fecha de creación y no por fecha de entrega', async () => {
+      // El primero se crea antes pero tiene una entrega mucho más lejana.
+      const entregaLejana = await crearPedido({
+        datos: { fechaEntrega: '2099-12-31' },
+      });
+      const entregaCercana = await crearPedido({
+        datos: { fechaEntrega: '2000-01-01' },
+      });
+
+      const res = await auth(request(app).get('/api/pedidos'));
+      const ids = res.body.data.map((p) => p.id);
+
+      expect(entregaCercana.fechaEntrega).toBe('2000-01-01');
+      expect(ids.indexOf(entregaCercana.id)).toBeGreaterThanOrEqual(0);
+      expect(ids.indexOf(entregaCercana.id)).toBeLessThan(
+        ids.indexOf(entregaLejana.id)
+      );
     });
 
     it('filtra por estado usando el slug del front', async () => {
@@ -377,7 +489,7 @@ describe('Módulo de pedidos', () => {
       expect(res.status).toBe(403);
     });
 
-    it('el repartidor no puede editar la cabecera (403)', async () => {
+    it('el repartidor no puede editar el pedido (403)', async () => {
       const res = await auth(
         request(app)
           .put(`/api/pedidos/${pedidoPrincipalId}`)
@@ -498,9 +610,10 @@ describe('Módulo de pedidos', () => {
   });
 
   describe('Edición y eliminación', () => {
-    it('PUT actualiza la cabecera y recalcula el domicilio', async () => {
+    it('PUT actualiza la cabecera y conserva las líneas y el domicilio recalculado', async () => {
       const pedido = await crearPedido();
       const otroMunicipio = municipios.find((m) => m.id !== municipio.id);
+      const idsLineasOriginales = pedido.lineas.map((linea) => linea.id);
 
       const res = await auth(request(app).put(`/api/pedidos/${pedido.id}`)).send({
         direccion: 'Carrera 50 # 10-20',
@@ -513,9 +626,189 @@ describe('Módulo de pedidos', () => {
       expect(res.body.data.mensajeTarjeta).toBe('Nuevo mensaje');
       expect(res.body.data.municipio.id).toBe(otroMunicipio.id);
       expect(res.body.data.precioDomicilio).toBe(otroMunicipio.precioDomicilio);
+      expect(res.body.data.lineas).toHaveLength(pedido.lineas.length);
+      expect(res.body.data.lineas.map((linea) => linea.id)).toEqual(idsLineasOriginales);
       expect(res.body.data.total).toBe(
         redondear(res.body.data.subtotal + otroMunicipio.precioDomicilio)
       );
+    });
+
+    it('PUT reemplaza las líneas de un pedido pendiente y recalcula los totales', async () => {
+      const pedido = await crearPedido();
+      const lineaOriginal = pedido.lineas[0];
+
+      const res = await auth(request(app).put(`/api/pedidos/${pedido.id}`)).send({
+        lineas: [
+          {
+            id: lineaOriginal.id,
+            idProducto: producto.id,
+            idPresentacion: presentacion.id,
+            cantidadProductos: 3,
+            idColorGlaseado: color.id,
+            mensajePersonalizado: 'TQM',
+          },
+          {
+            idProducto: producto.id,
+            idPresentacion: presentacion.id,
+            cantidadProductos: 1,
+            idColorGlaseado: color.id,
+          },
+        ],
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.lineas).toHaveLength(2);
+      expect(res.body.data.lineas[0].cantidadProductos).toBe(3);
+      expect(res.body.data.lineas[1].cantidadProductos).toBe(1);
+
+      const subtotalEsperado = redondear(presentacion.precio * 4);
+      expect(res.body.data.subtotal).toBe(subtotalEsperado);
+      expect(res.body.data.total).toBe(
+        redondear(subtotalEsperado + res.body.data.precioDomicilio)
+      );
+    });
+
+    it('PUT conserva el precio histórico de una línea sin cambios de producto, presentación ni glaseado', async () => {
+      const pedido = await crearPedido();
+      const linea = pedido.lineas[0];
+      const precioHistorico = 12345.67;
+      const nuevaCantidad = linea.cantidadProductos + 1;
+
+      // Simula un pedido viejo cuyo precio unitario ya no coincide con el
+      // catálogo actual. Solo se modifica esta línea temporal de prueba.
+      await query(
+        'UPDATE productoPedido SET precio_unitario = ?, subtotal = ? WHERE id = ?',
+        [precioHistorico, redondear(precioHistorico * linea.cantidadProductos), linea.id]
+      );
+
+      const res = await auth(request(app).put(`/api/pedidos/${pedido.id}`)).send({
+        lineas: [
+          {
+            id: linea.id,
+            idProducto: producto.id,
+            idPresentacion: presentacion.id,
+            cantidadProductos: nuevaCantidad,
+            idColorGlaseado: color.id,
+          },
+        ],
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.lineas[0].precioUnitario).toBe(precioHistorico);
+      expect(res.body.data.lineas[0].subtotal).toBe(
+        redondear(precioHistorico * nuevaCantidad)
+      );
+    });
+
+    it('PUT rechaza editar un pedido que ya no está Pendiente', async () => {
+      const pedido = await crearPedido();
+      await cambiarEstado(pedido.id, 'en_preparacion');
+
+      const res = await auth(request(app).put(`/api/pedidos/${pedido.id}`)).send({
+        direccion: 'No debería guardarse 123',
+        lineas: [
+          {
+            id: pedido.lineas[0].id,
+            idProducto: producto.id,
+            idPresentacion: presentacion.id,
+            cantidadProductos: 5,
+            idColorGlaseado: color.id,
+          },
+        ],
+      });
+
+      expect(res.status).toBe(409);
+    });
+
+    it('PUT con una línea inválida no modifica ni la cabecera ni las líneas', async () => {
+      const pedido = await crearPedido();
+      const direccionOriginal = pedido.direccion;
+
+      const res = await auth(request(app).put(`/api/pedidos/${pedido.id}`)).send({
+        direccion: 'Dirección que no debe guardarse',
+        lineas: [
+          {
+            id: pedido.lineas[0].id,
+            idProducto: producto.id,
+            idPresentacion: presentacion.id,
+            cantidadProductos: 2,
+            idColorGlaseado: color.id,
+          },
+          {
+            idProducto: 999999,
+            idPresentacion: presentacion.id,
+            cantidadProductos: 1,
+            idColorGlaseado: color.id,
+          },
+        ],
+      });
+
+      expect(res.status).toBe(400);
+
+      const detalle = await auth(request(app).get(`/api/pedidos/${pedido.id}`));
+      expect(detalle.status).toBe(200);
+      expect(detalle.body.data.direccion).toBe(direccionOriginal);
+      expect(detalle.body.data.lineas).toHaveLength(pedido.lineas.length);
+    });
+
+    it('PUT rechaza una línea que pertenece a otro pedido', async () => {
+      const pedido = await crearPedido();
+      const otroPedido = await crearPedido();
+
+      const res = await auth(request(app).put(`/api/pedidos/${pedido.id}`)).send({
+        lineas: [
+          {
+            id: otroPedido.lineas[0].id,
+            idProducto: producto.id,
+            idPresentacion: presentacion.id,
+            cantidadProductos: 1,
+            idColorGlaseado: color.id,
+          },
+        ],
+      });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('al editar, un pedido grande no puede quedar con entrega para mañana', async () => {
+      const pedido = await crearPedido();
+      const linea = pedido.lineas[0];
+
+      const res = await auth(request(app).put(`/api/pedidos/${pedido.id}`)).send({
+        fechaEntrega: fechaISO(1),
+        lineas: [
+          {
+            id: linea.id,
+            idProducto: producto.id,
+            idPresentacion: presentacion.id,
+            cantidadProductos: 11,
+            idColorGlaseado: color.id,
+          },
+        ],
+      });
+
+      expect(res.status).toBe(422);
+      expect(res.body.errors?.[0]?.campo).toBe('fechaEntrega');
+    });
+
+    it('el administrador puede editar un pedido para superar 20 unidades', async () => {
+      const pedido = await crearPedido();
+      const linea = pedido.lineas[0];
+
+      const res = await auth(request(app).put(`/api/pedidos/${pedido.id}`)).send({
+        lineas: [
+          {
+            id: linea.id,
+            idProducto: producto.id,
+            idPresentacion: presentacion.id,
+            cantidadProductos: 25,
+            idColorGlaseado: color.id,
+          },
+        ],
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.lineas[0].cantidadProductos).toBe(25);
     });
 
     it('el administrador puede crear un pedido a nombre de un cliente', async () => {

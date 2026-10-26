@@ -3,7 +3,7 @@
 .admin-layout {
   display: flex;
   height: 100vh;
-  overflow: hidden; /* Fija la pantalla y evita el scroll general de la ventana */
+  overflow: hidden; 
   background: var(--secundario-3);
   font-family: "Poppins", sans-serif;
 }
@@ -21,10 +21,43 @@
   top: 0;
 }
 
+/* Botón colapsar/expandir */
+.admin-sidebar-toggle {
+  display: none;
+  position: absolute;
+  top: 28px;
+  right: -14px;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--borde);
+  border-radius: 50%;
+  background: var(--blanco);
+  color: var(--texto-muted);
+  cursor: pointer;
+  z-index: 5;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.admin-sidebar-toggle:hover {
+  background: var(--primario);
+  color: var(--blanco);
+  border-color: var(--primario);
+}
+
+.admin-sidebar-toggle i {
+  font-size: 12px;
+  transition: transform 0.25s ease;
+}
+
 .admin-brand {
   display: flex;
   justify-content: center;
   padding: 20px 24px 16px;
+  max-height: 150px;
+  overflow: hidden;
+  transition: opacity 0.2s ease, max-height 0.25s ease;
 }
 
 .admin-brand-logo {
@@ -41,6 +74,7 @@
   flex-direction: column;
   gap: 2px;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 4px 14px;
 }
 
@@ -67,11 +101,17 @@
   color: var(--texto);
 }
 
-/* Ítem activo: rectángulo redondeado en el color principal */
+/* Ítem activo: */
 .admin-nav-item.active {
   background: var(--primario);
   color: var(--blanco);
   font-weight: 700;
+}
+
+.admin-nav-label,
+.admin-profile-info {
+  white-space: nowrap;
+  transition: opacity 0.15s ease;
 }
 
 /* ---------- Grupo desplegable del menú (Configuraciones) ---------- */
@@ -197,7 +237,7 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
-  overflow-y: auto; /* Aquí se aplica el scroll exclusivamente al contenido de la derecha */
+  overflow-y: auto; 
 }
 
 .admin-topbar {
@@ -235,24 +275,80 @@
     transform: translateX(-100%);
     transition: transform 0.2s ease;
   }
-  
+
   .admin-sidebar.open {
     transform: translateX(0);
   }
-  
+
   .admin-menu-toggle.MuiIconButton-root {
     display: inline-flex;
   }
-  
+
   .admin-topbar {
     display: flex;
   }
-  
+
   .admin-sidebar-backdrop {
     display: block;
     position: fixed;
     inset: 0;
     background: rgba(42, 35, 29, 0.4);
     z-index: 1100;
+  }
+}
+
+/* ---------- Desktop: sidebar colapsable ---------- */
+@media (min-width: 992px) {
+  .admin-sidebar {
+    z-index: 10; 
+    transition: width 0.25s ease;
+  }
+
+  .admin-sidebar-toggle {
+    display: flex;
+  }
+
+  .admin-sidebar.collapsed {
+    width: 72px;
+  }
+
+  .admin-sidebar.collapsed .admin-sidebar-toggle i {
+    transform: rotate(180deg);
+  }
+
+  .admin-sidebar.collapsed .admin-brand {
+    opacity: 0;
+    max-height: 20px;
+    pointer-events: none;
+  }
+
+  /* Solo iconos */
+  .admin-sidebar.collapsed .admin-nav-item,
+  .admin-sidebar.collapsed .admin-sidebar-action-btn {
+    justify-content: center;
+    gap: 0;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .admin-sidebar.collapsed .admin-nav-label,
+  .admin-sidebar.collapsed .admin-profile-info {
+    opacity: 0;
+    width: 0;
+    flex: 0;
+    overflow: hidden;
+  }
+
+  .admin-sidebar.collapsed .admin-nav-chevron {
+    display: none;
+  }
+
+  .admin-sidebar.collapsed .admin-sidebar-footer {
+    padding: 14px;
+  }
+
+  .admin-sidebar.collapsed .admin-profile {
+    justify-content: center;
+    gap: 0;
   }
 }

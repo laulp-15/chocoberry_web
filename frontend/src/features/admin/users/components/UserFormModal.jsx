@@ -135,6 +135,8 @@ export default function UserFormModal({ open, onClose, onSubmit, initialData, su
     } catch (err) {
       if (err.code === "EMAIL_TAKEN") {
         setFieldError("email", err.message);
+      } else if (err.code === "DOCUMENT_TAKEN") {
+        setFieldError("idNumber", err.message);
       } else {
         setFormError(err.message || "No fue posible guardar el usuario.");
       }

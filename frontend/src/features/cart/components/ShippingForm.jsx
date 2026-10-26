@@ -3,11 +3,12 @@ import { OutlinedInput, Select, MenuItem } from "@mui/material";
 import DatePicker, { addDaysISO } from "../../../shared/components/DatePicker";
 import { PICKUP_SCHEDULE } from "../data/pickupInfo";
 import { formatPrice } from "../../../shared/utils/formatPrice";
+import { formatearFechaISO } from "../../../shared/utils/orderRules";
 import "./ShippingForm.css";
 
-// La entrega no puede ser para hoy: mínimo el día siguiente (mañana) y
-// máximo 15 días a futuro.
-const MIN_DELIVERY_DATE = addDaysISO(1);
+// La entrega no puede ser para hoy: el mínimo lo calcula el checkout (mañana
+// normalmente y pasado mañana si el pedido supera 10 unidades). El máximo es
+// de 15 días a futuro.
 const MAX_DELIVERY_DATE = addDaysISO(15);
 
 /**
@@ -22,6 +23,8 @@ const MAX_DELIVERY_DATE = addDaysISO(15);
  * @param {string} [props.neighborhoodError]
  * @param {string} [props.recipientNameError]
  * @param {string} [props.recipientPhoneError]
+ * @param {string} [props.minDeliveryDate] - ISO; mínimo según el total del carrito
+ * @param {boolean} [props.largeOrder] - true si el pedido supera 10 unidades
  */
 export default function ShippingForm({
   values,
@@ -29,6 +32,8 @@ export default function ShippingForm({
   onBlurField,
   municipios = [],
   municipiosLoading = false,
+  minDeliveryDate = addDaysISO(1),
+  largeOrder = false,
   fullNameError,
   deliveryDateError,
   municipioError,
@@ -73,10 +78,14 @@ export default function ShippingForm({
         required
         value={deliveryDate}
         onChange={(v) => onChange("deliveryDate", v)}
-        minDate={MIN_DELIVERY_DATE}
+        minDate={minDeliveryDate}
         maxDate={MAX_DELIVERY_DATE}
         error={deliveryDateError}
-        hint="Disponible desde mañana y hasta 15 días a futuro."
+        hint={
+          largeOrder
+            ? `Con más de 10 unidades en total, la entrega más próxima es el ${formatearFechaISO(minDeliveryDate)}.`
+            : "Disponible desde mañana y hasta 15 días a futuro."
+        }
       />
 
       <div className="form-row">

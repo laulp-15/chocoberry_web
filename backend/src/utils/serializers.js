@@ -68,14 +68,26 @@ export function serializarCategoria(row) {
   };
 }
 
-/** Convierte una fila de `producto` (con nombre_categoria) al objeto público. */
-export function serializarProducto(row) {
+/**
+ * Convierte una fila de `producto` (con nombre de categoría) y sus imágenes al
+ * objeto público. `imagen` se conserva como la portada (orden 1) para no
+ * romper a los consumidores que ya esperaban una sola ruta.
+ */
+export function serializarProducto(row, imagenes = []) {
   if (!row) return null;
+
+  const lista = Array.isArray(imagenes) ? imagenes : [];
+
   return {
     id: row.id,
     nombre: row.nombre,
     descripcion: row.descripcion,
-    imagen: row.imagen,
+    imagen: lista[0]?.url ?? null,
+    imagenes: lista.map((imagen) => ({
+      id: imagen.id,
+      url: imagen.url,
+      orden: imagen.orden,
+    })),
     estado: Boolean(row.estado),
     categoria: row.categoria
       ? { id: row.id_categoria, nombre: row.categoria }

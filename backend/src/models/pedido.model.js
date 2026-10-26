@@ -90,6 +90,8 @@ export async function listar({
     params.push(`${fechaHasta} 23:59:59`);
   }
 
+  // Orden de llegada: fecha de creación (no fecha_entrega). El id desempata
+  // los pedidos creados dentro del mismo segundo.
   const sql = `${SELECT_BASE}${where.length ? ` WHERE ${where.join(' AND ')}` : ''}
                ORDER BY p.fecha DESC, p.id DESC`;
   return query(sql, params);
@@ -134,8 +136,8 @@ export async function crearConLineas({ pedido, lineas }) {
   });
 }
 
-/** Actualiza solo las columnas de cabecera presentes en `campos`. */
-export async function actualizar(id, campos) {
+/** Construye el SET dinámico de la cabecera con la lista blanca de columnas. */
+function construirAsignaciones(campos) {
   const asignaciones = [];
   const valores = [];
 
@@ -146,11 +148,41 @@ export async function actualizar(id, campos) {
     }
   }
 
+  return { asignaciones, valores };
+}
+
+/** Actualiza solo las columnas de cabecera presentes en `campos`. */
+export async function actualizar(id, campos) {
+  const { asignaciones, valores } = construirAsignaciones(campos);
+
   if (asignaciones.length === 0) return buscarPorId(id);
 
   valores.push(id);
   await query(`UPDATE pedido SET ${asignaciones.join(', ')} WHERE id = ?`, valores);
   return buscarPorId(id);
+}
+
+/**
+ * Actualiza la cabecera y reemplaza todas las líneas en una sola transacción.
+ * Las líneas recibidas ya vienen validadas y con sus precios resueltos.
+ */
+export async function actualizarConLineas(id, campos, lineas) {
+  return withTransaction(async (conexion) => {
+    const { asignaciones, valores } = construirAsignaciones(campos);
+
+    if (asignaciones.length > 0) {
+      valores.push(id);
+      await conexion.execute(
+        `UPDATE pedido SET ${asignaciones.join(', ')} WHERE id = ?`,
+        valores
+      );
+    }
+
+    await productoPedidoModel.eliminarPorPedido(conexion, id);
+    await productoPedidoModel.insertarLineas(conexion, id, lineas);
+
+    return id;
+  });
 }
 
 /** Actualiza la evidencia/observaciones de entrega. */

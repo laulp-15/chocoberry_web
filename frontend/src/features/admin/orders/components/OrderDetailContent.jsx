@@ -53,10 +53,16 @@ export default function OrderDetailContent({ order }) {
 
         <div className="order-detail-hero-side">
           <OrderStatusBadge status={order.estado} />
-          <span className="order-detail-date">
-            <i className="fa-solid fa-calendar" /> Entrega:{" "}
-            {formatDisplayDate(order.fechaEntrega)}
-          </span>
+          <div className="order-detail-dates">
+            <span className="order-detail-date">
+              <i className="fa-solid fa-clock" /> Creación:{" "}
+              {formatDisplayDate(order.fecha)}
+            </span>
+            <span className="order-detail-date">
+              <i className="fa-solid fa-calendar" /> Entrega:{" "}
+              {formatDisplayDate(order.fechaEntrega)}
+            </span>
+          </div>
           <div className="order-detail-hero-total">
             <span className="order-detail-hero-total-label">Total</span>
             <strong className="order-detail-hero-total-value">

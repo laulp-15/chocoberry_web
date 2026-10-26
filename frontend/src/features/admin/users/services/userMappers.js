@@ -85,16 +85,30 @@ export function toActualizarUsuarioPayload(datos = {}) {
 // -----------------------------------------------------------------------------
 
 /**
- * En crear/editar, un 409 significa que el correo ya está en uso.
- * Se marca como EMAIL_TAKEN para que el modal lo muestre bajo el campo correo.
+ * En crear/editar, un 409 puede ser por correo o por número de documento.
+ * Se marca con el código correspondiente para que el modal muestre el error
+ * debajo del campo correcto.
  */
 export function mapGuardarError(error) {
-  if (error?.status === 409) {
+  if (error?.status !== 409) return error;
+
+  if (error.code === "DOCUMENT_TAKEN") {
+    const mapped = new Error(
+      error.message || "Ya existe otro usuario registrado con ese número de documento."
+    );
+    mapped.code = "DOCUMENT_TAKEN";
+    return mapped;
+  }
+
+  if (error.code === "EMAIL_TAKEN" || error.code === "CONFLICT") {
     const mapped = new Error(
       error.message || "Ya existe otro usuario registrado con ese correo."
     );
     mapped.code = "EMAIL_TAKEN";
     return mapped;
   }
+
+  // Por ejemplo DUPLICATE_ENTRY sin campo identificable: se muestra como
+  // error general del formulario en lugar de señalar el campo equivocado.
   return error;
 }

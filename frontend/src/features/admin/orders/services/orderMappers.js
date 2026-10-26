@@ -121,6 +121,12 @@ function toLineaPayload(linea) {
     idColorGlaseado: Number(linea.colorId),
   };
 
+  // Solo las líneas que ya existen en el pedido llevan id. El backend lo usa
+  // para conservar su precio histórico cuando no cambian de producto,
+  // presentación ni glaseado.
+  const id = Number(linea.id);
+  if (Number.isInteger(id) && id > 0) payload.id = id;
+
   const mensaje = String(linea.mensajePersonalizado ?? "").trim();
   if (mensaje) payload.mensajePersonalizado = mensaje;
 
@@ -153,7 +159,10 @@ export function toCrearPedidoFormData(datos = {}) {
   return formData;
 }
 
-/** PUT /pedidos/:id: solo cabecera; las líneas y el comprobante no se editan. */
+/**
+ * PUT /pedidos/:id: cabecera y, si se envían, la lista completa de líneas.
+ * El comprobante no se edita.
+ */
 export function toActualizarPedidoPayload(datos = {}) {
   return {
     fechaEntrega: datos.fechaEntrega,
@@ -165,5 +174,8 @@ export function toActualizarPedidoPayload(datos = {}) {
     // Se envían siempre para permitir dejar el campo vacío.
     instruccionesEntrega: String(datos.instruccionesEntrega ?? "").trim(),
     mensajeTarjeta: String(datos.mensajeTarjeta ?? "").trim(),
+    ...(datos.lineas !== undefined
+      ? { lineas: datos.lineas.map(toLineaPayload) }
+      : {}),
   };
 }

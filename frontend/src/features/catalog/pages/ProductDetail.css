@@ -82,3 +82,48 @@
   background: var(--primario-oscuro) !important;
   box-shadow: none !important;
 }
+
+/* Aviso fijo cuando el carrito ya suma 20 unidades. */
+.product-limit-alert {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 1200;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  max-width: 380px;
+  padding: 14px 16px;
+  border: 1px solid var(--error-20);
+  border-radius: 12px;
+  background: var(--error-20);
+  color: var(--error-100);
+  font-size: 13px;
+  line-height: 1.45;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+.product-limit-alert > i {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+.product-limit-alert span {
+  flex: 1;
+}
+.product-limit-alert button {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  font-size: 13px;
+}
+
+@media (max-width: 576px) {
+  .product-limit-alert {
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    max-width: none;
+  }
+}

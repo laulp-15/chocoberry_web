@@ -6,7 +6,7 @@ import { Router } from 'express';
 import * as productoController from '../controllers/producto.controller.js';
 import { verifyToken } from '../middlewares/auth.js';
 import { checkPermiso } from '../middlewares/checkPermiso.js';
-import { subirImagen } from '../middlewares/upload.js';
+import { subirImagenes } from '../middlewares/upload.js';
 import { validar } from '../middlewares/validate.js';
 import { estadoSchema, idParamSchema } from '../validators/common.validator.js';
 import {
@@ -36,7 +36,7 @@ router.get(
 router.post(
   '/',
   checkPermiso('Productos', 'Crear'),
-  subirImagen,
+  subirImagenes,
   validar(crearProductoSchema),
   productoController.crear
 );
@@ -44,7 +44,7 @@ router.post(
 router.put(
   '/:id',
   checkPermiso('Productos', 'Editar'),
-  subirImagen,
+  subirImagenes,
   validar(idParamSchema, 'params'),
   validar(actualizarProductoSchema),
   productoController.actualizar
