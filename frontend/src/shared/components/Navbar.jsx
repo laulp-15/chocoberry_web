@@ -1,5 +1,5 @@
 // src/shared/components/Navbar.jsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useCart } from '../../features/cart/hooks/UseCart';
 import { useAuth } from '../../features/login/hooks/useAuth';
@@ -83,7 +83,6 @@ export default function Navbar() {
           >
             <i
               className={isDarkMode ? "fa-solid fa-sun" : "fa-solid fa-moon"}
-              style={{ color: isDarkMode ? '#FFB800' : 'var(--texto)' }}
             />
           </button>
 

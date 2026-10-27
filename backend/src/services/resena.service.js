@@ -35,12 +35,14 @@ export async function obtener(id) {
 /**
  * Crea una reseña a nombre del usuario autenticado. No se aceptan nombre,
  * fecha ni estado desde el cliente: esos valores los controla el servidor.
+ * La reseña nace inactiva y queda pendiente de aprobación del administrador.
  */
 export async function crear(datos, usuario) {
   const id = await resenaModel.crear({
     calificacion: datos.calificacion,
     comentario: datos.comentario,
     id_usuario: usuario.id,
+    estado: false,
   });
 
   return serializarResena(await resenaModel.buscarPorId(id));

@@ -99,6 +99,7 @@ export function mapPedidoAdmin(pedido) {
     recipientPhone: pedido.telefonoReceptor ?? "",
     comprobante: pedido.comprobantePago ?? null,
     motivoRechazo: pedido.motivoRechazo ?? "",
+    fechaCancelacion: pedido.fechaCancelacion ?? "",
     instruccionesEntrega: pedido.instruccionesEntrega ?? "",
     instrucciones: pedido.instruccionesEntrega ?? "",
     observacionesEntrega: pedido.observacionesEntrega ?? "",

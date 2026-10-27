@@ -33,6 +33,9 @@ const ESTADO_PENDIENTE = 'Pendiente';
 const ESTADO_RECHAZADO = 'Rechazado';
 const ESTADO_DESPACHADO = 'Despachado';
 const ESTADO_ENTREGADO = 'Entregado';
+const ESTADO_CANCELADO = 'Cancelado';
+
+const VENTANA_REPROGRAMACION_MS = 2 * 24 * 60 * 60 * 1000;
 
 // Reglas de volumen de la tienda. El panel queda exento del tope total para
 // poder registrar los pedidos grandes que llegan por teléfono.
@@ -476,7 +479,71 @@ export async function cambiarEstado(id, nombreEstado) {
   }
 
   const estado = await resolverEstado(destino);
-  await pedidoModel.cambiarEstado(id, estado.id);
+  await pedidoModel.cambiarEstado(id, estado.id, {
+    marcarCancelacion: destino === ESTADO_CANCELADO,
+  });
+  return obtenerPedidoCompleto(id);
+}
+
+function fechaDeValor(valor) {
+  if (!valor) return null;
+  const fecha = valor instanceof Date ? valor : new Date(valor);
+  return Number.isNaN(fecha.getTime()) ? null : fecha;
+}
+
+/**
+ * Reprograma un pedido cancelado dentro de las 48 horas posteriores a la
+ * cancelación. La nueva entrega solo puede ser mañana o pasado mañana y el
+ * pedido vuelve directamente a Despachado.
+ */
+export async function reprogramar(id, fechaEntrega) {
+  const { pedido, estado } = await cargarPedidoYEstado(id);
+
+  if (estado.nombre !== ESTADO_CANCELADO) {
+    throw new ConflictError(
+      `Solo se puede reprogramar un pedido en estado "${ESTADO_CANCELADO}".`
+    );
+  }
+
+  const cancelacion = fechaDeValor(pedido.fecha_cancelacion);
+  if (!cancelacion) {
+    throw new ConflictError(
+      'El pedido no tiene registrada la fecha de cancelación y no se puede reprogramar.'
+    );
+  }
+
+  if (Date.now() - cancelacion.getTime() > VENTANA_REPROGRAMACION_MS) {
+    throw new ConflictError(
+      'El plazo máximo para reprogramar la entrega es de 2 días desde la cancelación.'
+    );
+  }
+
+  const fecha = parseFecha(fechaEntrega);
+  const manana = sumarDias(fechaActualLocal(), 1);
+  const pasadoManana = sumarDias(fechaActualLocal(), 2);
+
+  if (
+    !fecha ||
+    (fecha.getTime() !== manana.getTime() &&
+      fecha.getTime() !== pasadoManana.getTime())
+  ) {
+    throw new UnprocessableEntityError(
+      'La nueva entrega solo puede programarse para mañana o pasado mañana.',
+      [
+        {
+          campo: 'fechaEntrega',
+          mensaje: 'Selecciona mañana o pasado mañana.',
+        },
+      ]
+    );
+  }
+
+  const despachado = await resolverEstado(ESTADO_DESPACHADO);
+  await pedidoModel.reprogramarEntrega(
+    id,
+    normalizarFechaEntrega(fechaEntrega),
+    despachado.id
+  );
   return obtenerPedidoCompleto(id);
 }
 

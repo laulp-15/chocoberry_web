@@ -7,8 +7,16 @@ import OrderDetailContent from "./OrderDetailContent";
  * @param {boolean} props.open
  * @param {() => void} props.onClose
  * @param {object} props.order
+ * @param {(fechaEntrega: string) => Promise<void>} [props.onReprogram]
+ * @param {boolean} [props.reprogramming]
  */
-export default function OrderDetailModal({ open, onClose, order }) {
+export default function OrderDetailModal({
+  open,
+  onClose,
+  order,
+  onReprogram,
+  reprogramming = false,
+}) {
   if (!order) return null;
 
   return (
@@ -18,7 +26,11 @@ export default function OrderDetailModal({ open, onClose, order }) {
       title={`Pedido #${order.id}`}
       maxWidth="md"
     >
-      <OrderDetailContent order={order} />
+      <OrderDetailContent
+        order={order}
+        onReprogram={onReprogram}
+        reprogramming={reprogramming}
+      />
     </Modal>
   );
 }

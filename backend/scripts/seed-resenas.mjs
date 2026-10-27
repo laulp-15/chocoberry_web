@@ -212,6 +212,7 @@ async function main() {
         comentario: definicion.comentario,
         id_usuario: cliente.id,
         fecha,
+        estado: true,
       });
       creadas += 1;
       console.log(
@@ -241,7 +242,7 @@ async function main() {
   console.log(`  Reseñas ya existentes:   ${existentes}`);
   console.log(`  Reseñas en la base:      ${total}`);
   console.log(`  Calificación promedio:   ${promedio ?? '—'}`);
-  console.log('  Las 10 reseñas quedaron activas por defecto.');
+  console.log('  Las 10 reseñas del seed quedaron activas.');
 }
 
 main()

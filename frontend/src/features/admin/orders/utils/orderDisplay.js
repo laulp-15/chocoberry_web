@@ -10,6 +10,17 @@ export function formatDisplayDate(iso) {
   return `${d}/${m}/${y}`;
 }
 
+/** Fecha larga en español: "29 de octubre de 2026". */
+export function formatLongDate(iso) {
+  if (!iso) return "—";
+  const [y, m, d] = String(iso).slice(0, 10).split("-").map(Number);
+  return new Intl.DateTimeFormat("es-CO", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(y, m - 1, d));
+}
+
 export function getMunicipioLabel(municipio) {
   return MUNICIPIOS.find((m) => m.value === municipio)?.label ?? "—";
 }

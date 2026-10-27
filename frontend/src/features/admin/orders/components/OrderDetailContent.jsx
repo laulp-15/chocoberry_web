@@ -1,6 +1,7 @@
 // src/features/admin/orders/components/OrderDetailContent.jsx
 import { useState } from "react";
 import OrderStatusBadge from "./OrderStatusBadge";
+import ReprogramDeliveryControl from "./ReprogramDeliveryControl";
 import ImageLightbox from "../../../../shared/components/ImageLightbox";
 import { formatPrice } from "../../../../shared/utils/formatPrice";
 import {
@@ -17,8 +18,14 @@ import "./OrderDetailContent.css";
  *
  * @param {object} props
  * @param {object} props.order
+ * @param {(fechaEntrega: string) => Promise<void>} [props.onReprogram]
+ * @param {boolean} [props.reprogramming]
  */
-export default function OrderDetailContent({ order }) {
+export default function OrderDetailContent({
+  order,
+  onReprogram,
+  reprogramming = false,
+}) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [evidenceLightboxOpen, setEvidenceLightboxOpen] = useState(false);
 
@@ -52,7 +59,15 @@ export default function OrderDetailContent({ order }) {
         </div>
 
         <div className="order-detail-hero-side">
-          <OrderStatusBadge status={order.estado} />
+          <div className="order-detail-status-block">
+            <OrderStatusBadge status={order.estado} />
+            <ReprogramDeliveryControl
+              key={order.id}
+              order={order}
+              onReprogram={onReprogram}
+              submitting={reprogramming}
+            />
+          </div>
           <div className="order-detail-dates">
             <span className="order-detail-date">
               <i className="fa-solid fa-clock" /> Creación:{" "}

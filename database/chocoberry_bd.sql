@@ -138,6 +138,7 @@ CREATE TABLE pedido (
     telefono_receptor VARCHAR(20) NOT NULL,
     comprobante_pago VARCHAR(255),
     motivo_rechazo VARCHAR(255),
+    fecha_cancelacion DATETIME,
     -- Entregas
     instrucciones_entrega VARCHAR(255),
     observaciones_entrega VARCHAR(255),
@@ -182,7 +183,7 @@ CREATE TABLE resena (
     calificacion INT NOT NULL CHECK (calificacion BETWEEN 1 AND 5),
     comentario VARCHAR(500),
     fecha DATE NOT NULL DEFAULT (CURRENT_DATE),
-    estado BOOLEAN NOT NULL DEFAULT TRUE,
+    estado BOOLEAN NOT NULL DEFAULT FALSE,
     id_usuario INT NOT NULL,
     CONSTRAINT fk_resena_usuario
         FOREIGN KEY (id_usuario) REFERENCES usuario(id)

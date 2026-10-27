@@ -100,11 +100,13 @@ describe('Módulo de reseñas', () => {
     });
     resenaToggleId = toggle.id;
 
-    const desactivar = await auth(
-      request(app).patch(`/api/resenas/${resenaInactivaId}/estado`)
-    ).send({ estado: false });
-    expect(desactivar.status).toBe(200);
-    expect(desactivar.body.data.estado).toBe(false);
+    // La creación nace inactiva; solo la fixture pública se activa a mano.
+    expect(activa.estado).toBe(false);
+    const activar = await auth(
+      request(app).patch(`/api/resenas/${resenaActivaId}/estado`)
+    ).send({ estado: true });
+    expect(activar.status).toBe(200);
+    expect(activar.body.data.estado).toBe(true);
   });
 
   afterAll(async () => {
@@ -155,13 +157,13 @@ describe('Módulo de reseñas', () => {
     expect(res.status).toBe(403);
   });
 
-  it('crea la reseña a nombre del usuario autenticado e ignora nombre, fecha y estado', async () => {
+  it('crea la reseña inactiva a nombre del usuario autenticado e ignora nombre, fecha y estado', async () => {
     const res = await auth(request(app).post('/api/resenas'), tokenCliente).send({
       calificacion: 5,
       comentario: `El servidor decide los campos ${s}.`,
       clientName: 'Nombre Falso',
       fecha: '2000-01-01',
-      estado: false,
+      estado: true,
       tag: 'Compra verificada',
     });
 
@@ -170,9 +172,14 @@ describe('Módulo de reseñas', () => {
 
     expect(res.body.data.cliente).toBe('Cliente Reseñas');
     expect(res.body.data.usuarioId).toBe(clienteId);
-    expect(res.body.data.estado).toBe(true);
+    expect(res.body.data.estado).toBe(false);
     expect(res.body.data.fecha).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(res.body.data.fecha).not.toBe('2000-01-01');
+
+    const publica = await request(app).get('/api/catalogo/resenas');
+    expect(publica.body.data.map((resena) => resena.id)).not.toContain(
+      res.body.data.id
+    );
   });
 
   it('rechaza una calificación fuera de 1 a 5 (422)', async () => {
@@ -251,16 +258,7 @@ describe('Módulo de reseñas', () => {
     expect(inexistente.status).toBe(404);
   });
 
-  it('cambia el estado y la reseña desaparece o reaparece en la vista pública', async () => {
-    const desactivar = await auth(
-      request(app).patch(`/api/resenas/${resenaToggleId}/estado`)
-    ).send({ estado: false });
-    expect(desactivar.status).toBe(200);
-    expect(desactivar.body.data.estado).toBe(false);
-
-    const publicaOculta = await request(app).get('/api/catalogo/resenas');
-    expect(publicaOculta.body.data.map((resena) => resena.id)).not.toContain(resenaToggleId);
-
+  it('cambia el estado y la reseña reaparece o desaparece de la vista pública', async () => {
     const activar = await auth(
       request(app).patch(`/api/resenas/${resenaToggleId}/estado`)
     ).send({ estado: true });
@@ -269,6 +267,15 @@ describe('Módulo de reseñas', () => {
 
     const publicaVisible = await request(app).get('/api/catalogo/resenas');
     expect(publicaVisible.body.data.map((resena) => resena.id)).toContain(resenaToggleId);
+
+    const desactivar = await auth(
+      request(app).patch(`/api/resenas/${resenaToggleId}/estado`)
+    ).send({ estado: false });
+    expect(desactivar.status).toBe(200);
+    expect(desactivar.body.data.estado).toBe(false);
+
+    const publicaOculta = await request(app).get('/api/catalogo/resenas');
+    expect(publicaOculta.body.data.map((resena) => resena.id)).not.toContain(resenaToggleId);
   });
 
   it('un cliente no puede cambiar el estado de una reseña (403)', async () => {

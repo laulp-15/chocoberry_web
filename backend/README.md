@@ -47,6 +47,28 @@ nuevas creadas desde `chocoberry_bd.sql` ya incluyen la nueva tabla. Los
 productos heredados que queden sin ninguna imagen deben editarse y recibir al
 menos una.
 
+Los pedidos ahora guardan `fecha_cancelacion` para limitar la reprogramación de
+la entrega a las 48 horas siguientes. Si tu base ya estaba creada antes de este
+cambio, ejecuta:
+
+```bash
+mysql -u TU_USUARIO -p chocoberry < ../database/migrations/003_pedido_fecha_cancelacion.sql
+```
+
+La migración es repetible y rellena los pedidos cancelados existentes usando su
+fecha de creación como aproximación conservadora. Las bases nuevas ya incluyen
+la columna.
+
+Las reseñas nuevas nacen inactivas para que un administrador las revise antes de
+publicarlas. Si tu base ya estaba creada, ejecuta:
+
+```bash
+mysql -u TU_USUARIO -p chocoberry < ../database/migrations/004_resena_estado_default_false.sql
+```
+
+La migración solo cambia el default de `resena.estado`; no modifica el estado de
+las reseñas existentes. Las bases nuevas ya incluyen este comportamiento.
+
 ## Instalación
 
 ```bash
@@ -280,6 +302,7 @@ Base: `/api`
 | POST | `/pedidos` | Crea un pedido con su comprobante (multipart) | Pedidos · Crear |
 | PUT | `/pedidos/:id` | Edita cabecera y líneas de un pedido Pendiente | Pedidos · Editar |
 | PATCH | `/pedidos/:id/estado` | Cambia el estado (`{ estado }`) | Pedidos · Cambiar estado |
+| PATCH | `/pedidos/:id/reprogramar` | Reprog. entrega cancelada (`{ fechaEntrega }`) | Pedidos · Cambiar estado |
 | PATCH | `/pedidos/:id/rechazar` | Rechaza con motivo (`{ motivo }`) | Pedidos · Cambiar estado |
 | PATCH | `/pedidos/:id/entrega` | Evidencia y observaciones del repartidor | Pedidos · Editar + solo Repartidor |
 | DELETE | `/pedidos/:id` | Elimina el pedido y sus líneas | Pedidos · Eliminar |
@@ -296,6 +319,11 @@ Base: `/api`
 > finales** (no admiten más cambios de estado). El rechazo solo aplica desde
 > `Pendiente` y exige `motivo`; para rechazar se usa su endpoint, no el de
 > cambio de estado.
+
+> **Reprogramación:** solo desde `Cancelado`, dentro de las 48 horas posteriores
+> a `fecha_cancelacion` y con una nueva fecha de entrega igual a mañana o pasado
+> mañana. El pedido pasa directamente a `Despachado` y no se modifica la tabla
+> general de transiciones.
 
 > **Edición:** solo se permite mientras el pedido está en `Pendiente`; después
 > responde `409`. Si se envía `lineas`, se interpreta como la lista completa
@@ -369,7 +397,8 @@ Base: `/api`
 > sola por persona.
 
 > **El servidor controla los campos sensibles:** `id_usuario` sale del token de
-> sesión, `fecha` la define la BD y `estado` nace activo. Si el cliente envía
+> sesión, `fecha` la define la BD y `estado` nace inactivo. La reseña solo se
+> publica cuando un administrador la activa desde el panel. Si el cliente envía
 > `clientName`, `fecha` o `estado`, se ignoran. El nombre que se muestra es el
 > del usuario autenticado.
 
