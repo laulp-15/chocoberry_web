@@ -34,7 +34,10 @@ export function toCrearFrostingPayload(datos = {}) {
 }
 
 export function toActualizarFrostingPayload(datos = {}) {
-  return toCrearFrostingPayload(datos);
+  return {
+    nombre: String(datos.nombre ?? '').trim(),
+    codigoHex: String(datos.hex ?? '').trim().toUpperCase(),
+  };
 }
 
 /** Un 409 significa nombre repetido: se marca para mostrarlo bajo el campo. */

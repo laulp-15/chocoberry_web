@@ -42,7 +42,6 @@ export async function actualizar(id, datos) {
 
   const campos = {};
   if (datos.nombre !== undefined) campos.nombre = datos.nombre;
-  if (datos.estado !== undefined) campos.estado = datos.estado ? 1 : 0;
 
   return serializarCategoria(await categoriaModel.actualizar(id, campos));
 }

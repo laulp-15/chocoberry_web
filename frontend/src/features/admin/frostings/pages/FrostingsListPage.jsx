@@ -6,10 +6,16 @@ import DataTable from '../../../../shared/components/DataTable';
 import ConfirmModal from '../../../../shared/components/ConfirmModal';
 import FormSelect from '../../../../shared/components/FormSelect';
 import StatusToggle from '../../../../shared/components/StatusToggle';
+import { usePermissions } from '../../../../shared/hooks/usePermissions';
 import OrderNotification from '../../orders/components/OrderNotification';
 import '../../../../shared/css/adminCrud.css';
 
 export default function FrostingsListPage() {
+  const { can } = usePermissions();
+  const canCreate = can('Productos', 'Crear');
+  const canEdit = can('Productos', 'Editar');
+  const canDelete = can('Productos', 'Eliminar');
+  const canChangeStatus = can('Productos', 'Cambiar estado');
   const [notification, setNotification] = useState(null);
   const {
     statusFilter,
@@ -57,6 +63,7 @@ export default function FrostingsListPage() {
     } catch (err) {
       setNotification({
         message: err?.message || 'No se pudo eliminar el glaseado.',
+        variant: 'error',
       });
     }
   };
@@ -89,6 +96,7 @@ export default function FrostingsListPage() {
         <StatusToggle
           checked={frosting.estado === 'Activo'}
           onChange={() => handleToggleStatus(frosting.id)}
+          disabled={!canChangeStatus}
         />
       ),
     },
@@ -107,23 +115,27 @@ export default function FrostingsListPage() {
             <i className="fa-solid fa-eye" />
           </button>
 
-          <button
-            type="button"
-            onClick={() => handleOpenEdit(frosting)}
-            className="table-action-btn"
-            title="Editar"
-          >
-            <i className="fa-solid fa-pen" />
-          </button>
+          {canEdit && (
+            <button
+              type="button"
+              onClick={() => handleOpenEdit(frosting)}
+              className="table-action-btn"
+              title="Editar"
+            >
+              <i className="fa-solid fa-pen" />
+            </button>
+          )}
 
-          <button
-            type="button"
-            onClick={() => handleOpenDelete(frosting)}
-            className="table-action-btn danger"
-            title="Eliminar"
-          >
-            <i className="fa-solid fa-trash" />
-          </button>
+          {canDelete && (
+            <button
+              type="button"
+              onClick={() => handleOpenDelete(frosting)}
+              className="table-action-btn danger"
+              title="Eliminar"
+            >
+              <i className="fa-solid fa-trash" />
+            </button>
+          )}
         </div>
       ),
     },
@@ -134,8 +146,8 @@ export default function FrostingsListPage() {
       <DataTable
         title="Glaseados"
         description="Administra los colores de glaseado disponibles para los productos."
-        createLabel="Crear glaseado"
-        onCreate={handleOpenCreate}
+        createLabel={canCreate ? 'Crear glaseado' : undefined}
+        onCreate={canCreate ? handleOpenCreate : undefined}
         columns={columns}
         data={filteredFrostings}
         searchPlaceholder="Buscar glaseado..."
@@ -199,6 +211,7 @@ export default function FrostingsListPage() {
         open={Boolean(notification)}
         onClose={() => setNotification(null)}
         message={notification?.message}
+        variant={notification?.variant}
       />
     </div>
   );

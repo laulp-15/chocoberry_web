@@ -13,7 +13,10 @@ const CLAVE_PRUEBA = 'Prueba123!';
 describe('Módulo de maestros (municipios y glaseados)', () => {
   let tokenAdmin;
   let tokenCliente;
+  let tokenAuditor;
   let clienteId;
+  let auditorId;
+  let rolAuditorId;
 
   let municipioId;
   let glaseadoId;
@@ -49,12 +52,41 @@ describe('Módulo de maestros (municipios y glaseados)', () => {
       .send({ correo, contrasena: CLAVE_PRUEBA });
     expect(loginCliente.status).toBe(200);
     tokenCliente = loginCliente.body.data.token;
+
+    // Rol personalizado con Productos · Ver y Productos · Cambiar estado.
+    const rol = await auth(request(app).post('/api/roles')).send({
+      nombre: `Auditor maestros ${s}`,
+      permisos: [19, 23],
+    });
+    expect(rol.status).toBe(201);
+    rolAuditorId = rol.body.data.id;
+
+    const correoAuditor = `auditor.maestros.${s}@chocoberry.com`;
+    const auditor = await auth(request(app).post('/api/usuarios')).send({
+      nombres: 'Auditor',
+      apellidos: 'Maestros',
+      tipoDocumento: 'CC',
+      numeroDocumento: `7${s}99`,
+      correo: correoAuditor,
+      contrasena: CLAVE_PRUEBA,
+      id_rol: rolAuditorId,
+    });
+    expect(auditor.status).toBe(201);
+    auditorId = auditor.body.data.id;
+
+    const loginAuditor = await request(app)
+      .post('/api/auth/login')
+      .send({ correo: correoAuditor, contrasena: CLAVE_PRUEBA });
+    expect(loginAuditor.status).toBe(200);
+    tokenAuditor = loginAuditor.body.data.token;
   });
 
   afterAll(async () => {
     if (municipioId) await auth(request(app).delete(`/api/municipios/${municipioId}`));
     if (glaseadoId) await auth(request(app).delete(`/api/glaseados/${glaseadoId}`));
     if (clienteId) await auth(request(app).delete(`/api/usuarios/${clienteId}`));
+    if (auditorId) await auth(request(app).delete(`/api/usuarios/${auditorId}`));
+    if (rolAuditorId) await auth(request(app).delete(`/api/roles/${rolAuditorId}`));
   });
 
   describe('Municipios', () => {
@@ -160,10 +192,45 @@ describe('Módulo de maestros (municipios y glaseados)', () => {
       expect(cliente.body.data.every((m) => m.estado === true)).toBe(true);
     });
 
+    it('un rol personalizado con Productos · Cambiar estado sí ve los inactivos', async () => {
+      const lista = await auth(
+        request(app).get('/api/municipios?estado=false'),
+        tokenAuditor
+      );
+      expect(lista.status).toBe(200);
+      expect(lista.body.data.some((m) => m.id === municipioId)).toBe(true);
+
+      const detalle = await auth(
+        request(app).get(`/api/municipios/${municipioId}`),
+        tokenAuditor
+      );
+      expect(detalle.status).toBe(200);
+      expect(detalle.body.data.estado).toBe(false);
+    });
+
     it('el catálogo público no incluye municipios inactivos', async () => {
       const res = await request(app).get('/api/catalogo/municipios');
       expect(res.status).toBe(200);
       expect(res.body.data.some((m) => m.id === municipioId)).toBe(false);
+    });
+
+    it('un cliente no puede obtener un municipio inactivo por id', async () => {
+      const res = await auth(
+        request(app).get(`/api/municipios/${municipioId}`),
+        tokenCliente
+      );
+      expect(res.status).toBe(404);
+    });
+
+    it('PUT /api/municipios/:id no cambia el estado', async () => {
+      const res = await auth(request(app).put(`/api/municipios/${municipioId}`)).send({
+        precioDomicilio: 13000,
+        estado: true,
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.precioDomicilio).toBe(13000);
+      expect(res.body.data.estado).toBe(false);
     });
 
     it('DELETE /api/municipios/:id elimina un municipio sin pedidos', async () => {
@@ -254,6 +321,25 @@ describe('Módulo de maestros (municipios y glaseados)', () => {
       const res = await request(app).get('/api/catalogo/glaseados');
       expect(res.status).toBe(200);
       expect(res.body.data.some((c) => c.id === glaseadoId)).toBe(false);
+    });
+
+    it('un cliente no puede obtener un glaseado inactivo por id', async () => {
+      const res = await auth(
+        request(app).get(`/api/glaseados/${glaseadoId}`),
+        tokenCliente
+      );
+      expect(res.status).toBe(404);
+    });
+
+    it('PUT /api/glaseados/:id no cambia el estado', async () => {
+      const res = await auth(request(app).put(`/api/glaseados/${glaseadoId}`)).send({
+        nombre: `${nombreGlaseado} Editado`,
+        estado: true,
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.nombre).toBe(`${nombreGlaseado} Editado`);
+      expect(res.body.data.estado).toBe(false);
     });
 
     it('DELETE /api/glaseados/:id elimina un glaseado sin pedidos', async () => {

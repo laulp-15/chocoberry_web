@@ -64,7 +64,6 @@ export async function actualizar(id, datos) {
 
   const precio = resolverPrecio(datos);
   if (precio !== undefined) campos.precio_domicilio = precio;
-  if (datos.estado !== undefined) campos.estado = datos.estado ? 1 : 0;
 
   return serializarMunicipio(await municipioModel.actualizar(id, campos));
 }

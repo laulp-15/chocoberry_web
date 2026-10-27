@@ -1,7 +1,7 @@
 // src/features/admin/users/pages/UserDetailPage.jsx
-import React from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import useUsersAdmin from "../hooks/useUsersAdmin";
+import useRoleOptions from "../hooks/useRoleOptions";
 import RoleBadge from "../components/RoleBadge";
 import { docTypeLabel } from "../../../../shared/utils/documentTypes";
 import "./UserDetailPage.css";
@@ -19,6 +19,7 @@ export default function UserDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { loading, error, getUserById } = useUsersAdmin();
+  const roleOptions = useRoleOptions();
   const user = getUserById(id);
 
   // La lista se carga al entrar a la página (también por enlace directo),
@@ -171,7 +172,7 @@ export default function UserDetailPage() {
                 <div className="user-detail-field-body">
                   <dt>Rol de usuario</dt>
                   <dd>
-                    <RoleBadge role={user.role} />
+                    <RoleBadge role={user.role} options={roleOptions} />
                   </dd>
                 </div>
               </div>

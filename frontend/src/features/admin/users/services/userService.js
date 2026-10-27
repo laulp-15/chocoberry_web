@@ -30,6 +30,19 @@ export async function listar(filtros = {}) {
   return mapUsuariosAdmin(usuarios);
 }
 
+/**
+ * GET /roles/opciones -> catálogo mínimo de roles para los selectores.
+ * Está protegido con Usuarios · Ver, no con Roles · Ver.
+ */
+export async function listarOpcionesRoles() {
+  const roles = await api.get("/roles/opciones");
+  return roles.map((rol) => ({
+    value: rol.slug,
+    label: rol.nombre,
+    id: rol.id,
+  }));
+}
+
 /** GET /usuarios/:id -> un usuario. */
 export async function obtener(id) {
   const usuario = await api.get(`/usuarios/${id}`);

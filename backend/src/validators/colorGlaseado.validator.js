@@ -48,10 +48,10 @@ export const crearColorGlaseadoSchema = z
   );
 
 // Al actualizar, todos los campos son opcionales (actualización parcial).
+// El estado se cambia únicamente con PATCH /glaseados/:id/estado.
 export const actualizarColorGlaseadoSchema = z.object({
   nombre: nombreField.optional(),
   codigoHex: hexField,
   codigo_hex: hexField,
   hex: hexField,
-  estado: booleanoFlexible.optional(),
 });

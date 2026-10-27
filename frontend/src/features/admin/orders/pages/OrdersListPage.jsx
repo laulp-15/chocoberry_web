@@ -7,6 +7,7 @@ import OrderFormModal from "../components/OrderFormModal";
 import OrderDetailModal from "../components/OrderDetailModal";
 import RejectReasonModal from "../components/RejectReasonModal";
 import OrderNotification from "../components/OrderNotification";
+import { usePermissions } from "../../../../shared/hooks/usePermissions";
 import useOrders from "../hooks/useOrders";
 import useOrderFormOptions from "../hooks/useOrderFormOptions";
 import {
@@ -26,6 +27,11 @@ const EQUAL_COLUMN_STYLE = {
 };
 
 export default function OrdersListPage() {
+  const { can } = usePermissions();
+  const canCreate = can("Pedidos", "Crear");
+  const canEditOrder = can("Pedidos", "Editar");
+  const canChangeStatus = can("Pedidos", "Cambiar estado");
+
   const {
     orders,
     loading,
@@ -71,17 +77,18 @@ export default function OrdersListPage() {
   // El estado final bloquea el selector; la edición solo está permitida
   // mientras el pedido siga pendiente (todavía no es una venta).
   const isLocked = (order) => isFinalStatus(order.estado);
-  const canEdit = (order) => order.estado === "pendiente";
-  const canReject = (order) => order.estado === "pendiente";
+  const isEditable = (order) => canEditOrder && order.estado === "pendiente";
+  const isRejectable = (order) => canChangeStatus && order.estado === "pendiente";
 
   const handleCreate = () => {
+    if (!canCreate) return;
     reloadOptions();
     setEditingOrder(null);
     setFormOpen(true);
   };
 
   const handleEdit = (order) => {
-    if (!canEdit(order)) return;
+    if (!isEditable(order)) return;
     reloadOptions();
     setEditingOrder(order);
     setFormOpen(true);
@@ -106,8 +113,10 @@ export default function OrdersListPage() {
   // Cambio de estado desde el desplegable. "Rechazado" no se aplica directo:
   // primero se pide el motivo (mismo flujo que el icono "Rechazar pedido").
   const handleStatusChange = async (order, newStatus) => {
+    if (!canChangeStatus) return;
+
     if (newStatus === "rechazado") {
-      if (!canReject(order)) return;
+      if (!isRejectable(order)) return;
       setRejectError("");
       setRejectingOrder(order);
       return;
@@ -127,7 +136,7 @@ export default function OrdersListPage() {
   };
 
   const handleSubmitReject = async (reason) => {
-    if (!rejectingOrder) return;
+    if (!canChangeStatus || !rejectingOrder) return;
 
     setRejectError("");
     try {
@@ -179,13 +188,15 @@ export default function OrdersListPage() {
           <OrderStatusSelector
             status={row.estado}
             onChange={(newStatus) => handleStatusChange(row, newStatus)}
-            disabled={isLocked(row) || saving}
+            disabled={!canChangeStatus || isLocked(row) || saving}
             lockedReason={
-              saving
-                ? "Actualizando estado..."
-                : "Este pedido está en un estado final"
+              !canChangeStatus
+                ? "No tienes permiso para cambiar el estado."
+                : saving
+                  ? "Actualizando estado..."
+                  : "Este pedido está en un estado final"
             }
-            canReject={canReject(row)}
+            canReject={isRejectable(row)}
           />
         );
       },
@@ -200,9 +211,9 @@ export default function OrdersListPage() {
         paddingRight: "2rem",
       },
       render: (row) => {
-        const editable = canEdit(row);
+        const editable = isEditable(row);
         const saving = String(statusSavingId) === String(row.id);
-        const rejectable = canReject(row);
+        const rejectable = isRejectable(row);
 
         return (
           <div className="table-actions">
@@ -214,36 +225,40 @@ export default function OrdersListPage() {
             >
               <i className="fa-solid fa-eye" />
             </button>
-            <button
-              type="button"
-              className="table-action-btn"
-              title={
-                editable
-                  ? "Editar pedido"
-                  : saving
-                    ? "Actualizando estado..."
-                    : "Solo se puede editar un pedido pendiente"
-              }
-              disabled={!editable || saving}
-              style={{ opacity: editable && !saving ? 1 : 0.35 }}
-              onClick={() => handleEdit(row)}
-            >
-              <i className="fa-solid fa-pen" />
-            </button>
-            <button
-              type="button"
-              className="table-action-btn danger"
-              title={
-                rejectable
-                  ? "Rechazar pedido"
-                  : "Solo se puede rechazar un pedido pendiente"
-              }
-              disabled={!rejectable}
-              style={{ opacity: rejectable ? 1 : 0.35 }}
-              onClick={() => handleStatusChange(row, "rechazado")}
-            >
-              <i className="fa-solid fa-circle-xmark" />
-            </button>
+            {canEditOrder && (
+              <button
+                type="button"
+                className="table-action-btn"
+                title={
+                  editable
+                    ? "Editar pedido"
+                    : saving
+                      ? "Actualizando estado..."
+                      : "Solo se puede editar un pedido pendiente"
+                }
+                disabled={!editable || saving}
+                style={{ opacity: editable && !saving ? 1 : 0.35 }}
+                onClick={() => handleEdit(row)}
+              >
+                <i className="fa-solid fa-pen" />
+              </button>
+            )}
+            {canChangeStatus && (
+              <button
+                type="button"
+                className="table-action-btn danger"
+                title={
+                  rejectable
+                    ? "Rechazar pedido"
+                    : "Solo se puede rechazar un pedido pendiente"
+                }
+                disabled={!rejectable}
+                style={{ opacity: rejectable ? 1 : 0.35 }}
+                onClick={() => handleStatusChange(row, "rechazado")}
+              >
+                <i className="fa-solid fa-circle-xmark" />
+              </button>
+            )}
           </div>
         );
       },
@@ -255,8 +270,8 @@ export default function OrdersListPage() {
       <DataTable
         title="Pedidos"
         description="Consulta y administra los pedidos reales del negocio."
-        createLabel="Crear pedido"
-        onCreate={handleCreate}
+        createLabel={canCreate ? "Crear pedido" : undefined}
+        onCreate={canCreate ? handleCreate : undefined}
         columns={columns}
         data={filtered}
         tableLayout="fixed"

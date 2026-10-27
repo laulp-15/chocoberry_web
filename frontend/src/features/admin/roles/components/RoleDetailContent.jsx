@@ -1,5 +1,4 @@
 // src/features/admin/roles/components/RoleDetailContent.jsx
-import React from "react";
 import { groupPermissionsByModule } from "../data/Permissions";
 import "./RoleDetailContent.css";
 
@@ -22,9 +21,6 @@ export default function RoleDetailContent({ role, permissions }) {
       <div className="detail-section role-detail-summary">
         <div className="role-detail-summary-head">
           <h3 className="role-detail-name">{role.name}</h3>
-          <span className={`role-detail-status ${role.active ? "active" : "inactive"}`}>
-            <i className="fa-solid fa-circle" /> {role.active ? "Activo" : "Inactivo"}
-          </span>
         </div>
 
         <div className="role-detail-stats">

@@ -27,6 +27,12 @@ export async function accionesPorRol(idRol) {
   return datos;
 }
 
+/** Indica si un rol tiene concedido un permiso (módulo + acción). */
+export async function tienePermiso(idRol, modulo, accion) {
+  const permisos = await accionesPorRol(idRol);
+  return permisos.some((p) => p.modulo === modulo && p.accion === accion);
+}
+
 /** Invalida la caché de un rol, o toda la caché si no se indica un rol. */
 export function invalidarCachePermisos(idRol) {
   if (idRol === undefined) cache.clear();

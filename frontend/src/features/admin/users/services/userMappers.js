@@ -58,7 +58,6 @@ function camposBase(datos = {}) {
     direccion: String(datos.address ?? "").trim(),
     barrio: String(datos.neighborhood ?? "").trim(),
     rol: datos.role,
-    estado: datos.active !== false,
   };
 }
 
@@ -66,6 +65,7 @@ function camposBase(datos = {}) {
 export function toCrearUsuarioPayload(datos = {}) {
   return {
     ...camposBase(datos),
+    estado: datos.active !== false,
     contrasena: datos.password,
   };
 }

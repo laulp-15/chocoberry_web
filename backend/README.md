@@ -181,7 +181,7 @@ Base: `/api`
 | GET | `/usuarios` | Lista con filtros `nombre`, `correo`, `rol`, `id_rol`, `estado` | Usuarios · Ver |
 | GET | `/usuarios/:id` | Detalle de un usuario | Usuarios · Ver |
 | POST | `/usuarios` | Crea usuario/empleado | Usuarios · Crear |
-| PUT | `/usuarios/:id` | Actualiza un usuario | Usuarios · Editar |
+| PUT | `/usuarios/:id` | Actualiza datos del usuario (no el estado) | Usuarios · Editar |
 | PATCH | `/usuarios/:id/estado` | Activa/desactiva (cuerpo `{ "estado": true }`) | Usuarios · Cambiar estado |
 | DELETE | `/usuarios/:id` | Elimina (bloqueado si tiene pedidos) | Usuarios · Eliminar |
 
@@ -195,7 +195,7 @@ Base: `/api`
 | GET | `/categorias` | Lista con filtros `nombre`, `estado` | Categorías · Ver |
 | GET | `/categorias/:id` | Detalle de una categoría | Categorías · Ver |
 | POST | `/categorias` | Crea una categoría (`{ nombre, estado? }`) | Categorías · Crear |
-| PUT | `/categorias/:id` | Actualiza una categoría | Categorías · Editar |
+| PUT | `/categorias/:id` | Actualiza el nombre (no el estado) | Categorías · Editar |
 | PATCH | `/categorias/:id/estado` | Activa/desactiva (`{ estado: true }`) | Categorías · Cambiar estado |
 | DELETE | `/categorias/:id` | Elimina (bloqueado con `409` si tiene productos) | Categorías · Eliminar |
 
@@ -206,7 +206,7 @@ Base: `/api`
 | GET | `/productos` | Lista con filtros `nombre`, `idCategoria`/`id_categoria`, `categoria`, `estado` | Productos · Ver |
 | GET | `/productos/:id` | Detalle de un producto | Productos · Ver |
 | POST | `/productos` | Crea un producto (ver nota de imágenes) | Productos · Crear |
-| PUT | `/productos/:id` | Actualiza un producto | Productos · Editar |
+| PUT | `/productos/:id` | Actualiza un producto (no el estado) | Productos · Editar |
 | PATCH | `/productos/:id/estado` | Activa/desactiva (`{ estado: true }`) | Productos · Cambiar estado |
 | DELETE | `/productos/:id` | Elimina (bloqueado con `409` si está en pedidos) | Productos · Eliminar |
 
@@ -235,7 +235,7 @@ Base: `/api`
 | GET | `/presentaciones` | Lista con filtros `cantidadFresas`, `estado` | Productos · Ver |
 | GET | `/presentaciones/:id` | Detalle de una presentación | Productos · Ver |
 | POST | `/presentaciones` | Crea (`{ cantidadFresas, precio, estado? }`) | Productos · Crear |
-| PUT | `/presentaciones/:id` | Actualiza una presentación | Productos · Editar |
+| PUT | `/presentaciones/:id` | Actualiza cantidad y precio (no el estado) | Productos · Editar |
 | PATCH | `/presentaciones/:id/estado` | Activa/desactiva (`{ estado: true }`) | Productos · Cambiar estado |
 | DELETE | `/presentaciones/:id` | Elimina (bloqueado con `409` si está en pedidos) | Productos · Eliminar |
 
@@ -423,13 +423,13 @@ Base: `/api`
 | GET | `/municipios` | Lista con filtros `nombre`, `estado` | Productos · Ver |
 | GET | `/municipios/:id` | Detalle de un municipio | Productos · Ver |
 | POST | `/municipios` | Crea (`{ nombre, precioDomicilio }` o alias `costoEnvio`) | Productos · Crear |
-| PUT | `/municipios/:id` | Actualiza nombre, precio y/o estado | Productos · Editar |
+| PUT | `/municipios/:id` | Actualiza nombre y precio (no el estado) | Productos · Editar |
 | PATCH | `/municipios/:id/estado` | Activa/desactiva (`{ estado: true }`) | Productos · Cambiar estado |
 | DELETE | `/municipios/:id` | Elimina (bloqueado con `409` si tiene pedidos) | Productos · Eliminar |
 | GET | `/glaseados` | Lista con filtros `nombre`, `estado` | Productos · Ver |
 | GET | `/glaseados/:id` | Detalle de un glaseado | Productos · Ver |
 | POST | `/glaseados` | Crea (`{ nombre, codigoHex }` o alias `hex`) | Productos · Crear |
-| PUT | `/glaseados/:id` | Actualiza nombre, color y/o estado | Productos · Editar |
+| PUT | `/glaseados/:id` | Actualiza nombre y color (no el estado) | Productos · Editar |
 | PATCH | `/glaseados/:id/estado` | Activa/desactiva (`{ estado: true }`) | Productos · Cambiar estado |
 | DELETE | `/glaseados/:id` | Elimina (bloqueado con `409` si está en pedidos) | Productos · Eliminar |
 
@@ -437,6 +437,10 @@ Base: `/api`
 > estas rutas reutilizan los permisos del módulo **Productos**, igual que
 > Presentaciones. La tienda los consulta sin sesión en
 > `/catalogo/municipios` y `/catalogo/glaseados` (solo activos).
+
+> **Estado:** solo se modifica con `PATCH .../estado`; los `PUT` ignoran el
+> campo `estado`. Sin `Productos · Cambiar estado`, el listado y el detalle por
+> id de municipios y glaseados devuelven únicamente registros activos.
 
 > **Reglas de negocio:**
 > - El nombre de municipios y glaseados es único sin distinguir

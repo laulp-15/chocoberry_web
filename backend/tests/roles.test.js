@@ -46,6 +46,17 @@ describe('Módulo de roles y permisos', () => {
     expect(res.body.data.every((rol) => /repartidor/i.test(rol.nombre))).toBe(true);
   });
 
+  it('GET /api/roles/opciones devuelve el catálogo mínimo de roles', async () => {
+    const res = await auth(request(app).get('/api/roles/opciones'));
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 1, nombre: 'Administrador', slug: 'administrador' }),
+      ])
+    );
+  });
+
   it('GET /api/roles/:id inexistente devuelve 404', async () => {
     const res = await auth(request(app).get('/api/roles/999999'));
     expect(res.status).toBe(404);

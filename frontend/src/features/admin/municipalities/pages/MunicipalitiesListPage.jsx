@@ -6,11 +6,17 @@ import DataTable from '../../../../shared/components/DataTable';
 import ConfirmModal from '../../../../shared/components/ConfirmModal';
 import FormSelect from '../../../../shared/components/FormSelect';
 import StatusToggle from '../../../../shared/components/StatusToggle';
+import { usePermissions } from '../../../../shared/hooks/usePermissions';
 import OrderNotification from '../../orders/components/OrderNotification';
 import { formatPrice } from '../../../../shared/utils/formatPrice';
 import '../../../../shared/css/adminCrud.css';
 
 export default function MunicipalitiesListPage() {
+  const { can } = usePermissions();
+  const canCreate = can('Productos', 'Crear');
+  const canEdit = can('Productos', 'Editar');
+  const canDelete = can('Productos', 'Eliminar');
+  const canChangeStatus = can('Productos', 'Cambiar estado');
   const [notification, setNotification] = useState(null);
   const {
     statusFilter,
@@ -58,6 +64,7 @@ export default function MunicipalitiesListPage() {
     } catch (err) {
       setNotification({
         message: err?.message || 'No se pudo eliminar el municipio.',
+        variant: 'error',
       });
     }
   };
@@ -89,6 +96,7 @@ export default function MunicipalitiesListPage() {
         <StatusToggle
           checked={municipality.estado === 'Activo'}
           onChange={() => handleToggleStatus(municipality.id)}
+          disabled={!canChangeStatus}
         />
       ),
     },
@@ -107,23 +115,27 @@ export default function MunicipalitiesListPage() {
             <i className="fa-solid fa-eye" />
           </button>
 
-          <button
-            type="button"
-            onClick={() => handleOpenEdit(municipality)}
-            className="table-action-btn"
-            title="Editar"
-          >
-            <i className="fa-solid fa-pen" />
-          </button>
+          {canEdit && (
+            <button
+              type="button"
+              onClick={() => handleOpenEdit(municipality)}
+              className="table-action-btn"
+              title="Editar"
+            >
+              <i className="fa-solid fa-pen" />
+            </button>
+          )}
 
-          <button
-            type="button"
-            onClick={() => handleOpenDelete(municipality)}
-            className="table-action-btn danger"
-            title="Eliminar"
-          >
-            <i className="fa-solid fa-trash" />
-          </button>
+          {canDelete && (
+            <button
+              type="button"
+              onClick={() => handleOpenDelete(municipality)}
+              className="table-action-btn danger"
+              title="Eliminar"
+            >
+              <i className="fa-solid fa-trash" />
+            </button>
+          )}
         </div>
       ),
     },
@@ -134,8 +146,8 @@ export default function MunicipalitiesListPage() {
       <DataTable
         title="Municipios"
         description="Administra los municipios de entrega y el costo de envío de cada uno."
-        createLabel="Crear municipio"
-        onCreate={handleOpenCreate}
+        createLabel={canCreate ? 'Crear municipio' : undefined}
+        onCreate={canCreate ? handleOpenCreate : undefined}
         columns={columns}
         data={filteredMunicipalities}
         searchPlaceholder="Buscar municipio..."
@@ -201,6 +213,7 @@ export default function MunicipalitiesListPage() {
         open={Boolean(notification)}
         onClose={() => setNotification(null)}
         message={notification?.message}
+        variant={notification?.variant}
       />
     </div>
   );
