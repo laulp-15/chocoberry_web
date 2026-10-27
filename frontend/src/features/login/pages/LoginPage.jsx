@@ -1,6 +1,6 @@
 // src/features/login/pages/LoginPage.jsx
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   Link,
@@ -12,6 +12,7 @@ import AuthLayout from "../components/AuthLayout";
 import AuthInput from "../components/AuthInput";
 import GoogleButton from "../components/GoogleButton";
 import Navbar from "../../../shared/components/Navbar";
+import { firstAllowedAdminPath } from "../../../shared/permissions/panelPermissions";
 
 import { useAuth } from "../hooks/useAuth";
 
@@ -138,15 +139,13 @@ export default function LoginPage() {
       });
 
       const userRole = sessionUser?.role || sessionUser?.rol || sessionUser?.tipo;
-      
+
       let redirectTo = location.state?.from;
 
       if (!redirectTo) {
-        if (email === "admin@chocoberry.com" || userRole === "administrador" || userRole === "admin") {
-          redirectTo = "/admin";
-        } else {
-          redirectTo = defaultRouteForRole(userRole);
-        }
+        redirectTo =
+          firstAllowedAdminPath(sessionUser?.permissions) ||
+          defaultRouteForRole(userRole);
       }
 
       navigate(redirectTo, {
@@ -338,17 +337,18 @@ export default function LoginPage() {
 }
 
 /**
- * Ruta inicial según el rol.
+ * Ruta inicial de respaldo cuando el rol no tiene acceso al panel
+ * (sin Dashboard · Ver). Los roles con panel usan firstAllowedAdminPath.
  */
 function defaultRouteForRole(role) {
   const normalizedRole = role ? String(role).trim().toLowerCase() : "";
 
   if (normalizedRole === "administrador" || normalizedRole === "admin") {
-    return "/admin";
+    return "/productos";
   }
 
   if (normalizedRole === "repartidor" || normalizedRole === "delivery") {
-    return "/admin/pedidos";
+    return "/users/orders";
   }
 
   return "/users/orders";

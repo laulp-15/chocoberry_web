@@ -49,7 +49,6 @@ export async function actualizar(id, datos) {
   const campos = {};
   if (datos.cantidadFresas !== undefined) campos.cantidad_fresas = datos.cantidadFresas;
   if (datos.precio !== undefined) campos.precio = datos.precio;
-  if (datos.estado !== undefined) campos.estado = datos.estado ? 1 : 0;
 
   return serializarPresentacion(await presentacionModel.actualizar(id, campos));
 }

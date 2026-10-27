@@ -35,8 +35,8 @@ export const crearPresentacionSchema = z.object({
 });
 
 // Al actualizar, todos los campos son opcionales (actualización parcial).
+// El estado se cambia únicamente con PATCH /presentaciones/:id/estado.
 export const actualizarPresentacionSchema = z.object({
   cantidadFresas: cantidadFresasField.optional(),
   precio: precioField.optional(),
-  estado: booleanoFlexible.optional(),
 });

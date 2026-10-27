@@ -9,6 +9,11 @@ export const listar = asyncHandler(async (req, res) => {
   return sendSuccess(res, roles, 'Roles obtenidos exitosamente.');
 });
 
+export const opciones = asyncHandler(async (req, res) => {
+  const roles = await rolService.listarOpciones();
+  return sendSuccess(res, roles, 'Opciones de roles obtenidas exitosamente.');
+});
+
 export const obtener = asyncHandler(async (req, res) => {
   const rol = await rolService.obtener(req.validado.params.id);
   return sendSuccess(res, rol, 'Rol obtenido exitosamente.');

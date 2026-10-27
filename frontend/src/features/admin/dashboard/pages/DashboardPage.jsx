@@ -4,6 +4,7 @@ import BarChart from "../../../../shared/components/BarChart";
 import DonutChart from "../../../../shared/components/DonutChart";
 import PieChart from "../../../../shared/components/PieChart";
 import TopProductsList from "../components/TopProductsList";
+import { usePermissions } from "../../../../shared/hooks/usePermissions";
 import { formatPrice } from "../../../../shared/utils/formatPrice";
 import useDashboard from "../hooks/useDashboard";
 import "./DashboardPage.css";
@@ -28,6 +29,9 @@ function subtituloCalificaciones(total) {
 }
 
 export default function DashboardPage() {
+  const { can } = usePermissions();
+  const canGenerate = can("Dashboard", "Generar reporte");
+  const canExport = can("Dashboard", "Exportar reporte");
   const { resumen, loading, error, reload } = useDashboard();
 
   const handleGenerate = () => {
@@ -78,16 +82,22 @@ export default function DashboardPage() {
             Aquí tienes un resumen del comportamiento de tu negocio.
           </p>
         </div>
-        <div className="dashboard-header-actions">
-          <button type="button" className="btn-generate-report" onClick={handleGenerate}>
-            <i className="fa-solid fa-file-word" />
-            Generar reporte
-          </button>
-          <button type="button" className="btn-export" onClick={handleExport}>
-            <i className="fa-solid fa-download" />
-            Exportar reporte
-          </button>
-        </div>
+        {(canGenerate || canExport) && (
+          <div className="dashboard-header-actions">
+            {canGenerate && (
+              <button type="button" className="btn-generate-report" onClick={handleGenerate}>
+                <i className="fa-solid fa-file-word" />
+                Generar reporte
+              </button>
+            )}
+            {canExport && (
+              <button type="button" className="btn-export" onClick={handleExport}>
+                <i className="fa-solid fa-download" />
+                Exportar reporte
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {loading && !resumen && (

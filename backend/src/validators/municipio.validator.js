@@ -47,10 +47,10 @@ export const crearMunicipioSchema = z
   );
 
 // Al actualizar, todos los campos son opcionales (actualización parcial).
+// El estado se cambia únicamente con PATCH /municipios/:id/estado.
 export const actualizarMunicipioSchema = z.object({
   nombre: nombreField.optional(),
   precioDomicilio: precioField,
   precio_domicilio: precioField,
   costoEnvio: precioField,
-  estado: booleanoFlexible.optional(),
 });

@@ -6,12 +6,18 @@ import DataTable from '../../../../shared/components/DataTable';
 import ConfirmModal from '../../../../shared/components/ConfirmModal';
 import FormSelect from '../../../../shared/components/FormSelect';
 import StatusToggle from '../../../../shared/components/StatusToggle';
+import { usePermissions } from '../../../../shared/hooks/usePermissions';
 import OrderNotification from '../../orders/components/OrderNotification';
 import { formatPrice } from '../../../../shared/utils/formatPrice';
 import { quantityLabel } from '../utils/presentationDisplay';
 import '../../../../shared/css/adminCrud.css';
 
 export default function PresentationsListPage() {
+  const { can } = usePermissions();
+  const canCreate = can('Productos', 'Crear');
+  const canEdit = can('Productos', 'Editar');
+  const canDelete = can('Productos', 'Eliminar');
+  const canChangeStatus = can('Productos', 'Cambiar estado');
   const [notification, setNotification] = useState(null);
   const {
     statusFilter,
@@ -59,6 +65,7 @@ export default function PresentationsListPage() {
     } catch (err) {
       setNotification({
         message: err?.message || 'No se pudo eliminar la presentación.',
+        variant: 'error',
       });
     }
   };
@@ -92,6 +99,7 @@ export default function PresentationsListPage() {
         <StatusToggle
           checked={presentation.estado === 'Activo'}
           onChange={() => handleToggleStatus(presentation.id)}
+          disabled={!canChangeStatus}
         />
       ),
     },
@@ -110,23 +118,27 @@ export default function PresentationsListPage() {
             <i className="fa-solid fa-eye" />
           </button>
 
-          <button
-            type="button"
-            onClick={() => handleOpenEdit(presentation)}
-            className="table-action-btn"
-            title="Editar"
-          >
-            <i className="fa-solid fa-pen" />
-          </button>
+          {canEdit && (
+            <button
+              type="button"
+              onClick={() => handleOpenEdit(presentation)}
+              className="table-action-btn"
+              title="Editar"
+            >
+              <i className="fa-solid fa-pen" />
+            </button>
+          )}
 
-          <button
-            type="button"
-            onClick={() => handleOpenDelete(presentation)}
-            className="table-action-btn danger"
-            title="Eliminar"
-          >
-            <i className="fa-solid fa-trash" />
-          </button>
+          {canDelete && (
+            <button
+              type="button"
+              onClick={() => handleOpenDelete(presentation)}
+              className="table-action-btn danger"
+              title="Eliminar"
+            >
+              <i className="fa-solid fa-trash" />
+            </button>
+          )}
         </div>
       ),
     },
@@ -137,8 +149,8 @@ export default function PresentationsListPage() {
       <DataTable
         title="Presentaciones"
         description="Administra las cantidades de fresas y el precio de cada presentación."
-        createLabel="Crear presentación"
-        onCreate={handleOpenCreate}
+        createLabel={canCreate ? 'Crear presentación' : undefined}
+        onCreate={canCreate ? handleOpenCreate : undefined}
         columns={columns}
         data={filteredPresentations}
         searchPlaceholder="Buscar presentación..."
@@ -206,6 +218,7 @@ export default function PresentationsListPage() {
         open={Boolean(notification)}
         onClose={() => setNotification(null)}
         message={notification?.message}
+        variant={notification?.variant}
       />
     </div>
   );

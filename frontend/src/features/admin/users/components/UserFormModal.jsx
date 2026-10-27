@@ -1,12 +1,12 @@
 // src/features/admin/users/components/UserFormModal.jsx
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { InputAdornment, IconButton } from "@mui/material";
 import Modal from "../../../../shared/components/Modal";
 import FormTextField from "../../../../shared/components/FormTextField";
 import FormSelect from "../../../../shared/components/FormSelect";
 import StatusToggle from "../../../../shared/components/StatusToggle";
 import useFormValidation from "../../../../shared/hooks/useFormValidation";
-import { ROLE_OPTIONS } from "../utils/roles";
+import { FALLBACK_ROLE_OPTIONS } from "../utils/roles";
 import {
   validateDocType,
   validateIdNumber,
@@ -43,7 +43,14 @@ const EMPTY_FORM = {
  * Un solo modal para Crear Y Editar usuario con soporte para teléfono,
  * dirección y visibilidad de contraseña.
  */
-export default function UserFormModal({ open, onClose, onSubmit, initialData, submitting }) {
+export default function UserFormModal({
+  open,
+  onClose,
+  onSubmit,
+  initialData,
+  submitting,
+  roleOptions = FALLBACK_ROLE_OPTIONS,
+}) {
   const isEdit = !!initialData;
   const [formError, setFormError] = useState("");
 
@@ -104,10 +111,14 @@ export default function UserFormModal({ open, onClose, onSubmit, initialData, su
     } else {
       reset(EMPTY_FORM);
     }
+  }, [open, initialData]);
+
+  function handleClose() {
     setFormError("");
     setShowPassword(false);
     setShowConfirmPassword(false);
-  }, [open, initialData]);
+    onClose();
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -132,6 +143,9 @@ export default function UserFormModal({ open, onClose, onSubmit, initialData, su
         role: form.role,
         active: form.active,
       });
+      setFormError("");
+      setShowPassword(false);
+      setShowConfirmPassword(false);
     } catch (err) {
       if (err.code === "EMAIL_TAKEN") {
         setFieldError("email", err.message);
@@ -146,7 +160,7 @@ export default function UserFormModal({ open, onClose, onSubmit, initialData, su
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       title={isEdit ? "Editar usuario" : "Crear Nuevo Usuario"}
       subtitle={
         isEdit
@@ -156,7 +170,7 @@ export default function UserFormModal({ open, onClose, onSubmit, initialData, su
       maxWidth="sm"
       footer={
         <>
-          <button type="button" className="btn-cancel" onClick={onClose}>
+          <button type="button" className="btn-cancel" onClick={handleClose}>
             Cancelar
           </button>
           <button
@@ -317,19 +331,21 @@ export default function UserFormModal({ open, onClose, onSubmit, initialData, su
             value={form.role}
             onChange={(v) => setField("role", v)}
             onBlur={() => handleBlur("role")}
-            options={ROLE_OPTIONS}
+            options={roleOptions}
             placeholder="Selecciona un rol"
             error={errors.role}
           />
-          <div className="user-form-status">
-            <span className="form-label">Estado del usuario</span>
-            <div className="user-form-status-row">
-              <StatusToggle checked={form.active} onChange={(v) => setField("active", v)} />
-              <span className={`user-form-status-label ${form.active ? "is-active" : ""}`}>
-                {form.active ? "Activo" : "Inactivo"}
-              </span>
+          {!isEdit && (
+            <div className="user-form-status">
+              <span className="form-label">Estado del usuario</span>
+              <div className="user-form-status-row">
+                <StatusToggle checked={form.active} onChange={(v) => setField("active", v)} />
+                <span className={`user-form-status-label ${form.active ? "is-active" : ""}`}>
+                  {form.active ? "Activo" : "Inactivo"}
+                </span>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </form>
     </Modal>

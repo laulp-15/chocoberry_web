@@ -29,6 +29,8 @@ export function mapUsuarioToSession(usuario) {
     // El slug del rol coincide con el que usa el front:
     // administrador / repartidor / cliente.
     role: usuario.rol?.slug ?? "",
+    roleName: usuario.rol?.nombre ?? "",
+    permissions: Array.isArray(usuario.permisos) ? usuario.permisos : [],
     phone: usuario.telefono ?? "",
     address: usuario.direccion ?? "",
     neighborhood: usuario.barrio ?? "",

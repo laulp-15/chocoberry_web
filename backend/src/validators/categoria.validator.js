@@ -20,7 +20,7 @@ export const crearCategoriaSchema = z.object({
 });
 
 // Al actualizar, todos los campos son opcionales (actualización parcial).
+// El estado se cambia únicamente con PATCH /categorias/:id/estado.
 export const actualizarCategoriaSchema = z.object({
   nombre: nombreField.optional(),
-  estado: booleanoFlexible.optional(),
 });

@@ -61,7 +61,6 @@ export async function actualizar(id, datos) {
 
   const codigoHex = resolverCodigoHex(datos);
   if (codigoHex !== undefined) campos.codigo_hex = codigoHex;
-  if (datos.estado !== undefined) campos.estado = datos.estado ? 1 : 0;
 
   return serializarColorGlaseado(await colorGlaseadoModel.actualizar(id, campos));
 }

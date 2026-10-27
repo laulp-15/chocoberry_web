@@ -33,7 +33,10 @@ export function toCrearMunicipioPayload(datos = {}) {
 }
 
 export function toActualizarMunicipioPayload(datos = {}) {
-  return toCrearMunicipioPayload(datos);
+  return {
+    nombre: String(datos.nombre ?? '').trim(),
+    precioDomicilio: Number(datos.costoEnvio),
+  };
 }
 
 /** Un 409 significa nombre repetido: se marca para mostrarlo bajo el campo. */

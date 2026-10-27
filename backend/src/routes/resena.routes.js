@@ -1,9 +1,9 @@
 // src/routes/resena.routes.js
-// Panel de reseñas (solo Administrador) y creación de reseñas para usuarios
-// autenticados. La lectura pública está en /api/catalogo/resenas.
+// Panel de reseñas (requiere permisos de moderación) y creación de reseñas
+// para usuarios autenticados. La lectura pública está en /api/catalogo/resenas.
 import { Router } from 'express';
 import * as resenaController from '../controllers/resena.controller.js';
-import { checkRol, verifyToken } from '../middlewares/auth.js';
+import { verifyToken } from '../middlewares/auth.js';
 import { checkPermiso } from '../middlewares/checkPermiso.js';
 import { validar } from '../middlewares/validate.js';
 import { idParamSchema } from '../validators/common.validator.js';
@@ -19,16 +19,16 @@ router.use(verifyToken);
 
 router.get(
   '/',
-  checkRol('Administrador'),
   checkPermiso('Reseñas', 'Ver'),
+  checkPermiso('Reseñas', 'Cambiar estado'),
   validar(filtrosResenaSchema, 'query'),
   resenaController.listar
 );
 
 router.get(
   '/:id',
-  checkRol('Administrador'),
   checkPermiso('Reseñas', 'Ver'),
+  checkPermiso('Reseñas', 'Cambiar estado'),
   validar(idParamSchema, 'params'),
   resenaController.obtener
 );
@@ -44,7 +44,6 @@ router.post(
 
 router.patch(
   '/:id/estado',
-  checkRol('Administrador'),
   checkPermiso('Reseñas', 'Cambiar estado'),
   validar(idParamSchema, 'params'),
   validar(cambiarEstadoResenaSchema),

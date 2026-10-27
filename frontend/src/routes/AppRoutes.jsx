@@ -16,6 +16,7 @@ import RegisterPage from "../features/login/pages/RegisterPage";
 import ForgotPasswordPage from "../features/login/pages/ForgotPasswordPage";
 import ChangePasswordPage from "../features/login/pages/ChangePasswordPage";
 import RequireAuth from "../shared/components/RequireAuth";
+import { RequirePanelAccess } from "../shared/components/RequirePermission";
 
 import AdminRoutes from "./AdminRoutes";
 import ProfileRoutes from "./ProfileRoutes";
@@ -66,12 +67,14 @@ export default function AppRoutes() {
           }
         />
         
-        {/* Panel de administración: solo el rol administrador */}
+        {/* Panel de administración: requiere el permiso Dashboard · Ver */}
         <Route
           path="/admin/*"
           element={
-            <RequireAuth allowedRoles={["administrador"]}>
-              <AdminRoutes />
+            <RequireAuth>
+              <RequirePanelAccess>
+                <AdminRoutes />
+              </RequirePanelAccess>
             </RequireAuth>
           }
         />

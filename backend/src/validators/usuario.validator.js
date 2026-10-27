@@ -46,6 +46,7 @@ export const crearUsuarioSchema = z.object({
   ...rolFields,
 });
 
+// El estado se cambia únicamente con PATCH /usuarios/:id/estado.
 export const actualizarUsuarioSchema = z.object({
   nombres: nombresField.optional(),
   apellidos: apellidosField.optional(),
@@ -56,7 +57,6 @@ export const actualizarUsuarioSchema = z.object({
   telefono: telefonoField,
   direccion: direccionField,
   barrio: barrioField,
-  estado: booleanoFlexible.optional(),
   ...rolFields,
 });
 

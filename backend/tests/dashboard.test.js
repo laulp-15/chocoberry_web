@@ -275,18 +275,19 @@ describe('Módulo de dashboard', () => {
     expect(res.status).toBe(401);
   });
 
-  it('solo un administrador puede consultar el dashboard', async () => {
+  it('exige el permiso Dashboard · Ver, no un rol específico', async () => {
     const admin = await consultar();
     expect(admin.status).toBe(200);
 
     const cliente = await auth(request(app).get('/api/dashboard/resumen'), tokenCliente);
     expect(cliente.status).toBe(403);
 
+    // El rol Repartidor tiene Dashboard · Ver en los datos iniciales.
     const repartidor = await auth(
       request(app).get('/api/dashboard/resumen'),
       tokenRepartidor
     );
-    expect(repartidor.status).toBe(403);
+    expect(repartidor.status).toBe(200);
   });
 
   it('rechaza una semana o un mes inválidos (422)', async () => {

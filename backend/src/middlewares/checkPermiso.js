@@ -15,8 +15,11 @@ export function checkPermiso(modulo, accion) {
       throw new ForbiddenError('No se pudo determinar el usuario de la sesión.');
     }
 
-    const permisos = await permisoModel.accionesPorRol(req.usuario.id_rol);
-    const autorizado = permisos.some((p) => p.modulo === modulo && p.accion === accion);
+    const autorizado = await permisoModel.tienePermiso(
+      req.usuario.id_rol,
+      modulo,
+      accion
+    );
 
     if (!autorizado) {
       throw new ForbiddenError(`No tienes permiso para ${accion.toLowerCase()} en el módulo ${modulo}.`);

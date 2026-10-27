@@ -33,6 +33,7 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => readSession());
+  const [isInitializing, setIsInitializing] = useState(() => Boolean(getToken()));
 
   // Al montar: si hay token, revalida la sesión contra el backend para
   // reflejar cambios de rol o de estado (deshabilitado) hechos por un
@@ -54,6 +55,9 @@ export function AuthProvider({ children }) {
           clearSession();
           setUser(null);
         }
+      })
+      .finally(() => {
+        if (activo) setIsInitializing(false);
       });
 
     return () => {
@@ -113,7 +117,10 @@ export function AuthProvider({ children }) {
   const value = {
     user,
     isAuthenticated: !!user,
+    isInitializing,
     role: user?.role ?? null,
+    roleName: user?.roleName ?? null,
+    permissions: user?.permissions ?? [],
     login,
     register,
     requestPasswordReset,

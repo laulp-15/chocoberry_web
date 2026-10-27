@@ -5,6 +5,7 @@ import * as permisoModel from '../models/permiso.model.js';
 import * as rolModel from '../models/rol.model.js';
 import * as rolPermisoModel from '../models/rolPermiso.model.js';
 import { serializarPermiso, serializarRol } from '../utils/serializers.js';
+import { slugify } from '../utils/text.js';
 
 /** Valida y normaliza la lista de ids de permisos a asignar. */
 async function validarPermisos(permisos) {
@@ -25,6 +26,16 @@ async function validarPermisos(permisos) {
 export async function listar(filtros = {}) {
   const filas = await rolModel.listarConConteo({ nombre: filtros.nombre });
   return filas.map(serializarRol);
+}
+
+/** Catálogo mínimo de roles para selectores (ej. formulario de usuarios). */
+export async function listarOpciones() {
+  const filas = await rolModel.listar();
+  return filas.map((rol) => ({
+    id: rol.id,
+    nombre: rol.nombre_rol,
+    slug: slugify(rol.nombre_rol),
+  }));
 }
 
 export async function obtener(id) {

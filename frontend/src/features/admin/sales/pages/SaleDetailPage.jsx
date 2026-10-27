@@ -1,12 +1,16 @@
 // src/features/admin/sales/pages/SaleDetailPage.jsx
 import { useParams, useNavigate, Link } from "react-router-dom";
 import SaleReceipt from "../components/SaleReceipt";
+import { usePermissions } from "../../../../shared/hooks/usePermissions";
 import useSale from "../hooks/useSale";
 import "./SaleDetailPage.css";
 
 export default function SaleDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { can } = usePermissions();
+  const canGenerate = can("Ventas", "Generar reporte");
+  const canExport = can("Ventas", "Exportar reporte");
   const { sale, loading, error, notFound, reload } = useSale(id);
 
   const handleGenerateReceipt = () => {
@@ -65,16 +69,22 @@ export default function SaleDetailPage() {
       <div className="sale-detail-header">
         <h1 className="sale-detail-title">Detalle de la Venta</h1>
 
-        <div className="sale-detail-actions">
-          <button type="button" className="btn-download-receipt" onClick={handleDownloadReceipt}>
-            <i className="fa-solid fa-download" />
-            Descargar comprobante
-          </button>
-          <button type="button" className="btn-generate-receipt" onClick={handleGenerateReceipt}>
-            <i className="fa-solid fa-print" />
-            Generar comprobante digital
-          </button>
-        </div>
+        {(canGenerate || canExport) && (
+          <div className="sale-detail-actions">
+            {canExport && (
+              <button type="button" className="btn-download-receipt" onClick={handleDownloadReceipt}>
+                <i className="fa-solid fa-download" />
+                Descargar comprobante
+              </button>
+            )}
+            {canGenerate && (
+              <button type="button" className="btn-generate-receipt" onClick={handleGenerateReceipt}>
+                <i className="fa-solid fa-print" />
+                Generar comprobante digital
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       <SaleReceipt sale={sale} />

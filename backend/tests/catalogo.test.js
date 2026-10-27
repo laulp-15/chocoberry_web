@@ -292,6 +292,25 @@ describe('Módulo de catálogo (categorías, productos y presentaciones)', () =>
       const res = await auth(request(app).delete(`/api/categorias/${categoriaId}`));
       expect(res.status).toBe(409);
     });
+
+    it('PUT /api/categorias/:id no cambia el estado', async () => {
+      const baja = await auth(
+        request(app).patch(`/api/categorias/${categoriaId}/estado`).send({ estado: false })
+      );
+      expect(baja.status).toBe(200);
+
+      const res = await auth(request(app).put(`/api/categorias/${categoriaId}`)).send({
+        nombre: nombreCategoria,
+        estado: true,
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.estado).toBe(false);
+
+      await auth(
+        request(app).patch(`/api/categorias/${categoriaId}/estado`).send({ estado: true })
+      );
+    });
   });
 
   describe('Presentaciones', () => {
@@ -328,6 +347,19 @@ describe('Módulo de catálogo (categorías, productos y presentaciones)', () =>
       expect(res.status).toBe(200);
       expect(res.body.data.estado).toBe(false);
     });
+
+    it('PUT /api/presentaciones/:id no cambia el estado', async () => {
+      const res = await auth(
+        request(app).put(`/api/presentaciones/${presentacionId}`)
+      ).send({
+        precio: 30000,
+        estado: true,
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.precio).toBe(30000);
+      expect(res.body.data.estado).toBe(false);
+    });
   });
 
   describe('Catálogo público (sin sesión)', () => {
@@ -362,6 +394,17 @@ describe('Módulo de catálogo (categorías, productos y presentaciones)', () =>
 
       const res = await request(app).get(`/api/catalogo/productos/${productoId}`);
       expect(res.status).toBe(404);
+    });
+
+    it('PUT /api/productos/:id no cambia el estado', async () => {
+      const res = await auth(request(app).put(`/api/productos/${productoId}`)).send({
+        descripcion: 'Intento de reactivación',
+        estado: true,
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.descripcion).toBe('Intento de reactivación');
+      expect(res.body.data.estado).toBe(false);
     });
 
     it('GET /api/catalogo/categorias y /presentaciones responden sin sesión', async () => {

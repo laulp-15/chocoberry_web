@@ -22,6 +22,10 @@ describe('Módulo de acceso y usuarios', () => {
     expect(res.body.data.token).toBeTruthy();
     expect(res.body.data.usuario.correo).toBe(ADMIN.correo);
     expect(res.body.data.usuario.rol.slug).toBe('administrador');
+    expect(Array.isArray(res.body.data.usuario.permisos)).toBe(true);
+    expect(res.body.data.usuario.permisos).toEqual(
+      expect.arrayContaining([{ modulo: 'Dashboard', accion: 'Ver' }])
+    );
     // La contraseña nunca se devuelve.
     expect(res.body.data.usuario.contrasena).toBeUndefined();
   });
@@ -53,6 +57,10 @@ describe('Módulo de acceso y usuarios', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.correo).toBe(ADMIN.correo);
+    expect(Array.isArray(res.body.data.permisos)).toBe(true);
+    expect(res.body.data.permisos).toEqual(
+      expect.arrayContaining([{ modulo: 'Roles', accion: 'Ver' }])
+    );
   });
 
   it('GET /api/usuarios sin token devuelve 401', async () => {
