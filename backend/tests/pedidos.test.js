@@ -120,6 +120,22 @@ describe('Módulo de pedidos', () => {
     );
   }
 
+  async function reprogramar(id, fechaEntrega, token = tokenAdmin) {
+    return auth(
+      request(app).patch(`/api/pedidos/${id}/reprogramar`).send({ fechaEntrega }),
+      token
+    );
+  }
+
+  async function crearPedidoCancelado() {
+    const pedido = await crearPedido();
+    await cambiarEstado(pedido.id, 'en_preparacion');
+    await cambiarEstado(pedido.id, 'Despachado');
+    const cancelado = await cambiarEstado(pedido.id, 'cancelado');
+    expect(cancelado.status).toBe(200);
+    return cancelado.body.data;
+  }
+
   async function crearUsuario({ rol, sufijo, nombres = 'Prueba', apellidos = 'Pedidos' }) {
     const res = await auth(request(app).post('/api/usuarios')).send({
       nombres,
@@ -567,6 +583,84 @@ describe('Módulo de pedidos', () => {
 
       const res = await cambiarEstado(entregado.id, 'cancelado');
       expect(res.status).toBe(409);
+    });
+  });
+
+  describe('Reprogramación de entrega', () => {
+    it('guarda fechaCancelacion y reprograma para mañana pasando a Despachado', async () => {
+      const cancelado = await crearPedidoCancelado();
+      expect(cancelado.fechaCancelacion).toBeTruthy();
+
+      const res = await reprogramar(cancelado.id, fechaISO(1));
+      expect(res.status).toBe(200);
+      expect(res.body.data.estado.nombre).toBe('Despachado');
+      expect(res.body.data.fechaEntrega).toBe(fechaISO(1));
+
+      const despachados = await auth(
+        request(app).get('/api/pedidos').query({ estado: 'despachado' })
+      );
+      expect(despachados.body.data.map((p) => p.id)).toContain(cancelado.id);
+    });
+
+    it('permite reprogramar para pasado mañana', async () => {
+      const cancelado = await crearPedidoCancelado();
+
+      const res = await reprogramar(cancelado.id, fechaISO(2));
+      expect(res.status).toBe(200);
+      expect(res.body.data.estado.nombre).toBe('Despachado');
+      expect(res.body.data.fechaEntrega).toBe(fechaISO(2));
+    });
+
+    it('rechaza una fecha que no sea mañana o pasado mañana', async () => {
+      const cancelado = await crearPedidoCancelado();
+
+      for (const dias of [0, 3]) {
+        const res = await reprogramar(cancelado.id, fechaISO(dias));
+        expect(res.status).toBe(422);
+        expect(res.body.errors?.[0]?.campo).toBe('fechaEntrega');
+      }
+    });
+
+    it('rechaza reprogramar un pedido que no está Cancelado', async () => {
+      const pedido = await crearPedido();
+
+      const res = await reprogramar(pedido.id, fechaISO(1));
+      expect(res.status).toBe(409);
+    });
+
+    it('rechaza reprogramar después de las 48 horas desde la cancelación', async () => {
+      const cancelado = await crearPedidoCancelado();
+      await query(
+        'UPDATE pedido SET fecha_cancelacion = DATE_SUB(NOW(), INTERVAL 3 DAY) WHERE id = ?',
+        [cancelado.id]
+      );
+
+      const res = await reprogramar(cancelado.id, fechaISO(1));
+      expect(res.status).toBe(409);
+    });
+
+    it('rechaza reprogramar un cancelado sin fecha de cancelación', async () => {
+      const cancelado = await crearPedidoCancelado();
+      await query('UPDATE pedido SET fecha_cancelacion = NULL WHERE id = ?', [
+        cancelado.id,
+      ]);
+
+      const res = await reprogramar(cancelado.id, fechaISO(1));
+      expect(res.status).toBe(409);
+    });
+
+    it('solo lo permite un rol con Pedidos · Cambiar estado', async () => {
+      const cancelado = await crearPedidoCancelado();
+
+      const repartidor = await reprogramar(
+        cancelado.id,
+        fechaISO(1),
+        tokenRepartidor
+      );
+      expect(repartidor.status).toBe(403);
+
+      const cliente = await reprogramar(cancelado.id, fechaISO(1), tokenCliente);
+      expect(cliente.status).toBe(403);
     });
   });
 

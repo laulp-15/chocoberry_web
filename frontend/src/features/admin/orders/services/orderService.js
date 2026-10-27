@@ -56,6 +56,12 @@ export async function cambiarEstado(id, estado) {
   return mapPedidoAdmin(pedido);
 }
 
+/** PATCH /pedidos/:id/reprogramar (solo pedidos cancelados recientes). */
+export async function reprogramar(id, fechaEntrega) {
+  const pedido = await api.patch(`/pedidos/${id}/reprogramar`, { fechaEntrega });
+  return mapPedidoAdmin(pedido);
+}
+
 /** PATCH /pedidos/:id/rechazar */
 export async function rechazar(id, motivo) {
   const pedido = await api.patch(`/pedidos/${id}/rechazar`, { motivo });

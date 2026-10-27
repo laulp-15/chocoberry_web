@@ -98,6 +98,174 @@
   gap: 16px;
 }
 
+.order-detail-status-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.reprogram-delivery {
+  display: flex;
+  justify-content: center;
+}
+
+.reprogram-delivery-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--primario);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--primario);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.reprogram-delivery-btn:hover:not(:disabled) {
+  background: var(--primario);
+  color: #fff;
+}
+
+.reprogram-delivery-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.reprogram-delivery-btn:focus-visible,
+.reprogram-delivery-date:focus-visible {
+  outline: 2px solid var(--primario);
+  outline-offset: 2px;
+}
+
+.reprogram-delivery-popover.MuiPaper-root {
+  width: 300px;
+  max-width: calc(100vw - 24px);
+  margin-top: 8px;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--secundario-3);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+}
+
+.reprogram-delivery-options {
+  padding: 14px;
+}
+
+.reprogram-delivery-options-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--borde);
+}
+
+.reprogram-delivery-options-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--secundario-1);
+  color: var(--primario);
+  font-size: 13px;
+}
+
+.reprogram-delivery-options-header > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.reprogram-delivery-options-header strong {
+  font-size: 13px;
+  line-height: 1.3;
+  color: var(--texto);
+}
+
+.reprogram-delivery-options-header > div > span {
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--texto-muted);
+}
+
+.reprogram-delivery-date-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.reprogram-delivery-date {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: var(--secundario-3);
+  color: var(--texto);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.reprogram-delivery-date:hover:not(:disabled) {
+  border-color: var(--primario);
+  background: var(--secundario-1);
+}
+
+.reprogram-delivery-date:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.reprogram-delivery-date-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--secundario-1);
+  color: var(--primario);
+  font-size: 12px;
+}
+
+.reprogram-delivery-date-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.reprogram-delivery-date-text strong {
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.reprogram-delivery-date-text > span {
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--texto-muted);
+}
+
+.reprogram-delivery-date-arrow {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: var(--texto-muted);
+}
+
 .order-detail-hero-total {
   display: flex;
   flex-direction: column;

@@ -16,6 +16,7 @@ import {
   filtrosPedidoSchema,
   rechazarPedidoSchema,
   registrarEntregaSchema,
+  reprogramarPedidoSchema,
 } from '../validators/pedido.validator.js';
 
 const router = Router();
@@ -75,6 +76,14 @@ router.patch(
   validar(idParamSchema, 'params'),
   validar(cambiarEstadoPedidoSchema),
   pedidoController.cambiarEstado
+);
+
+router.patch(
+  '/:id/reprogramar',
+  checkPermiso('Pedidos', 'Cambiar estado'),
+  validar(idParamSchema, 'params'),
+  validar(reprogramarPedidoSchema),
+  pedidoController.reprogramar
 );
 
 router.patch(

@@ -27,6 +27,7 @@ export default function useOrders({ autoLoad = true } = {}) {
   const [submitting, setSubmitting] = useState(false);
   const [statusSavingId, setStatusSavingId] = useState(null);
   const [rejectSubmitting, setRejectSubmitting] = useState(false);
+  const [reprogrammingId, setReprogrammingId] = useState(null);
 
   useEffect(() => {
     if (!autoLoad && reloadToken === 0) return undefined;
@@ -113,6 +114,17 @@ export default function useOrders({ autoLoad = true } = {}) {
     }
   }
 
+  async function reprogramOrder(id, fechaEntrega) {
+    setReprogrammingId(id);
+    try {
+      const actualizado = await orderService.reprogramar(id, fechaEntrega);
+      reemplazar(actualizado);
+      return actualizado;
+    } finally {
+      setReprogrammingId(null);
+    }
+  }
+
   return {
     orders,
     loading,
@@ -122,10 +134,12 @@ export default function useOrders({ autoLoad = true } = {}) {
     submitting,
     statusSavingId,
     rejectSubmitting,
+    reprogrammingId,
 
     createOrder,
     updateOrder,
     changeStatus,
     rejectOrder,
+    reprogramOrder,
   };
 }

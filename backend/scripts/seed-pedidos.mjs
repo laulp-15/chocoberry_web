@@ -771,10 +771,19 @@ async function main() {
       await aplicarEstado(pedidoCreado.id, definicion.estado, definicion.motivoRechazo);
 
       // El seed no genera archivos: el comprobante queda siempre en blanco.
-      await query('UPDATE pedido SET fecha = ?, comprobante_pago = NULL WHERE id = ?', [
-        fecha,
-        pedidoCreado.id,
-      ]);
+      // La cancelación se ancla a la fecha histórica, no al momento del seed.
+      await query(
+        `UPDATE pedido
+            SET fecha = ?,
+                comprobante_pago = NULL,
+                fecha_cancelacion = IF(
+                  id_estado = (SELECT id FROM estadosPedido WHERE nombre = 'Cancelado'),
+                  DATE_ADD(?, INTERVAL 1 DAY),
+                  NULL
+                )
+          WHERE id = ?`,
+        [fecha, fecha, pedidoCreado.id]
+      );
 
       const item = {
         id: pedidoCreado.id,

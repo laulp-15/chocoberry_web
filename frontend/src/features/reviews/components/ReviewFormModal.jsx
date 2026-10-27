@@ -152,7 +152,7 @@ export default function ReviewFormModal({ isOpen, onClose, onSubmit, userName })
                 ¡Gracias{firstName ? `, ${firstName}` : ""}!
               </h2>
               <p className="review-success-text">
-                Tu reseña ya está publicada y nos ayuda a seguir endulzando momentos.
+                Tu reseña fue enviada
               </p>
               <button type="button" className="review-submit" onClick={handleClose}>
                 Cerrar
@@ -285,7 +285,7 @@ export default function ReviewFormModal({ isOpen, onClose, onSubmit, userName })
                     Cancelar
                   </button>
                   <button type="submit" className="review-submit" disabled={submitting}>
-                    {submitting ? "Publicando..." : "Publicar reseña"}
+                    {submitting ? "Enviando..." : "Enviar reseña"}
                     {!submitting && <i className="fa-solid fa-paper-plane" aria-hidden="true" />}
                   </button>
                 </div>

@@ -35,9 +35,9 @@ export const useReviews = () => {
   }, [reloadToken]);
 
   const addReview = async ({ calificacion, comentario }) => {
-    const nueva = await createReview({ calificacion, comentario });
-    setReviews((prev) => [nueva, ...prev]);
-    return nueva;
+    // La reseña nace inactiva: no se agrega a la lista pública hasta que un
+    // administrador la apruebe.
+    return createReview({ calificacion, comentario });
   };
 
   const reload = () => {

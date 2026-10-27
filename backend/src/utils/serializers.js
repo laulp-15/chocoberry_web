@@ -221,6 +221,7 @@ export function serializarPedido(row, lineas = []) {
     telefonoReceptor: row.telefono_receptor,
     comprobantePago: row.comprobante_pago,
     motivoRechazo: row.motivo_rechazo,
+    fechaCancelacion: row.fecha_cancelacion,
     instruccionesEntrega: row.instrucciones_entrega,
     observacionesEntrega: row.observaciones_entrega,
     evidenciaEntrega: row.evidencia_entrega,

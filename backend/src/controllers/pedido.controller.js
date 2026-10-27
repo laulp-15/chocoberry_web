@@ -56,6 +56,14 @@ export const cambiarEstado = asyncHandler(async (req, res) => {
   return sendSuccess(res, pedido, 'Estado del pedido actualizado exitosamente.');
 });
 
+export const reprogramar = asyncHandler(async (req, res) => {
+  const pedido = await pedidoService.reprogramar(
+    req.validado.params.id,
+    req.validado.body.fechaEntrega
+  );
+  return sendSuccess(res, pedido, 'Entrega reprogramada exitosamente.');
+});
+
 export const rechazar = asyncHandler(async (req, res) => {
   const pedido = await pedidoService.rechazar(req.validado.params.id, req.validado.body.motivo);
   return sendSuccess(res, pedido, 'Pedido rechazado exitosamente.');

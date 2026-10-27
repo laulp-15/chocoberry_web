@@ -47,13 +47,20 @@ export async function buscarPorId(id) {
 }
 
 /**
- * Inserta una reseña. La API no acepta `fecha` ni `estado`: se usan los
- * valores por defecto de la BD. El seed histórico puede enviar `fecha`
- * explícitamente para repartir las reseñas en el tiempo.
+ * Inserta una reseña. La API no acepta `fecha` ni `estado`: la fecha la define
+ * la BD y las reseñas nuevas nacen inactivas. El seed histórico puede enviar
+ * ambos valores explícitamente para repartir las reseñas en el tiempo y
+ * mantenerlas visibles en la demostración.
  */
-export async function crear({ calificacion, comentario, id_usuario, fecha }) {
-  const columnas = ['calificacion', 'comentario', 'id_usuario'];
-  const valores = [calificacion, comentario, id_usuario];
+export async function crear({
+  calificacion,
+  comentario,
+  id_usuario,
+  fecha,
+  estado = false,
+}) {
+  const columnas = ['calificacion', 'comentario', 'id_usuario', 'estado'];
+  const valores = [calificacion, comentario, id_usuario, estado ? 1 : 0];
 
   if (fecha) {
     columnas.splice(2, 0, 'fecha');

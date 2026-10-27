@@ -149,6 +149,10 @@ export const cambiarEstadoPedidoSchema = z.object({
     .min(1, 'El estado es obligatorio.'),
 });
 
+export const reprogramarPedidoSchema = z.object({
+  fechaEntrega: fechaEntregaField,
+});
+
 export const rechazarPedidoSchema = z.object({
   motivo: z
     .string({ required_error: 'El motivo de rechazo es obligatorio.' })

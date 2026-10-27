@@ -34,10 +34,12 @@ export default function OrdersListPage() {
     submitting,
     statusSavingId,
     rejectSubmitting,
+    reprogrammingId,
     createOrder,
     updateOrder,
     changeStatus,
     rejectOrder,
+    reprogramOrder,
   } = useOrders();
 
   const [statusFilter, setStatusFilter] = useState("");
@@ -121,6 +123,25 @@ export default function OrdersListPage() {
     } catch (err) {
       setNotification({
         message: err?.message || "No se pudo cambiar el estado del pedido.",
+        variant: "error",
+      });
+    }
+  };
+
+  // Reprogramar no es una transición normal: solo aplica a un pedido cancelado
+  // dentro de las 48 horas y lo devuelve directamente a "Despachado".
+  const handleReprogram = async (order, fechaEntrega) => {
+    try {
+      const actualizado = await reprogramOrder(order.id, fechaEntrega);
+      setDetailOrder(actualizado);
+      setNotification({
+        message: `Entrega reprogramada para el ${formatDisplayDate(
+          fechaEntrega
+        )}. El pedido pasó a "Despachado".`,
+      });
+    } catch (err) {
+      setNotification({
+        message: err?.message || "No se pudo reprogramar la entrega.",
         variant: "error",
       });
     }
@@ -324,6 +345,10 @@ export default function OrdersListPage() {
           open
           onClose={() => setDetailOrder(null)}
           order={detailOrder}
+          onReprogram={(fechaEntrega) =>
+            handleReprogram(detailOrder, fechaEntrega)
+          }
+          reprogramming={String(reprogrammingId) === String(detailOrder.id)}
         />
       )}
 
