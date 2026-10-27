@@ -3,11 +3,14 @@ import { useReviews } from '../hooks/useReviews';
 import ReviewDetailModal from '../components/ReviewDetailModal';
 import DataTable from '../../../../shared/components/DataTable';
 import FormSelect from '../../../../shared/components/FormSelect';
+import { usePermissions } from '../../../../shared/hooks/usePermissions';
 import { formatDisplayDate } from '../../orders/utils/orderDisplay';
 import '../../../../shared/css/adminCrud.css';
 import './ReviewsListPage.css';
 
 export default function ReviewsListPage() {
+  const { can } = usePermissions();
+  const canChangeStatus = can('Reseñas', 'Cambiar estado');
   const {
     statusFilter,
     handleStatusFilterChange,
@@ -76,16 +79,18 @@ export default function ReviewsListPage() {
         return (
           <button
             type="button"
-            onClick={() => handleToggleStatus(review)}
+            onClick={canChangeStatus ? () => handleToggleStatus(review) : undefined}
             className={`status-toggle ${review.estado === 'Activo' ? 'active' : 'inactive'}`}
             title={
-              isToggling
-                ? 'Actualizando estado...'
-                : `Estado: ${review.estado}. Clic para cambiar.`
+              !canChangeStatus
+                ? 'No tienes permiso para cambiar el estado.'
+                : isToggling
+                  ? 'Actualizando estado...'
+                  : `Estado: ${review.estado}. Clic para cambiar.`
             }
             aria-label={`Cambiar estado de la reseña de ${review.cliente}`}
             aria-pressed={review.estado === 'Activo'}
-            disabled={isToggling}
+            disabled={isToggling || !canChangeStatus}
           >
             <div className={`status-toggle-knob ${review.estado === 'Activo' ? 'active' : 'inactive'}`} />
           </button>

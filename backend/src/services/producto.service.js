@@ -175,7 +175,6 @@ export async function actualizar(id, datos) {
   const campos = {};
   if (datos.nombre !== undefined) campos.nombre = datos.nombre;
   if (datos.descripcion !== undefined) campos.descripcion = limpiarVacio(datos.descripcion);
-  if (datos.estado !== undefined) campos.estado = datos.estado ? 1 : 0;
   if (datos.idCategoria !== undefined || datos.id_categoria !== undefined || datos.categoria !== undefined) {
     campos.id_categoria = await resolverCategoria(datos);
   }

@@ -90,13 +90,13 @@ export const crearProductoSchema = z
   });
 
 // Al actualizar, todos los campos son opcionales (actualización parcial).
+// El estado se cambia únicamente con PATCH /productos/:id/estado.
 export const actualizarProductoSchema = z.object({
   nombre: nombreField.optional(),
   descripcion: descripcionField,
   imagen: imagenField,
   imagenesUrl: rutasField,
   ordenImagenes: rutasField,
-  estado: booleanoFlexible.optional(),
   idCategoria: idCategoriaField,
   id_categoria: idCategoriaField,
   categoria: z.string().trim().optional(),

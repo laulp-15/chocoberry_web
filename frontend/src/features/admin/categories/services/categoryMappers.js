@@ -31,7 +31,9 @@ export function toCrearCategoriaPayload(datos = {}) {
 }
 
 export function toActualizarCategoriaPayload(datos = {}) {
-  return toCrearCategoriaPayload(datos);
+  return {
+    nombre: String(datos.nombre ?? '').trim(),
+  };
 }
 
 /** Un 409 significa nombre repetido: se marca para mostrarlo bajo el campo. */

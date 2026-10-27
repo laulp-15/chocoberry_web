@@ -19,6 +19,14 @@ router.use(verifyToken);
 
 router.get('/', checkPermiso('Roles', 'Ver'), validar(filtrosRolSchema, 'query'), rolController.listar);
 
+// Catálogo para el selector del formulario de usuarios. No exige "Roles Ver"
+// para que un gestor de usuarios pueda asignar roles sin administrarlos.
+router.get(
+  '/opciones',
+  checkPermiso('Usuarios', 'Ver'),
+  rolController.opciones
+);
+
 router.get('/:id', checkPermiso('Roles', 'Ver'), validar(idParamSchema, 'params'), rolController.obtener);
 
 router.post('/', checkPermiso('Roles', 'Crear'), validar(crearRolSchema), rolController.crear);

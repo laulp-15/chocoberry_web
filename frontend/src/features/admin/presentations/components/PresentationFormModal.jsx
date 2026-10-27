@@ -167,16 +167,18 @@ export default function PresentationFormModal({
               error={errors.precio}
             />
 
-            <div className="form-field">
-              <label className="form-label">Estado</label>
-              <div className="crud-status-field">
-                <StatusToggle
-                  checked={values.estado === 'Activo'}
-                  onChange={(checked) => setField('estado', checked ? 'Activo' : 'Inactivo')}
-                />
-                <span className="crud-status-label">{values.estado}</span>
+            {!initialData && (
+              <div className="form-field">
+                <label className="form-label">Estado</label>
+                <div className="crud-status-field">
+                  <StatusToggle
+                    checked={values.estado === 'Activo'}
+                    onChange={(checked) => setField('estado', checked ? 'Activo' : 'Inactivo')}
+                  />
+                  <span className="crud-status-label">{values.estado}</span>
+                </div>
               </div>
-            </div>
+            )}
           </form>
         )}
       </div>

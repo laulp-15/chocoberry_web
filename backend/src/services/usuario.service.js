@@ -119,7 +119,6 @@ export async function actualizar(id, datos) {
   if (datos.id_rol !== undefined || datos.rol !== undefined) {
     campos.id_rol = await resolverRol(datos.id_rol ?? datos.rol);
   }
-  if (datos.estado !== undefined) campos.estado = datos.estado ? 1 : 0;
 
   return serializarUsuario(await usuarioModel.actualizar(id, campos));
 }

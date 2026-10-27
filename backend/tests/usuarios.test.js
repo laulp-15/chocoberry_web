@@ -96,6 +96,15 @@ describe('Unicidad del número de documento', () => {
     expect(res.body.code).toBe('DOCUMENT_TAKEN');
   });
 
+  it('PUT /api/usuarios/:id no cambia el estado', async () => {
+    const res = await auth(
+      request(app).put(`/api/usuarios/${usuarioBId}`)
+    ).send({ estado: false });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.estado).toBe(true);
+  });
+
   it('rechaza el registro público con un documento existente', async () => {
     const res = await request(app).post('/api/auth/register').send({
       nombres: 'Tercer',

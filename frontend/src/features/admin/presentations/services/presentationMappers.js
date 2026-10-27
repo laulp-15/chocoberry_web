@@ -35,7 +35,10 @@ export function toCrearPresentacionPayload(datos = {}) {
 }
 
 export function toActualizarPresentacionPayload(datos = {}) {
-  return toCrearPresentacionPayload(datos);
+  return {
+    cantidadFresas: Number(datos.cantidadFresas),
+    precio: Number(datos.precio),
+  };
 }
 
 /**

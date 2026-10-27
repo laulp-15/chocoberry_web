@@ -25,7 +25,9 @@ conexión se está haciendo **módulo por módulo**, de forma incremental:
   `features/admin/admin-reviews` contra `/api/resenas` para listado y cambio
   de estado). **Dashboard** (`features/admin/dashboard` contra
   `/api/dashboard/resumen`: KPIs, ventas semanales/mensuales, productos,
-  municipios, estados y calificaciones).
+  municipios, estados y calificaciones). **Roles** (`features/admin/roles`
+  contra `/api/roles` y `/api/permisos`; el catálogo de permisos es de solo
+  lectura en este alcance).
 - **Aún simulado:** entregas. Sigue usando datos mock en
   memoria/localStorage.
 
@@ -61,11 +63,26 @@ npm run preview  # preview del build
 ## Autenticación (JWT por API)
 
 `useAuth()` mantiene la misma API pública (`user`, `isAuthenticated`, `role`,
-`login`, `register`, `requestPasswordReset`, `changePassword`, `logout`,
-`updateUser`) pero ahora habla con el backend a través de
-`features/login/services/authService.js`. La sesión y el token se guardan con
-`shared/api/session.js`. `RequireAuth` sigue manejando autenticación y
-autorización por rol (`cliente`, `administrador`, `repartidor`).
+`roleName`, `permissions`, `isInitializing`, `login`, `register`,
+`requestPasswordReset`, `changePassword`, `logout`, `updateUser`) pero ahora
+habla con el backend a través de `features/login/services/authService.js`. La
+sesión y el token se guardan con `shared/api/session.js`.
+
+El login y `/auth/me` devuelven los permisos efectivos del rol. El acceso al
+panel usa `Dashboard · Ver` como permiso de entrada, no el slug del rol.
+`RequireAuth` solo valida la sesión; `RequirePanelAccess` y
+`RequirePermission` (`shared/components/RequirePermission.jsx`) validan
+permisos por ruta. El menú se filtra con
+`shared/permissions/panelPermissions.js` y se consulta con
+`shared/hooks/usePermissions.js`. Las acciones de cada módulo deben ocultarse
+con los permisos `Crear`, `Editar`, `Eliminar` o `Cambiar estado`; el backend
+sigue siendo la autoridad final. Reseñas exige `Ver` y `Cambiar estado` para
+entrar al panel de moderación.
+
+El estado de maestros, productos y usuarios solo se cambia con el toggle
+(`PATCH .../estado`): los formularios de edición lo ocultan y los `PUT` no lo
+envían. La visibilidad de registros inactivos de municipios y glaseados usa
+`Productos · Cambiar estado`; sin ese permiso solo se devuelven activos.
 
 ## Arquitectura por features
 

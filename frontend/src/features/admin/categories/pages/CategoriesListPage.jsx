@@ -5,10 +5,16 @@ import CategoryFormModal from '../components/CategoryFormModal';
 import DataTable from '../../../../shared/components/DataTable';
 import ConfirmModal from '../../../../shared/components/ConfirmModal';
 import FormSelect from '../../../../shared/components/FormSelect';
+import { usePermissions } from '../../../../shared/hooks/usePermissions';
 import OrderNotification from "../../orders/components/OrderNotification";
 import './CategoriesListPage.css';
 
 export default function CategoriesListPage() {
+  const { can } = usePermissions();
+  const canCreate = can('Categorías', 'Crear');
+  const canEdit = can('Categorías', 'Editar');
+  const canDelete = can('Categorías', 'Eliminar');
+  const canChangeStatus = can('Categorías', 'Cambiar estado');
   const [notification, setNotification] = useState(null);
   const {
     searchTerm,
@@ -58,6 +64,7 @@ export default function CategoriesListPage() {
     } catch (err) {
       setNotification({
         message: err?.message || 'No se pudo eliminar la categoría.',
+        variant: 'error',
       });
     }
   };
@@ -77,9 +84,20 @@ export default function CategoriesListPage() {
       render: (cat) => (
         <button
           type="button"
-          onClick={() => handleToggleStatus(cat.id)}
+          onClick={canChangeStatus ? () => handleToggleStatus(cat.id) : undefined}
           className={`status-toggle ${cat.estado === 'Activo' ? 'active' : 'inactive'}`}
-          title={cat.estado === 'Activo' ? 'Desactivar' : 'Activar'}
+          disabled={!canChangeStatus}
+          style={{
+            cursor: canChangeStatus ? 'pointer' : 'not-allowed',
+            opacity: canChangeStatus ? 1 : 0.55,
+          }}
+          title={
+            canChangeStatus
+              ? cat.estado === 'Activo'
+                ? 'Desactivar'
+                : 'Activar'
+              : 'No tienes permiso para cambiar el estado.'
+          }
         >
           <div className={`status-toggle-knob ${cat.estado === 'Activo' ? 'active' : 'inactive'}`} />
         </button>
@@ -100,23 +118,27 @@ export default function CategoriesListPage() {
             <i className="fa-solid fa-eye" />
           </button>
 
-          <button
-            type="button"
-            onClick={() => handleOpenEdit(cat)}
-            className="table-action-btn"
-            title="Editar"
-          >
-            <i className="fa-solid fa-pen" />
-          </button>
+          {canEdit && (
+            <button
+              type="button"
+              onClick={() => handleOpenEdit(cat)}
+              className="table-action-btn"
+              title="Editar"
+            >
+              <i className="fa-solid fa-pen" />
+            </button>
+          )}
 
-          <button
-            type="button"
-            onClick={() => handleOpenDelete(cat)}
-            className="table-action-btn danger"
-            title="Eliminar"
-          >
-            <i className="fa-solid fa-trash" />
-          </button>
+          {canDelete && (
+            <button
+              type="button"
+              onClick={() => handleOpenDelete(cat)}
+              className="table-action-btn danger"
+              title="Eliminar"
+            >
+              <i className="fa-solid fa-trash" />
+            </button>
+          )}
         </div>
       )
     }
@@ -127,8 +149,8 @@ export default function CategoriesListPage() {
       <DataTable
         title="Categorías"
         description="Consulta y administra las categorías de productos del negocio."
-        createLabel="Crear categoría"
-        onCreate={handleOpenCreate}
+        createLabel={canCreate ? 'Crear categoría' : undefined}
+        onCreate={canCreate ? handleOpenCreate : undefined}
         columns={columns}
         data={filteredCategorias}
         searchPlaceholder="Buscar por categoría..."
@@ -192,6 +214,7 @@ export default function CategoriesListPage() {
         open={Boolean(notification)}
         onClose={() => setNotification(null)}
         message={notification?.message}
+        variant={notification?.variant}
       />
     </div>
   );

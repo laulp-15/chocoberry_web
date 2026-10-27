@@ -5,11 +5,17 @@ import ProductFormModal from '../components/ProductFormModal';
 import DataTable from '../../../../shared/components/DataTable';
 import ConfirmModal from '../../../../shared/components/ConfirmModal';
 import FormSelect from '../../../../shared/components/FormSelect';
+import { usePermissions } from '../../../../shared/hooks/usePermissions';
 import OrderNotification from "../../orders/components/OrderNotification";
 import { imageUrl } from '../../../../shared/utils/imageUrl';
 import './ProductsListPage.css';
 
 export default function ProductsListPage() {
+  const { can } = usePermissions();
+  const canCreate = can('Productos', 'Crear');
+  const canEdit = can('Productos', 'Editar');
+  const canDelete = can('Productos', 'Eliminar');
+  const canChangeStatus = can('Productos', 'Cambiar estado');
   const [notification, setNotification] = useState(null);
   const {
     searchTerm,
@@ -60,6 +66,7 @@ export default function ProductsListPage() {
     } catch (err) {
       setNotification({
         message: err?.message || 'No se pudo eliminar el producto.',
+        variant: 'error',
       });
     }
   };
@@ -106,9 +113,18 @@ export default function ProductsListPage() {
       render: (prod) => (
         <button
           type="button"
-          onClick={() => handleToggleStatus(prod.id)}
+          onClick={canChangeStatus ? () => handleToggleStatus(prod.id) : undefined}
           className={`status-toggle ${prod.estado === 'Activo' ? 'active' : 'inactive'}`}
-          title={`Estado: ${prod.estado}. Clic para cambiar.`}
+          disabled={!canChangeStatus}
+          style={{
+            cursor: canChangeStatus ? 'pointer' : 'not-allowed',
+            opacity: canChangeStatus ? 1 : 0.55,
+          }}
+          title={
+            canChangeStatus
+              ? `Estado: ${prod.estado}. Clic para cambiar.`
+              : 'No tienes permiso para cambiar el estado.'
+          }
         >
           <div className={`status-toggle-knob ${prod.estado === 'Activo' ? 'active' : 'inactive'}`} />
         </button>
@@ -129,23 +145,27 @@ export default function ProductsListPage() {
             <i className="fa-solid fa-eye" />
           </button>
 
-          <button
-            type="button"
-            onClick={() => handleOpenEdit(prod)}
-            className="table-action-btn"
-            title="Editar"
-          >
-            <i className="fa-solid fa-pen" />
-          </button>
+          {canEdit && (
+            <button
+              type="button"
+              onClick={() => handleOpenEdit(prod)}
+              className="table-action-btn"
+              title="Editar"
+            >
+              <i className="fa-solid fa-pen" />
+            </button>
+          )}
 
-          <button
-            type="button"
-            onClick={() => handleOpenDelete(prod)}
-            className="table-action-btn danger"
-            title="Eliminar"
-          >
-            <i className="fa-solid fa-trash" />
-          </button>
+          {canDelete && (
+            <button
+              type="button"
+              onClick={() => handleOpenDelete(prod)}
+              className="table-action-btn danger"
+              title="Eliminar"
+            >
+              <i className="fa-solid fa-trash" />
+            </button>
+          )}
         </div>
       )
     }
@@ -156,8 +176,8 @@ export default function ProductsListPage() {
       <DataTable
         title="Productos"
         description="Consulta y administra el catálogo de productos de ChocoBerry."
-        createLabel="Crear producto"
-        onCreate={handleOpenCreate}
+        createLabel={canCreate ? 'Crear producto' : undefined}
+        onCreate={canCreate ? handleOpenCreate : undefined}
         columns={columns}
         data={currentProducts}
         searchPlaceholder="Buscar producto, descripción o categoría..."
@@ -222,6 +242,7 @@ export default function ProductsListPage() {
         open={Boolean(notification)}
         onClose={() => setNotification(null)}
         message={notification?.message}
+        variant={notification?.variant}
       />
     </div>
   );

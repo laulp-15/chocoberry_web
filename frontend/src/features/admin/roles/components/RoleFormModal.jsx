@@ -1,5 +1,5 @@
 // src/features/admin/roles/components/RoleFormModal.jsx
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Modal from "../../../../shared/components/Modal";
 import FormTextField from "../../../../shared/components/FormTextField";
 import PermissionsChecklist from "./PermissionsChecklist";
@@ -17,9 +17,21 @@ export default function RoleFormModal({ open, onClose, initialData, onSaved }) {
   const { values: role, errors, setField, handleBlur, validateAll, reset } = useFormValidation({
     initialValues: EMPTY_ROLE,
     validators: {
-      name: (r) => (r.name.trim() ? "" : "El nombre del rol es obligatorio."),
+      name: (r) => {
+        const nombre = r.name.trim();
+        if (!nombre) return "El nombre del rol es obligatorio.";
+        if (nombre.length < 3) {
+          return "El nombre del rol debe tener al menos 3 caracteres.";
+        }
+        if (nombre.length > 50) {
+          return "El nombre del rol no puede superar los 50 caracteres.";
+        }
+        return "";
+      },
       permissionIds: (r) =>
-        r.permissionIds.length > 0 ? "" : "Debes asignar como mínimo un permiso.",
+        r.permissionIds.length > 0
+          ? ""
+          : "Debes asignar como mínimo un permiso.",
     },
     immediate: ["permissionIds"],
   });
@@ -37,10 +49,14 @@ export default function RoleFormModal({ open, onClose, initialData, onSaved }) {
           }
         : EMPTY_ROLE
     );
-    setSaveError("");
   }, [open, initialData]);
 
   const update = (field, value) => setField(field, value);
+
+  const handleClose = () => {
+    setSaveError("");
+    onClose();
+  };
 
   const handleSave = async () => {
     if (!validateAll()) return;
@@ -64,12 +80,12 @@ export default function RoleFormModal({ open, onClose, initialData, onSaved }) {
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       title={isEditing ? "Editar Rol" : "Crear Nuevo Rol"}
       maxWidth="md"
       footer={
         <>
-          <button type="button" className="btn-cancel" onClick={onClose} disabled={saving}>
+          <button type="button" className="btn-cancel" onClick={handleClose} disabled={saving}>
             Cancelar
           </button>
           <button type="button" className="btn-save" onClick={handleSave} disabled={saving}>

@@ -1,33 +1,14 @@
 // src/shared/layouts/AdminLayout.jsx
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { IconButton, useMediaQuery } from "@mui/material";
 import { useAuth } from "../../features/login/hooks/useAuth";
+import { usePermissions } from "../hooks/usePermissions";
+import { allowedNavItems } from "../permissions/panelPermissions";
 import { useTheme } from "../../shared/context/ThemeContext";
 import SidebarTooltip from "../components/SidebarTooltip";
 import ThemeToggleBtn from "../components/ThemeToggleBtn";
 import "./AdminLayout.css";
-
-// Menú del admin
-const NAV_ITEMS = [
-  { to: "/admin", label: "Dashboard", icon: "fa-chart-line", end: true },
-  { to: "/admin/roles", label: "Roles", icon: "fa-shield-halved" },
-  { to: "/admin/usuarios", label: "Usuarios", icon: "fa-users" },
-  { to: "/admin/categorias", label: "Categorías", icon: "fa-tag" },
-  { to: "/admin/productos", label: "Productos", icon: "fa-store" },
-  { to: "/admin/pedidos", label: "Pedidos", icon: "fa-box" },
-  { to: "/admin/ventas", label: "Ventas", icon: "fa-credit-card" },
-  { to: "/admin/resenas", label: "Reseñas", icon: "fa-star" },
-  {
-    label: "Configuraciones",
-    icon: "fa-sliders",
-    children: [
-      { to: "/admin/presentaciones", label: "Presentaciones", icon: "fa-layer-group" },
-      { to: "/admin/municipios", label: "Municipios", icon: "fa-location-dot" },
-      { to: "/admin/glaseados", label: "Glaseados", icon: "fa-palette" },
-    ],
-  },
-];
 
 const STORAGE_KEY = "cb_sidebar_collapsed";
 
@@ -42,9 +23,11 @@ export default function AdminLayout() {
     }
   });
   const { user, logout } = useAuth();
+  const { permissions, roleName } = usePermissions();
   const { theme } = useTheme();
   const location = useLocation();
   const isDarkMode = theme === "dark";
+  const navItems = allowedNavItems(permissions);
 
   const isDesktop = useMediaQuery("(min-width:992px)");
   const isCollapsed = collapsed && isDesktop;
@@ -53,6 +36,7 @@ export default function AdminLayout() {
     try {
       localStorage.setItem(STORAGE_KEY, String(collapsed));
     } catch {
+      // Almacenamiento no disponible: el estado sigue solo en memoria.
     }
   }, [collapsed]);
 
@@ -105,7 +89,7 @@ export default function AdminLayout() {
         </div>
 
         <nav className="admin-nav">
-          {NAV_ITEMS.map((item) =>
+          {navItems.map((item) =>
             item.children ? (
               <div className="admin-nav-group" key={item.label}>
                 <SidebarTooltip title={tip(item.label)}>
@@ -173,11 +157,11 @@ export default function AdminLayout() {
             <i className="fa-solid fa-circle-user" />
             <div className="admin-profile-info">
               <span className="admin-profile-name">
-                {user?.email === "admin@chocoberry.com"
-                  ? "Leidy Figueroa"
-                  : user?.fullName || user?.name || "Leidy Figueroa"}
+                {user?.fullName || user?.name || "Usuario"}
               </span>
-              <span className="admin-profile-role">Administradora</span>
+              <span className="admin-profile-role">
+                {roleName || user?.role || "Sin rol"}
+              </span>
             </div>
           </div>
           <div className="admin-sidebar-actions">

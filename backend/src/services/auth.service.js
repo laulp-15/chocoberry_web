@@ -13,6 +13,7 @@ import {
   NotFoundError,
   UnauthorizedError,
 } from '../errors/index.js';
+import * as permisoModel from '../models/permiso.model.js';
 import * as rolModel from '../models/rol.model.js';
 import * as usuarioModel from '../models/usuario.model.js';
 import { registrarAcceso } from '../utils/accessLog.js';
@@ -27,6 +28,16 @@ const firmarToken = (usuario) =>
   jwt.sign({ sub: usuario.id, correo: usuario.correo }, env.jwt.secret, {
     expiresIn: env.jwt.expiresIn,
   });
+
+/**
+ * Usuario de sesión + permisos efectivos de su rol. Se usa en login y en
+ * /auth/me para que el frontend pueda construir el menú y las rutas sin
+ * consultar endpoints que exigen permisos de administración.
+ */
+async function serializarSesion(usuario) {
+  const permisos = await permisoModel.accionesPorRol(usuario.id_rol);
+  return { ...serializarUsuario(usuario), permisos };
+}
 
 /** Registro de una cuenta de cliente (rol Cliente forzado). */
 export async function registrarCliente(datos) {
@@ -104,7 +115,7 @@ export async function iniciarSesion({ correo, contrasena, ip, userAgent }) {
   limpiarIntentos(correo);
   registrarAcceso({ correo, resultado: 'exitoso', ip, userAgent });
 
-  return { token: firmarToken(usuario), usuario: serializarUsuario(usuario) };
+  return { token: firmarToken(usuario), usuario: await serializarSesion(usuario) };
 }
 
 /** Cierre de sesión: el JWT es stateless, solo se registra el evento. */
@@ -174,5 +185,5 @@ export async function cambiarContrasena(id, { contrasenaActual, nuevaContrasena 
 export async function obtenerPerfil(id) {
   const usuario = await usuarioModel.buscarPorId(id);
   if (!usuario) throw new NotFoundError('Usuario no encontrado.');
-  return serializarUsuario(usuario);
+  return serializarSesion(usuario);
 }
