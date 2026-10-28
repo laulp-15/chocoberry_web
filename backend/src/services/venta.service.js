@@ -6,6 +6,7 @@
 // Entregado o Cancelado. Pendiente y Rechazado no son ventas (el pago todavía
 // no está aprobado).
 import { NotFoundError, UnprocessableEntityError } from '../errors/index.js';
+import * as comprobantePagoModel from '../models/comprobantePago.model.js';
 import * as pedidoModel from '../models/pedido.model.js';
 import * as productoPedidoModel from '../models/productoPedido.model.js';
 import { serializarPedido } from '../utils/serializers.js';
@@ -37,7 +38,7 @@ function normalizarEstadoVenta(valor) {
   return ALIAS_ESTADOS_VENTA[clave] ?? null;
 }
 
-function agruparLineas(filas) {
+function agruparPorPedido(filas) {
   const mapa = new Map();
   for (const fila of filas) {
     if (!mapa.has(fila.id_pedido)) mapa.set(fila.id_pedido, []);
@@ -75,9 +76,20 @@ export async function listar(filtros = {}) {
 
   if (filas.length === 0) return [];
 
-  const lineas = await productoPedidoModel.listarPorPedidos(filas.map((fila) => fila.id));
-  const mapa = agruparLineas(lineas);
-  return filas.map((fila) => serializarPedido(fila, mapa.get(fila.id) ?? []));
+  const ids = filas.map((fila) => fila.id);
+  const [lineas, comprobantes] = await Promise.all([
+    productoPedidoModel.listarPorPedidos(ids),
+    comprobantePagoModel.listarPorPedidos(ids),
+  ]);
+  const mapaLineas = agruparPorPedido(lineas);
+  const mapaComprobantes = agruparPorPedido(comprobantes);
+  return filas.map((fila) =>
+    serializarPedido(
+      fila,
+      mapaLineas.get(fila.id) ?? [],
+      mapaComprobantes.get(fila.id) ?? []
+    )
+  );
 }
 
 /** Detalle de una venta. Devuelve 404 si el pedido existe pero no es venta. */

@@ -3,6 +3,7 @@ node_modules/
 
 # Variables de entorno (NUNCA subir el .env)
 .env
+.env.example
 
 # Archivos subidos por los usuarios (imágenes/comprobantes/evidencias)
 uploads/*

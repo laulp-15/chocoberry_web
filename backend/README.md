@@ -69,6 +69,19 @@ mysql -u TU_USUARIO -p chocoberry < ../database/migrations/004_resena_estado_def
 La migración solo cambia el default de `resena.estado`; no modifica el estado de
 las reseñas existentes. Las bases nuevas ya incluyen este comportamiento.
 
+Los pedidos ahora pueden tener varios comprobantes de pago, cada uno con su
+propio estado (`Pendiente`, `Aprobado` o `Rechazado`) y su monto registrado. Si
+tu base ya estaba creada, ejecuta:
+
+```bash
+mysql -u TU_USUARIO -p chocoberry < ../database/migrations/005_comprobantes_pago.sql
+```
+
+La migración es repetible: crea `estadosComprobante` y `comprobantePago`, migra
+el archivo de `pedido.comprobante_pago` como comprobante Pendiente y solo
+elimina esa columna si todavía existe. Las bases nuevas creadas desde
+`chocoberry_bd.sql` ya incluyen la nueva estructura.
+
 ## Instalación
 
 ```bash
@@ -118,8 +131,7 @@ recientes y pedidos históricos repartidos en los últimos 12 meses, con refuerz
 en las semanas anteriores para que las gráficas del Dashboard tengan datos. Los
 pedidos antiguos quedan en estados finales (`Entregado`, `Cancelado` o
 `Rechazado`) y los recientes mezclan estados activos y finales. No se generan
-archivos de comprobante: `comprobante_pago` queda en `NULL` en todos los pedidos
-del seed.
+archivos ni registros de comprobantes de pago en los pedidos del seed.
 
 El seed de reseñas usa clientes activos, preferiblemente con pedidos entregados,
 y reparte 10 comentarios en los últimos meses. Guarda sus IDs en
@@ -300,6 +312,7 @@ Base: `/api`
 | GET | `/pedidos/mios` | Pedidos del usuario autenticado | Pedidos · Ver |
 | GET | `/pedidos/mios/:id` | Detalle de un pedido propio | Pedidos · Ver |
 | POST | `/pedidos` | Crea un pedido con su comprobante (multipart) | Pedidos · Crear |
+| POST | `/pedidos/:id/comprobantes` | Agrega un comprobante al pedido (multipart) | Pedidos · Crear |
 | PUT | `/pedidos/:id` | Edita cabecera y líneas de un pedido Pendiente | Pedidos · Editar |
 | PATCH | `/pedidos/:id/estado` | Cambia el estado (`{ estado }`) | Pedidos · Cambiar estado |
 | PATCH | `/pedidos/:id/reprogramar` | Reprog. entrega cancelada (`{ fechaEntrega }`) | Pedidos · Cambiar estado |
@@ -316,9 +329,10 @@ Base: `/api`
 > **Estados y transiciones:**
 > `Pendiente → En preparación / Rechazado` · `En preparación → Despachado` ·
 > `Despachado → Entregado / Cancelado`. **Entregado, Rechazado y Cancelado son
-> finales** (no admiten más cambios de estado). El rechazo solo aplica desde
-> `Pendiente` y exige `motivo`; para rechazar se usa su endpoint, no el de
-> cambio de estado.
+> finales** (no admiten más cambios de estado). El paso a `En preparación` solo
+> se permite si el saldo del pedido es cero (pago completo registrado). El rechazo solo
+> aplica desde `Pendiente` y exige `motivo`; para rechazar se usa su endpoint, no
+> el de cambio de estado.
 
 > **Reprogramación:** solo desde `Cancelado`, dentro de las 48 horas posteriores
 > a `fecha_cancelacion` y con una nueva fecha de entrega igual a mañana o pasado
@@ -356,6 +370,39 @@ Base: `/api`
 > actualizarla. Se envía como archivo en el campo `evidencia` y solo se permite
 > con el pedido **Despachado** o **Entregado**; registrarla no cambia el estado.
 > Si el pedido aún no tiene evidencia, la foto es obligatoria.
+
+### Comprobantes de pago (`/api/comprobantes`)
+
+| Método | Ruta | Descripción | Permiso |
+| --- | --- | --- | --- |
+| DELETE | `/comprobantes/:id` | Elimina un comprobante Pendiente propio | Pedidos · Ver |
+| PATCH | `/comprobantes/:id/aprobar` | Aprueba con `{ monto }` (debe igualar el saldo) | Pedidos · Cambiar estado |
+| PATCH | `/comprobantes/:id/rechazar` | Rechaza con `{ motivo, monto }` (valor entregado) | Pedidos · Cambiar estado |
+
+> **Varios comprobantes por pedido:** la creación del pedido exige uno inicial en
+> estado `Pendiente`. Luego, el cliente dueño puede subir hasta **3 comprobantes
+> activos** (`Pendiente` + `Aprobado`) con `POST /pedidos/:id/comprobantes`
+> (campo `comprobante`, PNG/JPG/WEBP, máx. 5 MB) y eliminar los suyos mientras
+> sigan `Pendiente`. Un comprobante `Rechazado` no cuenta para el límite y queda
+> como historial.
+
+> **Aprobación y saldo:** aprobar exige que el **monto verificado** coincida
+> exactamente con el saldo pendiente; no se permiten abonos parciales ni
+> sobrepagos. Aprobar **no** cambia el estado del pedido. El paso manual
+> `Pendiente → En preparación` solo se permite cuando `saldo <= 0`; si hay saldo
+> pendiente responde `409`.
+>
+> **Rechazo con valor entregado:** rechazar exige `motivo` (5–255 caracteres) y
+> `monto` (`>= 0`). El monto de un comprobante rechazado **sí reduce el saldo**.
+> Para evitar que un pedido quede pagado solo con rechazos:
+>
+> - Con saldo pendiente, el monto debe cumplir `0 <= monto < saldo`.
+> - Si `monto === saldo`, debe usarse `aprobar` (`422`).
+> - Si `monto > saldo`, responde `422`.
+> - Si el saldo ya es `0`, solo se admite `monto = 0` para descartar
+>   comprobantes duplicados.
+>
+> Un rechazo no cambia el estado del pedido.
 
 ### Ventas (`/api/ventas`)
 

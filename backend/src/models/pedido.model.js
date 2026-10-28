@@ -3,6 +3,7 @@
 // líneas (productoPedido). Los nombres de columnas siguen EXACTAMENTE la
 // capitalización del script SQL.
 import { query, withTransaction } from '../config/db.js';
+import * as comprobantePagoModel from './comprobantePago.model.js';
 import * as productoPedidoModel from './productoPedido.model.js';
 
 // Columnas de cabecera que se pueden actualizar (lista blanca).
@@ -103,17 +104,17 @@ export async function buscarPorId(id) {
 }
 
 /**
- * Inserta la cabecera y todas sus líneas en una sola transacción.
- * Devuelve el id del pedido creado.
+ * Inserta la cabecera, sus líneas y el comprobante inicial en una sola
+ * transacción. Devuelve el id del pedido creado.
  */
-export async function crearConLineas({ pedido, lineas }) {
+export async function crearConLineas({ pedido, lineas, comprobante }) {
   return withTransaction(async (conexion) => {
     const [resultado] = await conexion.execute(
       `INSERT INTO pedido
          (mensaje_tarjeta, fecha_entrega, direccion, barrio, precio_domicilio,
-          nombre_receptor, telefono_receptor, comprobante_pago,
-          instrucciones_entrega, id_usuario, id_estado, id_municipio)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          nombre_receptor, telefono_receptor, instrucciones_entrega,
+          id_usuario, id_estado, id_municipio)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         pedido.mensaje_tarjeta ?? null,
         pedido.fecha_entrega,
@@ -122,7 +123,6 @@ export async function crearConLineas({ pedido, lineas }) {
         pedido.precio_domicilio,
         pedido.nombre_receptor,
         pedido.telefono_receptor,
-        pedido.comprobante_pago,
         pedido.instrucciones_entrega ?? null,
         pedido.id_usuario,
         pedido.id_estado,
@@ -132,6 +132,11 @@ export async function crearConLineas({ pedido, lineas }) {
 
     const idPedido = resultado.insertId;
     await productoPedidoModel.insertarLineas(conexion, idPedido, lineas);
+    await comprobantePagoModel.crear(conexion, {
+      url: comprobante.url,
+      idPedido,
+      idEstado: comprobante.id_estado,
+    });
     return idPedido;
   });
 }

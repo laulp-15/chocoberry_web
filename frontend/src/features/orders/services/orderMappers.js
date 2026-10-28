@@ -6,6 +6,22 @@
 
 import { imageUrl } from '../../../shared/utils/imageUrl';
 
+function mapComprobante(comprobante) {
+  if (!comprobante) return null;
+
+  return {
+    id: comprobante.id,
+    url: imageUrl(comprobante.url),
+    monto:
+      comprobante.monto === null || comprobante.monto === undefined
+        ? null
+        : Number(comprobante.monto),
+    fecha: comprobante.fecha,
+    motivoRechazo: comprobante.motivoRechazo ?? '',
+    estado: comprobante.estado?.nombre ?? '',
+  };
+}
+
 function mapLinea(linea) {
   if (!linea) return null;
 
@@ -48,6 +64,12 @@ export function mapPedido(pedido) {
     motivoRechazo: pedido.motivoRechazo ?? '',
     subtotal: Number(pedido.subtotal ?? 0),
     total: Number(pedido.total ?? 0),
+    totalPagado: Number(pedido.totalPagado ?? 0),
+    saldo: Number(pedido.saldo ?? 0),
+    puedeSubirComprobante: Boolean(pedido.puedeSubirComprobante),
+    comprobantes: Array.isArray(pedido.comprobantes)
+      ? pedido.comprobantes.map(mapComprobante)
+      : [],
     lineas: Array.isArray(pedido.lineas) ? pedido.lineas.map(mapLinea) : [],
   };
 }

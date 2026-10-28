@@ -113,7 +113,30 @@ describe('Módulo de pedidos', () => {
     return res.body.data;
   }
 
+  async function aprobarPagoCompleto(id) {
+    const detalle = await auth(request(app).get(`/api/pedidos/${id}`));
+    expect(detalle.status).toBe(200);
+    const pedido = detalle.body.data;
+    if (pedido.estado.nombre !== 'Pendiente' || pedido.saldo <= 0) return pedido;
+
+    const pendiente = (pedido.comprobantes ?? []).find(
+      (comprobante) => comprobante.estado.nombre === 'Pendiente'
+    );
+    if (!pendiente) return pedido;
+
+    const res = await auth(
+      request(app)
+        .patch(`/api/comprobantes/${pendiente.id}/aprobar`)
+        .send({ monto: pedido.saldo })
+    );
+    expect(res.status).toBe(200);
+    return res.body.data.pedido;
+  }
+
   async function cambiarEstado(id, estado, token = tokenAdmin) {
+    if (estado === 'en_preparacion') {
+      await aprobarPagoCompleto(id);
+    }
     return auth(
       request(app).patch(`/api/pedidos/${id}/estado`).send({ estado }),
       token
@@ -242,7 +265,13 @@ describe('Módulo de pedidos', () => {
       expect(pedido.cliente.id).toBe(clienteId);
       expect(pedido.municipio.id).toBe(municipio.id);
       expect(pedido.fechaEntrega).toBe('2026-12-24');
-      expect(pedido.comprobantePago).toMatch(/^\/uploads\//);
+      expect(pedido.comprobantes).toHaveLength(1);
+      expect(pedido.comprobantes[0].url).toMatch(/^\/uploads\//);
+      expect(pedido.comprobantes[0].estado.nombre).toBe('Pendiente');
+      expect(pedido.comprobantes[0].monto).toBeNull();
+      expect(pedido.totalPagado).toBe(0);
+      expect(pedido.saldo).toBe(pedido.total);
+      expect(pedido.puedeSubirComprobante).toBe(true);
       expect(pedido.lineas).toHaveLength(1);
 
       const linea = pedido.lineas[0];
@@ -469,6 +498,17 @@ describe('Módulo de pedidos', () => {
 
     it('PATCH /estado con una transición inválida devuelve 409', async () => {
       const res = await cambiarEstado(pedidoPrincipalId, 'entregado');
+      expect(res.status).toBe(409);
+    });
+
+    it('bloquea el paso a En preparación si el pedido tiene saldo pendiente', async () => {
+      const pedido = await crearPedido();
+      const res = await auth(
+        request(app)
+          .patch(`/api/pedidos/${pedido.id}/estado`)
+          .send({ estado: 'en_preparacion' })
+      );
+
       expect(res.status).toBe(409);
     });
 

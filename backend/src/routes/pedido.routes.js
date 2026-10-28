@@ -3,6 +3,7 @@
 // El alcance por rol (cliente = solo lo suyo, repartidor = sin cambiar
 // estado) se aplica en el service.
 import { Router } from 'express';
+import * as comprobanteController from '../controllers/comprobante.controller.js';
 import * as pedidoController from '../controllers/pedido.controller.js';
 import { checkRol, verifyToken } from '../middlewares/auth.js';
 import { checkPermiso } from '../middlewares/checkPermiso.js';
@@ -60,6 +61,15 @@ router.post(
   subirComprobante,
   validar(crearPedidoSchema),
   pedidoController.crear
+);
+
+// Subida de un comprobante adicional para un pedido propio.
+router.post(
+  '/:id/comprobantes',
+  checkPermiso('Pedidos', 'Crear'),
+  subirComprobante,
+  validar(idParamSchema, 'params'),
+  comprobanteController.agregar
 );
 
 router.put(

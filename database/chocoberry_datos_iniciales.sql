@@ -28,6 +28,14 @@ INSERT INTO estadosPedido (id, nombre) VALUES
     (6, 'Cancelado');
 
 -- -----------------------------------------------------------------------------
+-- ESTADOS DE COMPROBANTE DE PAGO
+-- -----------------------------------------------------------------------------
+INSERT INTO estadosComprobante (id, nombre) VALUES
+    (1, 'Pendiente'),
+    (2, 'Aprobado'),
+    (3, 'Rechazado');
+
+-- -----------------------------------------------------------------------------
 -- MÓDULOS (mismas claves que el catálogo del front: Permissions.js)
 -- -----------------------------------------------------------------------------
 INSERT INTO modulo (id, nombre) VALUES

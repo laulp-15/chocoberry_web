@@ -184,18 +184,47 @@ export function serializarLineaPedido(row) {
   };
 }
 
+/** Convierte una fila de `comprobantePago` al objeto público. */
+export function serializarComprobante(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    url: row.url,
+    monto:
+      row.monto === null || row.monto === undefined ? null : Number(row.monto),
+    fecha: row.fecha,
+    motivoRechazo: row.motivo_rechazo ?? null,
+    estado: { id: row.id_estado, nombre: row.estado_comprobante },
+  };
+}
+
 /**
  * Convierte una fila de `pedido` (con cliente, estado y municipio) más sus
- * líneas al objeto público. El total se deriva: no existe columna en la BD.
+ * líneas y comprobantes al objeto público. El total y el saldo se derivan: no
+ * existen columnas en la BD para ellos.
  */
-export function serializarPedido(row, lineas = []) {
+export function serializarPedido(row, lineas = [], comprobantes = []) {
   if (!row) return null;
 
   const lineasSerializadas = lineas.map(serializarLineaPedido);
+  const comprobantesSerializados = comprobantes.map(serializarComprobante);
   const subtotal = redondear2(
     lineasSerializadas.reduce((acumulado, linea) => acumulado + linea.subtotal, 0)
   );
   const precioDomicilio = Number(row.precio_domicilio);
+  const total = redondear2(subtotal + precioDomicilio);
+
+  const totalPagado = redondear2(
+    comprobantesSerializados
+      .filter((comprobante) =>
+        ['Aprobado', 'Rechazado'].includes(comprobante.estado.nombre)
+      )
+      .reduce((acumulado, comprobante) => acumulado + Number(comprobante.monto ?? 0), 0)
+  );
+  const saldo = redondear2(total - totalPagado);
+  const comprobantesActivos = comprobantesSerializados.filter((comprobante) =>
+    ['Pendiente', 'Aprobado'].includes(comprobante.estado.nombre)
+  ).length;
 
   return {
     id: row.id,
@@ -219,14 +248,18 @@ export function serializarPedido(row, lineas = []) {
     precioDomicilio,
     nombreReceptor: row.nombre_receptor,
     telefonoReceptor: row.telefono_receptor,
-    comprobantePago: row.comprobante_pago,
     motivoRechazo: row.motivo_rechazo,
     fechaCancelacion: row.fecha_cancelacion,
     instruccionesEntrega: row.instrucciones_entrega,
     observacionesEntrega: row.observaciones_entrega,
     evidenciaEntrega: row.evidencia_entrega,
     lineas: lineasSerializadas,
+    comprobantes: comprobantesSerializados,
     subtotal,
-    total: redondear2(subtotal + precioDomicilio),
+    total,
+    totalPagado,
+    saldo,
+    puedeSubirComprobante:
+      row.estado === 'Pendiente' && saldo > 0 && comprobantesActivos < 3,
   };
 }

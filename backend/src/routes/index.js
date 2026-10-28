@@ -14,6 +14,7 @@ import productoRoutes from './producto.routes.js';
 import presentacionRoutes from './presentacion.routes.js';
 import catalogoRoutes from './catalogo.routes.js';
 import pedidoRoutes from './pedido.routes.js';
+import comprobanteRoutes from './comprobante.routes.js';
 import ventaRoutes from './venta.routes.js';
 import resenaRoutes from './resena.routes.js';
 import dashboardRoutes from './dashboard.routes.js';
@@ -43,6 +44,8 @@ router.use('/presentaciones', presentacionRoutes);
 router.use('/catalogo', catalogoRoutes);
 // Pedidos (clientes, panel y repartidor).
 router.use('/pedidos', pedidoRoutes);
+// Acciones sobre comprobantes de pago existentes.
+router.use('/comprobantes', comprobanteRoutes);
 // Ventas (vista de solo lectura de pedidos confirmados).
 router.use('/ventas', ventaRoutes);
 // Reseñas: panel de administración y creación de reseñas autenticadas.

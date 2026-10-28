@@ -21,6 +21,10 @@ export default function RejectReasonModal({
   onSubmit,
   submitting = false,
   formError = "",
+  title = "Motivo del rechazo",
+  label = "Motivo",
+  placeholder = "Ej: El cliente no confirmó el pago del pedido.",
+  submitLabel = "Guardar",
 }) {
   const { values, errors, setField, handleBlur, validateAll } =
     useFormValidation({
@@ -50,7 +54,7 @@ export default function RejectReasonModal({
     <Modal
       open={open}
       onClose={onClose}
-      title="Motivo del rechazo"
+      title={title}
       maxWidth="sm"
       footer={
         <>
@@ -63,7 +67,7 @@ export default function RejectReasonModal({
             onClick={handleSubmit}
             disabled={submitting}
           >
-            {submitting ? "Guardando..." : "Guardar"}
+            {submitting ? "Guardando..." : submitLabel}
           </button>
         </>
       }
@@ -74,14 +78,14 @@ export default function RejectReasonModal({
         </div>
       )}
       <FormTextField
-        label="Motivo"
+        label={label}
         required
         multiline
         minRows={3}
         value={values.reason}
         onChange={(v) => setField("reason", v)}
         onBlur={() => handleBlur("reason")}
-        placeholder="Ej: El cliente no confirmó el pago del pedido."
+        placeholder={placeholder}
         error={errors.reason}
       />
     </Modal>

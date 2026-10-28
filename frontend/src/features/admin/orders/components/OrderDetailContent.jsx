@@ -8,9 +8,14 @@ import {
   formatDisplayDate,
   getInitials,
   getProofUrl,
-  isPdfProof,
 } from "../utils/orderDisplay";
 import "./OrderDetailContent.css";
+
+const COMPROBANTE_COLORS = {
+  Pendiente: { color: "#B45309", background: "#F59E0B1F" },
+  Aprobado: { color: "#1B5E3F", background: "#E7F7EE" },
+  Rechazado: { color: "#B91C1C", background: "#FEE2E2" },
+};
 
 /**
  * Contenido de "ver detalle" de un pedido — sin ningún wrapper (ni Modal,
@@ -20,19 +25,26 @@ import "./OrderDetailContent.css";
  * @param {object} props.order
  * @param {(fechaEntrega: string) => Promise<void>} [props.onReprogram]
  * @param {boolean} [props.reprogramming]
+ * @param {(comprobante: object) => void} [props.onApprovePayment]
+ * @param {(comprobante: object) => void} [props.onRejectPayment]
+ * @param {boolean} [props.canManagePayments]
+ * @param {number|string|null} [props.paymentSavingId]
  */
 export default function OrderDetailContent({
   order,
   onReprogram,
   reprogramming = false,
+  onApprovePayment,
+  onRejectPayment,
+  canManagePayments = false,
+  paymentSavingId = null,
 }) {
-  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [activeReceiptUrl, setActiveReceiptUrl] = useState(null);
   const [evidenceLightboxOpen, setEvidenceLightboxOpen] = useState(false);
 
   if (!order) return null;
 
-  const proofUrl = getProofUrl(order.comprobante);
-  const proofIsPdf = isPdfProof(order.comprobante);
+  const comprobantes = order.comprobantes ?? [];
   const evidenceUrl = getProofUrl(order.evidenciaEntrega);
   const hasEvidence = Boolean(evidenceUrl || order.observacionesEntrega);
 
@@ -237,38 +249,121 @@ export default function OrderDetailContent({
             <i className="fa-solid fa-credit-card" />
             Información de pago
           </div>
-          <div className="order-detail-grid">
+
+          {comprobantes.length === 0 ? (
+            <div className="order-detail-value order-detail-muted">
+              Sin comprobantes adjuntos
+            </div>
+          ) : (
+            <div className="order-detail-receipt-list">
+              {comprobantes.map((comprobante) => {
+                const receiptUrl = getProofUrl(comprobante.url);
+                const colors =
+                  COMPROBANTE_COLORS[comprobante.estado] ??
+                  COMPROBANTE_COLORS.Pendiente;
+                const saving =
+                  String(paymentSavingId) === String(comprobante.id);
+
+                return (
+                  <div
+                    key={comprobante.id}
+                    className="order-detail-receipt"
+                  >
+                    {receiptUrl ? (
+                      <button
+                        type="button"
+                        className="order-detail-proof-link"
+                        title="Ver comprobante"
+                        onClick={() => setActiveReceiptUrl(receiptUrl)}
+                      >
+                        <img
+                          src={receiptUrl}
+                          alt={`Comprobante #${comprobante.id}`}
+                          className="order-detail-proof-thumb"
+                        />
+                      </button>
+                    ) : (
+                      <div className="order-detail-proof-thumb order-detail-muted">
+                        Sin imagen
+                      </div>
+                    )}
+
+                    <div className="order-detail-receipt-body">
+                      <div className="order-detail-receipt-head">
+                        <span
+                          className="order-detail-receipt-status"
+                          style={{
+                            color: colors.color,
+                            backgroundColor: colors.background,
+                          }}
+                        >
+                          {comprobante.estado}
+                        </span>
+                        <span className="order-detail-receipt-date">
+                          {formatDisplayDate(comprobante.fecha)}
+                        </span>
+                      </div>
+
+                      <div className="order-detail-receipt-line">
+                        <span>
+                          {comprobante.estado === "Rechazado"
+                            ? "Valor entregado"
+                            : "Monto verificado"}
+                        </span>
+                        <strong>
+                          {comprobante.monto === null
+                            ? "Sin verificar"
+                            : formatPrice(comprobante.monto)}
+                        </strong>
+                      </div>
+
+                      {comprobante.motivoRechazo && (
+                        <div className="order-detail-receipt-reason">
+                          <strong>Motivo:</strong> {comprobante.motivoRechazo}
+                        </div>
+                      )}
+
+                      {canManagePayments &&
+                        order.estado === "pendiente" &&
+                        comprobante.estado === "Pendiente" && (
+                          <div className="order-detail-receipt-actions">
+                            {Number(order.saldo) > 0 && (
+                              <button
+                                type="button"
+                                className="order-detail-receipt-btn approve"
+                                disabled={saving}
+                                onClick={() => onApprovePayment?.(comprobante)}
+                              >
+                                <i className="fa-solid fa-check" /> Aprobar
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              className="order-detail-receipt-btn reject"
+                              disabled={saving}
+                              onClick={() => onRejectPayment?.(comprobante)}
+                            >
+                              <i className="fa-solid fa-xmark" /> Rechazar
+                            </button>
+                          </div>
+                        )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="order-detail-payment-summary">
             <div>
-              <div className="order-detail-label">Comprobante</div>
-              {proofUrl ? (
-                proofIsPdf ? (
-                  <a
-                    href={proofUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="order-detail-proof-pdf"
-                  >
-                    <i className="fa-solid fa-file-pdf" />
-                    Ver comprobante PDF
-                  </a>
-                ) : (
-                  <button
-                    type="button"
-                    className="order-detail-proof-link"
-                    onClick={() => setLightboxOpen(true)}
-                  >
-                    <img
-                      src={proofUrl}
-                      alt="Comprobante de pago"
-                      className="order-detail-proof-thumb"
-                    />
-                  </button>
-                )
-              ) : (
-                <div className="order-detail-value order-detail-muted">
-                  Sin comprobante adjunto
-                </div>
-              )}
+              <span>Total pagado</span>
+              <strong>{formatPrice(order.totalPagado ?? 0)}</strong>
+            </div>
+            <div>
+              <span>{order.saldo < 0 ? "Saldo a favor" : "Saldo pendiente"}</span>
+              <strong className={order.saldo > 0 ? "pending" : "paid"}>
+                {formatPrice(Math.abs(order.saldo ?? 0))}
+              </strong>
             </div>
           </div>
         </div>
@@ -343,9 +438,9 @@ export default function OrderDetailContent({
 
       {/* Visor para comprobante de pago */}
       <ImageLightbox
-        open={lightboxOpen}
-        onClose={() => setLightboxOpen(false)}
-        src={proofUrl}
+        open={Boolean(activeReceiptUrl)}
+        onClose={() => setActiveReceiptUrl(null)}
+        src={activeReceiptUrl}
         alt="Comprobante de pago"
       />
 

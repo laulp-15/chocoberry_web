@@ -5,6 +5,8 @@ import FormSelect from "../../../../shared/components/FormSelect";
 import OrderStatusSelector from "../components/OrderStatusSelector";
 import OrderFormModal from "../components/OrderFormModal";
 import OrderDetailModal from "../components/OrderDetailModal";
+import ApprovePaymentModal from "../components/ApprovePaymentModal";
+import RejectPaymentModal from "../components/RejectPaymentModal";
 import RejectReasonModal from "../components/RejectReasonModal";
 import OrderNotification from "../components/OrderNotification";
 import { usePermissions } from "../../../../shared/hooks/usePermissions";
@@ -41,10 +43,13 @@ export default function OrdersListPage() {
     statusSavingId,
     rejectSubmitting,
     reprogrammingId,
+    paymentSavingId,
     createOrder,
     updateOrder,
     changeStatus,
     rejectOrder,
+    approvePayment,
+    rejectPayment,
     reprogramOrder,
   } = useOrders();
 
@@ -56,6 +61,10 @@ export default function OrdersListPage() {
   // Pedido que se está rechazando: se pide el motivo antes de aplicar el estado.
   const [rejectingOrder, setRejectingOrder] = useState(null);
   const [rejectError, setRejectError] = useState("");
+
+  const [approvingPayment, setApprovingPayment] = useState(null); // { order, comprobante }
+  const [paymentError, setPaymentError] = useState("");
+  const [rejectingPayment, setRejectingPayment] = useState(null); // { order, comprobante }
 
   const [notification, setNotification] = useState(null); // { message, variant }
 
@@ -166,6 +175,57 @@ export default function OrdersListPage() {
       setNotification({ message: "Pedido rechazado correctamente." });
     } catch (err) {
       setRejectError(err?.message || "No se pudo rechazar el pedido.");
+    }
+  };
+
+  const handleOpenApprovePayment = (order, comprobante) => {
+    setPaymentError("");
+    setApprovingPayment({ order, comprobante });
+  };
+
+  const handleSubmitApprovePayment = async (monto) => {
+    if (!approvingPayment) return;
+
+    setPaymentError("");
+    try {
+      const { pedido, advertencia } = await approvePayment(
+        approvingPayment.comprobante.id,
+        monto
+      );
+      setDetailOrder(pedido);
+      setApprovingPayment(null);
+      setNotification({
+        message:
+          advertencia ||
+          "Comprobante aprobado. Recuerda que el pedido sigue Pendiente.",
+      });
+    } catch (err) {
+      setPaymentError(err?.message || "No se pudo aprobar el comprobante.");
+    }
+  };
+
+  const handleOpenRejectPayment = (order, comprobante) => {
+    setPaymentError("");
+    setRejectingPayment({ order, comprobante });
+  };
+
+  const handleSubmitRejectPayment = async ({ motivo, monto }) => {
+    if (!rejectingPayment) return;
+
+    setPaymentError("");
+    try {
+      const pedido = await rejectPayment(
+        rejectingPayment.comprobante.id,
+        motivo,
+        monto
+      );
+      setDetailOrder(pedido);
+      setRejectingPayment(null);
+      setNotification({
+        message: "Comprobante de pago rechazado. El saldo fue actualizado.",
+      });
+    } catch (err) {
+      setPaymentError(err?.message || "No se pudo rechazar el comprobante.");
     }
   };
 
@@ -364,6 +424,14 @@ export default function OrdersListPage() {
             handleReprogram(detailOrder, fechaEntrega)
           }
           reprogramming={String(reprogrammingId) === String(detailOrder.id)}
+          onApprovePayment={(comprobante) =>
+            handleOpenApprovePayment(detailOrder, comprobante)
+          }
+          onRejectPayment={(comprobante) =>
+            handleOpenRejectPayment(detailOrder, comprobante)
+          }
+          canManagePayments={canChangeStatus}
+          paymentSavingId={paymentSavingId}
         />
       )}
 
@@ -378,6 +446,36 @@ export default function OrdersListPage() {
           onSubmit={handleSubmitReject}
           submitting={rejectSubmitting}
           formError={rejectError}
+        />
+      )}
+
+      {approvingPayment && (
+        <ApprovePaymentModal
+          key={approvingPayment.comprobante.id}
+          open
+          onClose={() => {
+            setApprovingPayment(null);
+            setPaymentError("");
+          }}
+          onSubmit={handleSubmitApprovePayment}
+          submitting={String(paymentSavingId) === String(approvingPayment.comprobante.id)}
+          formError={paymentError}
+          saldo={approvingPayment.order.saldo}
+        />
+      )}
+
+      {rejectingPayment && (
+        <RejectPaymentModal
+          key={rejectingPayment.comprobante.id}
+          open
+          onClose={() => {
+            setRejectingPayment(null);
+            setPaymentError("");
+          }}
+          onSubmit={handleSubmitRejectPayment}
+          submitting={String(paymentSavingId) === String(rejectingPayment.comprobante.id)}
+          formError={paymentError}
+          saldo={rejectingPayment.order.saldo}
         />
       )}
 

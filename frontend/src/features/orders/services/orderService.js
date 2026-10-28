@@ -26,3 +26,17 @@ export async function obtenerMio(id) {
   const pedido = await api.get(`/pedidos/mios/${id}`);
   return mapPedido(pedido);
 }
+
+/** POST /pedidos/:id/comprobantes (multipart, campo "comprobante"). */
+export async function subirComprobante(id, archivo) {
+  const formData = new FormData();
+  formData.append('comprobante', archivo);
+  const pedido = await api.post(`/pedidos/${id}/comprobantes`, formData);
+  return mapPedido(pedido);
+}
+
+/** DELETE /comprobantes/:id */
+export async function eliminarComprobante(id) {
+  const pedido = await api.del(`/comprobantes/${id}`);
+  return mapPedido(pedido);
+}

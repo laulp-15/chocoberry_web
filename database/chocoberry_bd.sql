@@ -117,6 +117,11 @@ CREATE TABLE estadosPedido (
     nombre VARCHAR(50) NOT NULL UNIQUE
 ) ENGINE=InnoDB;
 
+CREATE TABLE estadosComprobante (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL UNIQUE
+) ENGINE=InnoDB;
+
 CREATE TABLE municipio (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
@@ -136,7 +141,6 @@ CREATE TABLE pedido (
     precio_domicilio DECIMAL(10,2) NOT NULL,
     nombre_receptor VARCHAR(100) NOT NULL,
     telefono_receptor VARCHAR(20) NOT NULL,
-    comprobante_pago VARCHAR(255),
     motivo_rechazo VARCHAR(255),
     fecha_cancelacion DATETIME,
     -- Entregas
@@ -174,6 +178,23 @@ CREATE TABLE productoPedido (
         FOREIGN KEY (id_presentacion) REFERENCES presentacion(id),
     CONSTRAINT fk_prodPedido_color
         FOREIGN KEY (id_color_glaseado) REFERENCES colorGlaseado(id)
+) ENGINE=InnoDB;
+
+-- COMPROBANTES DE PAGO (puede haber varios por pedido)
+
+CREATE TABLE comprobantePago (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    url VARCHAR(255) NOT NULL,
+    monto DECIMAL(10,2),
+    fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    motivo_rechazo VARCHAR(255),
+    id_pedido INT NOT NULL,
+    id_estado INT NOT NULL,
+    CONSTRAINT fk_comprobantePago_pedido
+        FOREIGN KEY (id_pedido) REFERENCES pedido(id)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_comprobantePago_estado
+        FOREIGN KEY (id_estado) REFERENCES estadosComprobante(id)
 ) ENGINE=InnoDB;
 
 -- RESEÑAS (por usuario)

@@ -244,7 +244,7 @@
   color: var(--primario);
 }
 
-/* --- Comprobante --- */
+/* --- Comprobantes --- */
 .sale-proof-card {
   background: var(--blanco);
   border: 1px solid var(--borde);
@@ -252,8 +252,25 @@
   padding: 20px 24px;
 }
 
+.sale-proof-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sale-proof-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 12px;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--bg-main);
+}
+
 .sale-proof-link {
   display: inline-block;
+  flex-shrink: 0;
   border: none;
   background: none;
   padding: 0;
@@ -263,9 +280,74 @@
 .sale-proof-thumb {
   width: 72px;
   height: 72px;
+  flex-shrink: 0;
   object-fit: cover;
   border-radius: 10px;
   border: 1px solid var(--borde);
+}
+
+.sale-proof-thumb-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--texto-suave);
+  background: var(--secundario-3);
+}
+
+.sale-proof-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.sale-proof-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.sale-proof-status {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.sale-proof-status--pendiente {
+  color: var(--warning-100);
+  background: var(--warning-20);
+}
+.sale-proof-status--aprobado {
+  color: var(--success-100);
+  background: var(--success-20);
+}
+.sale-proof-status--rechazado {
+  color: var(--error-100);
+  background: var(--error-20);
+}
+
+.sale-proof-date {
+  font-size: 11px;
+  color: var(--texto-suave);
+}
+
+.sale-proof-amount {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--texto-muted);
+}
+.sale-proof-amount strong {
+  color: var(--texto);
+}
+
+.sale-proof-reason {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--error-100);
 }
 
 .sale-proof-empty {
@@ -277,6 +359,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
   padding: 8px 14px;
   border: 1px solid var(--borde);
   border-radius: 10px;
@@ -291,4 +374,10 @@
 }
 .sale-proof-pdf i {
   font-size: 15px;
+}
+
+@media (max-width: 575px) {
+  .sale-proof-item {
+    flex-direction: column;
+  }
 }

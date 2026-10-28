@@ -10,6 +10,8 @@ import {
   UnprocessableEntityError,
 } from '../errors/index.js';
 import * as colorGlaseadoModel from '../models/colorGlaseado.model.js';
+import * as comprobantePagoModel from '../models/comprobantePago.model.js';
+import * as estadoComprobanteModel from '../models/estadoComprobante.model.js';
 import * as estadoPedidoModel from '../models/estadoPedido.model.js';
 import * as pedidoModel from '../models/pedido.model.js';
 import * as presentacionModel from '../models/presentacion.model.js';
@@ -17,6 +19,7 @@ import * as productoModel from '../models/producto.model.js';
 import * as productoPedidoModel from '../models/productoPedido.model.js';
 import * as usuarioModel from '../models/usuario.model.js';
 import * as municipioService from './municipio.service.js';
+import { eliminarArchivoSubido } from '../utils/archivos.js';
 import { redondear2 } from '../utils/number.js';
 import {
   fechaActualLocal,
@@ -181,11 +184,23 @@ async function obtenerPedidoCompleto(id) {
   const fila = await pedidoModel.buscarPorId(id);
   if (!fila) return null;
 
-  const lineas = await productoPedidoModel.listarPorPedido(id);
-  return serializarPedido(fila, lineas);
+  const [lineas, comprobantes] = await Promise.all([
+    productoPedidoModel.listarPorPedido(id),
+    comprobantePagoModel.listarPorPedido(id),
+  ]);
+  return serializarPedido(fila, lineas, comprobantes);
 }
 
 function agruparLineas(filas) {
+  const mapa = new Map();
+  for (const fila of filas) {
+    if (!mapa.has(fila.id_pedido)) mapa.set(fila.id_pedido, []);
+    mapa.get(fila.id_pedido).push(fila);
+  }
+  return mapa;
+}
+
+function agruparComprobantes(filas) {
   const mapa = new Map();
   for (const fila of filas) {
     if (!mapa.has(fila.id_pedido)) mapa.set(fila.id_pedido, []);
@@ -222,9 +237,20 @@ export async function listar(filtros = {}, usuario, { soloPropios = false } = {}
 
   if (filas.length === 0) return [];
 
-  const lineas = await productoPedidoModel.listarPorPedidos(filas.map((fila) => fila.id));
-  const mapa = agruparLineas(lineas);
-  return filas.map((fila) => serializarPedido(fila, mapa.get(fila.id) ?? []));
+  const ids = filas.map((fila) => fila.id);
+  const [lineas, comprobantes] = await Promise.all([
+    productoPedidoModel.listarPorPedidos(ids),
+    comprobantePagoModel.listarPorPedidos(ids),
+  ]);
+  const mapaLineas = agruparLineas(lineas);
+  const mapaComprobantes = agruparComprobantes(comprobantes);
+  return filas.map((fila) =>
+    serializarPedido(
+      fila,
+      mapaLineas.get(fila.id) ?? [],
+      mapaComprobantes.get(fila.id) ?? []
+    )
+  );
 }
 
 export async function obtener(id, usuario, { soloPropios = false } = {}) {
@@ -372,6 +398,14 @@ export async function crear(datos, usuario, comprobante) {
   const idUsuario = await resolverUsuarioPedido(datos.idUsuario, usuario);
   const municipio = await municipioService.resolverActivo(datos.idMunicipio);
   const estado = await resolverEstado(ESTADO_PENDIENTE);
+  const estadoComprobante = await estadoComprobanteModel.buscarPorNombre('Pendiente');
+  if (!estadoComprobante) {
+    throw new AppError(
+      'El estado "Pendiente" de comprobantes no está configurado en la base de datos.',
+      500
+    );
+  }
+
   const lineas = await prepararLineas(datos.lineas);
   validarLimitesPedido(lineas, datos.fechaEntrega, usuario);
 
@@ -385,13 +419,13 @@ export async function crear(datos, usuario, comprobante) {
       precio_domicilio: redondear2(municipio.precio_domicilio),
       nombre_receptor: datos.nombreReceptor,
       telefono_receptor: datos.telefonoReceptor,
-      comprobante_pago: comprobante,
       instrucciones_entrega: limpiarTexto(datos.instruccionesEntrega),
       id_usuario: idUsuario,
       id_estado: estado.id,
       id_municipio: municipio.id,
     },
     lineas,
+    comprobante: { url: comprobante, id_estado: estadoComprobante.id },
   });
 
   return obtenerPedidoCompleto(id);
@@ -476,6 +510,26 @@ export async function cambiarEstado(id, nombreEstado) {
     throw new ConflictError(
       `No se puede cambiar el estado de "${estadoActual.nombre}" a "${destino}". ${detalle}`
     );
+  }
+
+  // El paso a preparación es manual, pero solo se permite cuando el pago ya
+  // está completo. Los comprobantes aprobados definen el saldo.
+  if (destino === 'En preparación') {
+    const resumen = await comprobantePagoModel.resumenPago(id);
+    const saldo = redondear2(Number(resumen?.total ?? 0) - Number(resumen?.pagado ?? 0));
+
+    if (saldo > 0) {
+      const monto = saldo.toLocaleString('es-CO', { maximumFractionDigits: 2 });
+      throw new ConflictError(
+        `No se puede pasar a "En preparación": el pedido tiene un saldo pendiente de $${monto}.`,
+        [
+          {
+            campo: 'saldo',
+            mensaje: `Saldo pendiente: $${monto}.`,
+          },
+        ]
+      );
+    }
   }
 
   const estado = await resolverEstado(destino);
@@ -593,6 +647,11 @@ export async function eliminar(id) {
   const actual = await pedidoModel.buscarPorId(id);
   if (!actual) throw new NotFoundError('Pedido no encontrado.');
 
-  // Las líneas se eliminan en cascada (FK productoPedido.id_pedido).
+  const comprobantes = await comprobantePagoModel.listarPorPedido(id);
+
+  // Las líneas y los comprobantes se eliminan en cascada por sus FKs.
   await pedidoModel.eliminar(id);
+  await Promise.all(
+    comprobantes.map((comprobante) => eliminarArchivoSubido(comprobante.url))
+  );
 }

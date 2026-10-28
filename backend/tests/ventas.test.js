@@ -91,13 +91,38 @@ describe('Módulo de ventas', () => {
 
     expect(res.status).toBe(201);
     pedidosCreados.push(res.body.data.id);
-    if (res.body.data.comprobantePago) {
-      archivosCreados.add(path.join(uploadsDir, path.basename(res.body.data.comprobantePago)));
+    for (const comprobante of res.body.data.comprobantes ?? []) {
+      if (comprobante.url) {
+        archivosCreados.add(path.join(uploadsDir, path.basename(comprobante.url)));
+      }
     }
     return res.body.data;
   }
 
+  async function aprobarPagoCompleto(id) {
+    const detalle = await auth(request(app).get(`/api/pedidos/${id}`));
+    expect(detalle.status).toBe(200);
+    const pedido = detalle.body.data;
+    if (pedido.estado.nombre !== 'Pendiente' || pedido.saldo <= 0) return pedido;
+
+    const pendiente = (pedido.comprobantes ?? []).find(
+      (comprobante) => comprobante.estado.nombre === 'Pendiente'
+    );
+    if (!pendiente) return pedido;
+
+    const res = await auth(
+      request(app)
+        .patch(`/api/comprobantes/${pendiente.id}/aprobar`)
+        .send({ monto: pedido.saldo })
+    );
+    expect(res.status).toBe(200);
+    return res.body.data.pedido;
+  }
+
   async function cambiarEstado(id, estado) {
+    if (estado === 'en_preparacion') {
+      await aprobarPagoCompleto(id);
+    }
     const res = await auth(request(app).patch(`/api/pedidos/${id}/estado`)).send({ estado });
     expect(res.status).toBe(200);
     return res.body.data;
@@ -234,7 +259,8 @@ describe('Módulo de ventas', () => {
     expect(res.body.data.estado.nombre).toBe('Entregado');
     expect(res.body.data.lineas).toHaveLength(1);
     expect(res.body.data.total).toBeGreaterThan(0);
-    expect(res.body.data.comprobantePago).toMatch(/^\/uploads\//);
+    expect(res.body.data.comprobantes).toHaveLength(1);
+    expect(res.body.data.comprobantes[0].url).toMatch(/^\/uploads\//);
   });
 
   it('un pedido Pendiente o Rechazado no se puede ver como venta (404)', async () => {

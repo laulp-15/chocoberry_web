@@ -68,6 +68,24 @@ export async function rechazar(id, motivo) {
   return mapPedidoAdmin(pedido);
 }
 
+/** PATCH /comprobantes/:id/aprobar. Devuelve el pedido y una advertencia. */
+export async function aprobarComprobante(id, monto) {
+  const resultado = await api.patch(`/comprobantes/${id}/aprobar`, { monto });
+  return {
+    pedido: mapPedidoAdmin(resultado.pedido),
+    advertencia: resultado.advertencia ?? "",
+  };
+}
+
+/** PATCH /comprobantes/:id/rechazar */
+export async function rechazarComprobante(id, motivo, monto) {
+  const pedido = await api.patch(`/comprobantes/${id}/rechazar`, {
+    motivo,
+    monto,
+  });
+  return mapPedidoAdmin(pedido);
+}
+
 /** DELETE /pedidos/:id */
 export async function eliminar(id) {
   await api.del(`/pedidos/${id}`);
