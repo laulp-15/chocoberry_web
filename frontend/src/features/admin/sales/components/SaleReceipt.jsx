@@ -25,9 +25,8 @@ function getInitials(name) {
  */
 export default function SaleReceipt({ sale }) {
   const municipioLabel = sale.municipio || "—";
-  const proofUrl = getProofUrl(sale.comprobante);
-  const proofIsPdf = isPdfProof(sale.comprobante);
-  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const comprobantes = sale.comprobantes ?? [];
+  const [activeProof, setActiveProof] = useState(null);
 
   return (
     <div className="sale-receipt">
@@ -121,28 +120,92 @@ export default function SaleReceipt({ sale }) {
       </div>
 
       <div className="sale-proof-card">
-        <div className="sale-info-label">Comprobante de pago</div>
-        {proofUrl ? (
-          proofIsPdf ? (
-            <a href={proofUrl} target="_blank" rel="noreferrer" className="sale-proof-pdf">
-              <i className="fa-solid fa-file-pdf" />
-              Ver comprobante PDF
-            </a>
-          ) : (
-            <button type="button" className="sale-proof-link" onClick={() => setLightboxOpen(true)}>
-              <img src={proofUrl} alt="Comprobante de pago" className="sale-proof-thumb" />
-            </button>
-          )
-        ) : (
+        <div className="sale-info-label">Comprobantes de pago</div>
+        {comprobantes.length === 0 ? (
           <span className="sale-proof-empty">Sin comprobante adjunto</span>
+        ) : (
+          <div className="sale-proof-list">
+            {comprobantes.map((comprobante) => {
+              const proofUrl = getProofUrl(comprobante.url);
+              const proofIsPdf = isPdfProof(comprobante.url);
+              const estadoClass = (comprobante.estado || "pendiente").toLowerCase();
+
+              return (
+                <div key={comprobante.id} className="sale-proof-item">
+                  {proofUrl ? (
+                    proofIsPdf ? (
+                      <a
+                        href={proofUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="sale-proof-pdf"
+                      >
+                        <i className="fa-solid fa-file-pdf" />
+                        Ver PDF
+                      </a>
+                    ) : (
+                      <button
+                        type="button"
+                        className="sale-proof-link"
+                        onClick={() =>
+                          setActiveProof({
+                            url: proofUrl,
+                            alt: `Comprobante #${comprobante.id}`,
+                          })
+                        }
+                      >
+                        <img
+                          src={proofUrl}
+                          alt={`Comprobante #${comprobante.id}`}
+                          className="sale-proof-thumb"
+                        />
+                      </button>
+                    )
+                  ) : (
+                    <span className="sale-proof-thumb sale-proof-thumb-empty">
+                      <i className="fa-solid fa-image" />
+                    </span>
+                  )}
+
+                  <div className="sale-proof-info">
+                    <div className="sale-proof-head">
+                      <span className={`sale-proof-status sale-proof-status--${estadoClass}`}>
+                        {comprobante.estado}
+                      </span>
+                      <span className="sale-proof-date">
+                        {formatDisplayDate(comprobante.fecha)}
+                      </span>
+                    </div>
+                    <div className="sale-proof-amount">
+                      <span>
+                        {comprobante.estado === "Rechazado"
+                          ? "Valor entregado"
+                          : "Monto verificado"}
+                      </span>
+                      <strong>
+                        {comprobante.monto === null
+                          ? "Pendiente de verificación"
+                          : formatPrice(comprobante.monto)}
+                      </strong>
+                    </div>
+                    {comprobante.motivoRechazo && (
+                      <div className="sale-proof-reason">
+                        <strong>Motivo del rechazo:</strong> {comprobante.motivoRechazo}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
 
       <ImageLightbox
-        open={lightboxOpen}
-        onClose={() => setLightboxOpen(false)}
-        src={proofUrl}
-        alt="Comprobante de pago"
+        open={Boolean(activeProof)}
+        onClose={() => setActiveProof(null)}
+        src={activeProof?.url}
+        alt={activeProof?.alt ?? "Comprobante de pago"}
       />
     </div>
   );

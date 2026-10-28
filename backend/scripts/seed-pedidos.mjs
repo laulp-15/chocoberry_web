@@ -5,7 +5,7 @@
 // - Usa los services de pedidos para calcular precios, domicilios y estados.
 // - Ajusta la fecha de creación para que el listado quede ordenado como una
 //   línea de tiempo real: los más recientes primero.
-// - No genera archivos de comprobante: `comprobante_pago` queda en NULL.
+// - No genera archivos ni registros de comprobantes de pago.
 // - No escribe etiquetas [SEED] en los pedidos. El lote se identifica con el
 //   manifiesto local scripts/.seed-pedidos.json (ignorado por git).
 // - `npm run seed:pedidos -- --reset` elimina el lote anterior (incluidos los
@@ -31,7 +31,7 @@ const MANIFIESTO_ARCHIVO = path.join(DIR_SCRIPT, '.seed-pedidos.json');
 const PATRON_LEGACY = /\[SEED-\d{2}\]/;
 
 // `pedidoService.crear` exige un comprobante. El seed no genera archivos: usa
-// una ruta ficticia y después deja `comprobante_pago` en NULL.
+// una ruta ficticia y después elimina el registro del comprobante.
 const COMPROBANTE_DUMMY = '/uploads/seed-sin-comprobante.svg';
 
 // Catálogos resueltos por correo/nombre/cantidad, no por IDs.
@@ -46,7 +46,6 @@ const PEDIDOS_SEED = [
     hora: '18:42:10',
     diasEntrega: 10,
     estado: 'pendiente',
-    comprobante: false,
     mensajeTarjeta: 'Gracias por estar siempre.',
     instrucciones: 'Entregar en portería.',
     lineas: [
@@ -60,7 +59,6 @@ const PEDIDOS_SEED = [
     hora: '12:18:35',
     diasEntrega: 9,
     estado: 'pendiente',
-    comprobante: false,
     mensajeTarjeta: 'Feliz aniversario, mi amor.',
     instrucciones: 'Llamar al llegar.',
     lineas: [
@@ -74,7 +72,6 @@ const PEDIDOS_SEED = [
     hora: '09:07:22',
     diasEntrega: 8,
     estado: 'pendiente',
-    comprobante: false,
     mensajeTarjeta: 'Para compartir en familia.',
     instrucciones: 'Dejar en recepción.',
     lineas: [
@@ -88,7 +85,6 @@ const PEDIDOS_SEED = [
     hora: '20:05:48',
     diasEntrega: 7,
     estado: 'pendiente',
-    comprobante: false,
     mensajeTarjeta: 'Un detalle para alegrar tu día.',
     instrucciones: null,
     lineas: [
@@ -102,7 +98,6 @@ const PEDIDOS_SEED = [
     hora: '15:33:04',
     diasEntrega: 6,
     estado: 'pendiente',
-    comprobante: false,
     mensajeTarjeta: '¡Feliz cumpleaños!',
     instrucciones: 'Coordinar con el cliente.',
     lineas: [
@@ -118,7 +113,6 @@ const PEDIDOS_SEED = [
     hora: '11:26:51',
     diasEntrega: 3,
     estado: 'en_preparacion',
-    comprobante: false,
     mensajeTarjeta: 'Que cumplas muchos más.',
     instrucciones: 'Confirmar horario de entrega.',
     lineas: [
@@ -134,7 +128,6 @@ const PEDIDOS_SEED = [
     hora: '17:48:19',
     diasEntrega: 2,
     estado: 'en_preparacion',
-    comprobante: false,
     mensajeTarjeta: 'Te amo mucho.',
     instrucciones: 'Enviar mensaje antes de salir.',
     lineas: [
@@ -150,7 +143,6 @@ const PEDIDOS_SEED = [
     hora: '08:55:37',
     diasEntrega: 1,
     estado: 'despachado',
-    comprobante: false,
     mensajeTarjeta: '¡Mucha fuerza!',
     instrucciones: 'Entregar después de las 3 p. m.',
     lineas: [
@@ -164,7 +156,6 @@ const PEDIDOS_SEED = [
     hora: '14:12:06',
     diasEntrega: -7,
     estado: 'entregado',
-    comprobante: false,
     mensajeTarjeta: 'Feliz día, papá.',
     instrucciones: null,
     lineas: [
@@ -180,7 +171,6 @@ const PEDIDOS_SEED = [
     hora: '10:41:29',
     diasEntrega: -11,
     estado: 'entregado',
-    comprobante: false,
     mensajeTarjeta: 'Con todo mi cariño.',
     instrucciones: null,
     lineas: [
@@ -194,7 +184,6 @@ const PEDIDOS_SEED = [
     hora: '19:03:15',
     diasEntrega: -16,
     estado: 'entregado',
-    comprobante: false,
     mensajeTarjeta: 'Feliz día, mamá.',
     instrucciones: null,
     lineas: [
@@ -208,7 +197,6 @@ const PEDIDOS_SEED = [
     hora: '13:27:44',
     diasEntrega: -21,
     estado: 'entregado',
-    comprobante: false,
     mensajeTarjeta: 'Por muchos momentos juntos.',
     instrucciones: null,
     lineas: [
@@ -224,7 +212,6 @@ const PEDIDOS_SEED = [
     hora: '16:58:02',
     diasEntrega: -26,
     estado: 'entregado',
-    comprobante: false,
     mensajeTarjeta: 'Dos detalles para una persona especial.',
     instrucciones: 'Entregar en la portería principal.',
     lineas: [
@@ -241,7 +228,6 @@ const PEDIDOS_SEED = [
     hora: '09:36:18',
     diasEntrega: -29,
     estado: 'rechazado',
-    comprobante: false,
     motivoRechazo: 'No se recibió el comprobante de pago.',
     mensajeTarjeta: 'Celebremos juntos.',
     instrucciones: 'Entregar en portería.',
@@ -259,7 +245,6 @@ const PEDIDOS_SEED = [
     hora: '18:11:53',
     diasEntrega: -32,
     estado: 'cancelado',
-    comprobante: false,
     mensajeTarjeta: 'Una sorpresa para consentirte.',
     instrucciones: 'El cliente canceló la entrega.',
     lineas: [
@@ -460,7 +445,6 @@ function definicionHistorica({ fecha, indice, estado, hoy }) {
     hora: HORAS_HISTORICAS[indice % HORAS_HISTORICAS.length],
     diasEntrega,
     estado,
-    comprobante: false,
     mensajeTarjeta: MENSAJES_HISTORICOS[indice % MENSAJES_HISTORICOS.length],
     instrucciones: INSTRUCCIONES_HISTORICAS[indice % INSTRUCCIONES_HISTORICAS.length],
     lineas: lineasHistoricas(indice),
@@ -568,44 +552,44 @@ function coincideManifiesto(pedido, item) {
 
 async function eliminarPedido(pedido, motivo) {
   await pedidoService.eliminar(pedido.id);
-  if (pedido.comprobantePago) borrarArchivoSubido(pedido.comprobantePago);
   console.log(`[reset] Eliminado #${pedido.id} (${motivo}).`);
 }
 
+const ESTADOS_SEED = {
+  en_preparacion: 'En preparación',
+  despachado: 'Despachado',
+  entregado: 'Entregado',
+  cancelado: 'Cancelado',
+  rechazado: 'Rechazado',
+};
+
+// El seed fija el estado directamente: es data histórica de demostración y no
+// debe pasar por las reglas de pago/transición del flujo real.
 async function aplicarEstado(id, estado, motivoRechazo) {
   if (estado === 'pendiente') return;
 
-  if (estado === 'en_preparacion') {
-    await pedidoService.cambiarEstado(id, 'en_preparacion');
-    return;
-  }
-
-  if (estado === 'despachado') {
-    await pedidoService.cambiarEstado(id, 'en_preparacion');
-    await pedidoService.cambiarEstado(id, 'despachado');
-    return;
-  }
-
-  if (estado === 'entregado') {
-    await pedidoService.cambiarEstado(id, 'en_preparacion');
-    await pedidoService.cambiarEstado(id, 'despachado');
-    await pedidoService.cambiarEstado(id, 'entregado');
-    return;
-  }
-
-  if (estado === 'cancelado') {
-    await pedidoService.cambiarEstado(id, 'en_preparacion');
-    await pedidoService.cambiarEstado(id, 'despachado');
-    await pedidoService.cambiarEstado(id, 'cancelado');
-    return;
+  const nombre = ESTADOS_SEED[estado];
+  if (!nombre) {
+    throw new Error(`Estado no soportado en el seed: "${estado}".`);
   }
 
   if (estado === 'rechazado') {
-    await pedidoService.rechazar(id, motivoRechazo ?? 'Pedido rechazado.');
+    await query(
+      `UPDATE pedido
+          SET id_estado = (SELECT id FROM estadosPedido WHERE nombre = ?),
+              motivo_rechazo = ?
+        WHERE id = ?`,
+      [nombre, motivoRechazo ?? 'Pedido rechazado.', id]
+    );
     return;
   }
 
-  throw new Error(`Estado no soportado en el seed: "${estado}".`);
+  await query(
+    `UPDATE pedido
+        SET id_estado = (SELECT id FROM estadosPedido WHERE nombre = ?)
+      WHERE id = ?`,
+    [nombre, id]
+  );
 }
 
 async function main() {
@@ -770,12 +754,14 @@ async function main() {
       pedidoCreado = await pedidoService.crear(datos, admin, COMPROBANTE_DUMMY);
       await aplicarEstado(pedidoCreado.id, definicion.estado, definicion.motivoRechazo);
 
-      // El seed no genera archivos: el comprobante queda siempre en blanco.
-      // La cancelación se ancla a la fecha histórica, no al momento del seed.
+      // El seed no genera archivos: se elimina el comprobante ficticio que exige
+      // la creación. La cancelación se ancla a la fecha histórica, no al seed.
+      await query('DELETE FROM comprobantePago WHERE id_pedido = ?', [
+        pedidoCreado.id,
+      ]);
       await query(
         `UPDATE pedido
             SET fecha = ?,
-                comprobante_pago = NULL,
                 fecha_cancelacion = IF(
                   id_estado = (SELECT id FROM estadosPedido WHERE nombre = 'Cancelado'),
                   DATE_ADD(?, INTERVAL 1 DAY),
@@ -789,7 +775,6 @@ async function main() {
         id: pedidoCreado.id,
         clienteId: cliente.id,
         fecha,
-        comprobante: null,
       };
       nuevoManifiesto.orders.push(item);
       guardarManifiesto(nuevoManifiesto);
@@ -825,9 +810,13 @@ async function main() {
     resumenEstados[nombre] = (resumenEstados[nombre] ?? 0) + 1;
   }
 
-  const conComprobante = nuevos.filter((pedido) => pedido.comprobantePago).length;
+  const conComprobante = nuevos.filter(
+    (pedido) => (pedido.comprobantes ?? []).length > 0
+  ).length;
   if (conComprobante > 0) {
-    throw new Error(`El seed no debe generar comprobantes y hay ${conComprobante} pedido(s) con archivo.`);
+    throw new Error(
+      `El seed no debe generar comprobantes y hay ${conComprobante} pedido(s) con uno.`
+    );
   }
 
   const clientesUsados = new Set(nuevos.map((pedido) => pedido.cliente?.id));
@@ -846,7 +835,7 @@ async function main() {
   console.log(`  Pedidos creados:              ${creados}`);
   console.log(`  Pedidos nuevos en la base:    ${nuevos.length}`);
   console.log(`  Pedidos totales en la base:   ${pedidosFinales.length}`);
-  console.log(`  Comprobantes de pago:         ${conComprobante} (todos en blanco)`);
+  console.log(`  Comprobantes de pago:         ${conComprobante} (sin registros)`);
   console.log('  Estados:');
   for (const [estado, total] of Object.entries(resumenEstados)) {
     console.log(`    - ${estado}: ${total}`);

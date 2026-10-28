@@ -8,6 +8,8 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useOutletContext } from 'react-router-dom';
 import { useAuth } from '../../login/hooks/useAuth';
 import { formatPrice } from '../../../shared/utils/formatPrice';
+import ConfirmModal from '../../../shared/components/ConfirmModal';
+import ImageLightbox from '../../../shared/components/ImageLightbox';
 import * as orderService from '../../orders/services/orderService';
 
 const STATUS_STYLES = {
@@ -18,6 +20,15 @@ const STATUS_STYLES = {
   Rechazado: { bg: '#DC26261F', text: '#B91C1C' },
   Cancelado: { bg: '#6B72801F', text: '#4B5563' },
 };
+
+const RECEIPT_STATUS_STYLES = {
+  Pendiente: { bg: '#F59E0B1F', text: '#B45309' },
+  Aprobado: { bg: '#E7F7EE', text: '#1B5E3F' },
+  Rechazado: { bg: '#DC26261F', text: '#B91C1C' },
+};
+
+const MAX_IMAGEN_BYTES = 5 * 1024 * 1024;
+const IMAGENES_PERMITIDAS = ['image/png', 'image/jpeg', 'image/webp'];
 
 function formatFecha(value) {
   if (!value) return '—';
@@ -55,6 +66,11 @@ const UserOrders = () => {
 
   const [expandedOrders, setExpandedOrders] = useState({});
   const [hoveredOrder, setHoveredOrder] = useState(null);
+  const [uploadingOrderId, setUploadingOrderId] = useState(null);
+  const [deletingReceiptId, setDeletingReceiptId] = useState(null);
+  const [paymentError, setPaymentError] = useState('');
+  const [activeReceiptUrl, setActiveReceiptUrl] = useState('');
+  const [receiptToDelete, setReceiptToDelete] = useState(null);
 
   useEffect(() => {
     let activo = true;
@@ -90,6 +106,65 @@ const UserOrders = () => {
     setLoading(true);
     setError('');
     setReloadToken((valor) => valor + 1);
+  };
+
+  const reemplazarPedido = (actualizado) => {
+    setOrders((prev) =>
+      prev.map((pedido) =>
+        String(pedido.id) === String(actualizado.id) ? actualizado : pedido
+      )
+    );
+  };
+
+  const handleUploadReceipt = async (order, file) => {
+    if (!file) return;
+    setPaymentError('');
+
+    if (!IMAGENES_PERMITIDAS.includes(file.type)) {
+      setPaymentError('El comprobante debe ser una imagen PNG, JPG o WEBP.');
+      return;
+    }
+    if (file.size > MAX_IMAGEN_BYTES) {
+      setPaymentError('El comprobante no puede superar los 5 MB.');
+      return;
+    }
+
+    setUploadingOrderId(order.id);
+    try {
+      const actualizado = await orderService.subirComprobante(order.id, file);
+      reemplazarPedido(actualizado);
+      setExpandedOrders((prev) => ({ ...prev, [order.id]: true }));
+    } catch (err) {
+      setPaymentError(
+        err?.message || 'No se pudo subir el comprobante de pago.'
+      );
+    } finally {
+      setUploadingOrderId(null);
+    }
+  };
+
+  const handleDeleteReceipt = (comprobante) => {
+    setPaymentError('');
+    setReceiptToDelete(comprobante);
+  };
+
+  const confirmDeleteReceipt = async (comprobante) => {
+    if (!comprobante) return;
+
+    setPaymentError('');
+    setDeletingReceiptId(comprobante.id);
+    try {
+      const actualizado = await orderService.eliminarComprobante(
+        comprobante.id
+      );
+      reemplazarPedido(actualizado);
+    } catch (err) {
+      setPaymentError(
+        err?.message || 'No se pudo eliminar el comprobante de pago.'
+      );
+    } finally {
+      setDeletingReceiptId(null);
+    }
   };
 
   const colors = {
@@ -276,6 +351,237 @@ const UserOrders = () => {
     );
   };
 
+  const renderPaymentInfo = (order) => {
+    const comprobantes = order.comprobantes ?? [];
+    const saldo = Number(order.saldo ?? 0);
+    const saldoLabel = saldo < 0 ? 'Saldo a favor' : 'Saldo pendiente';
+    const saldoColor = saldo > 0 ? '#B45309' : '#1B5E3F';
+
+    return (
+      <div style={{
+        padding: '16px',
+        background: colors.cardBg,
+        border: `1px solid ${colors.cardBorder}`,
+        borderRadius: '10px',
+        marginTop: '12px',
+      }}>
+        <div style={{ fontSize: '14px', fontWeight: '600', color: colors.textMain, marginBottom: '10px' }}>
+          Pagos y comprobantes
+        </div>
+
+        {comprobantes.length === 0 ? (
+          <p style={{ margin: 0, fontSize: '13px', color: colors.textMuted }}>
+            Aún no hay comprobantes registrados.
+          </p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {comprobantes.map((comprobante) => {
+              const receiptColors =
+                RECEIPT_STATUS_STYLES[comprobante.estado] ??
+                RECEIPT_STATUS_STYLES.Pendiente;
+              const eliminando =
+                String(deletingReceiptId) === String(comprobante.id);
+              const puedeEliminar =
+                comprobante.estado === 'Pendiente' &&
+                order.estado === 'Pendiente';
+
+              return (
+                <div
+                  key={comprobante.id}
+                  style={{
+                    display: 'flex',
+                    gap: '12px',
+                    padding: '12px',
+                    borderRadius: '10px',
+                    border: `1px solid ${colors.divider}`,
+                    background: colors.inputBg,
+                  }}
+                >
+                  {comprobante.url ? (
+                    <button
+                      type="button"
+                      onClick={() => setActiveReceiptUrl(comprobante.url)}
+                      style={{
+                        flexShrink: 0,
+                        padding: 0,
+                        border: 'none',
+                        background: 'none',
+                        cursor: 'pointer',
+                      }}
+                      title="Ver comprobante de pago"
+                    >
+                      <img
+                        src={comprobante.url}
+                        alt={`Comprobante #${comprobante.id}`}
+                        style={{
+                          width: '64px',
+                          height: '64px',
+                          objectFit: 'cover',
+                          borderRadius: '8px',
+                          border: `1px solid ${colors.inputBorder}`,
+                          display: 'block',
+                        }}
+                      />
+                    </button>
+                  ) : (
+                    <div style={{
+                      width: '64px',
+                      height: '64px',
+                      borderRadius: '8px',
+                      border: `1px solid ${colors.inputBorder}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: colors.textMuted,
+                      flexShrink: 0,
+                    }}>
+                      <i className="fa-solid fa-image" />
+                    </div>
+                  )}
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '8px',
+                      marginBottom: '6px',
+                    }}>
+                      <span style={{
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        color: receiptColors.text,
+                        background: receiptColors.bg,
+                        padding: '3px 9px',
+                        borderRadius: '999px',
+                      }}>
+                        {comprobante.estado}
+                      </span>
+                      <span style={{ fontSize: '11px', color: colors.textDate }}>
+                        {formatFecha(comprobante.fecha)}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', fontSize: '13px' }}>
+                      <span style={{ color: colors.textMuted }}>
+                        {comprobante.estado === 'Rechazado'
+                          ? 'Valor entregado'
+                          : 'Monto verificado'}
+                      </span>
+                      <strong style={{ color: colors.textMain }}>
+                        {comprobante.monto === null
+                          ? 'Pendiente de verificación'
+                          : formatPrice(comprobante.monto)}
+                      </strong>
+                    </div>
+
+                    {comprobante.motivoRechazo && (
+                      <div style={{
+                        marginTop: '6px',
+                        fontSize: '12px',
+                        lineHeight: 1.4,
+                        color: '#B91C1C',
+                      }}>
+                        <strong>Motivo del rechazo:</strong>{' '}
+                        {comprobante.motivoRechazo}
+                      </div>
+                    )}
+
+                    {puedeEliminar && (
+                      <button
+                        type="button"
+                        disabled={eliminando}
+                        onClick={() => handleDeleteReceipt(comprobante)}
+                        style={{
+                          marginTop: '8px',
+                          padding: '5px 10px',
+                          borderRadius: '7px',
+                          border: '1px solid #f5c2c7',
+                          background: '#fdecee',
+                          color: '#B91C1C',
+                          fontSize: '11.5px',
+                          fontWeight: '600',
+                          cursor: eliminando ? 'not-allowed' : 'pointer',
+                          opacity: eliminando ? 0.6 : 1,
+                        }}
+                      >
+                        <i className="fa-solid fa-trash-can" />{' '}
+                        {eliminando ? 'Eliminando...' : 'Eliminar comprobante'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '6px',
+          marginTop: '14px',
+          paddingTop: '12px',
+          borderTop: `1px solid ${colors.divider}`,
+          fontSize: '13px',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: colors.textMuted }}>
+            <span>Total pagado</span>
+            <strong style={{ color: colors.textMain }}>
+              {formatPrice(order.totalPagado ?? 0)}
+            </strong>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: colors.textMuted }}>
+            <span>{saldoLabel}</span>
+            <strong style={{ color: saldoColor }}>
+              {formatPrice(Math.abs(saldo))}
+            </strong>
+          </div>
+        </div>
+
+        {order.puedeSubirComprobante && (
+          <div style={{ marginTop: '14px' }}>
+            <label style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '9px 14px',
+              borderRadius: '8px',
+              background: colors.primary,
+              color: '#fff',
+              fontSize: '13px',
+              fontWeight: '600',
+              cursor: uploadingOrderId === order.id ? 'not-allowed' : 'pointer',
+              opacity: uploadingOrderId === order.id ? 0.65 : 1,
+            }}>
+              <i className="fa-solid fa-upload" />
+              {uploadingOrderId === order.id
+                ? 'Subiendo...'
+                : comprobantes.length === 0
+                  ? 'Subir comprobante'
+                  : 'Subir otro comprobante'}
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                disabled={uploadingOrderId === order.id}
+                style={{ display: 'none' }}
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  event.target.value = '';
+                  handleUploadReceipt(order, file);
+                }}
+              />
+            </label>
+            <p style={{ margin: '8px 0 0', fontSize: '12px', color: colors.textMuted }}>
+              PNG, JPG o WEBP de máximo 5 MB. Puedes tener hasta 3 comprobantes
+              activos.
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderOrderSummary = (order) => (
     <div style={{
       padding: '16px',
@@ -317,6 +623,7 @@ const UserOrders = () => {
     <div style={{ paddingTop: '20px' }}>
       {renderOrderItems(order.lineas)}
       {renderDeliveryInfo(order)}
+      {renderPaymentInfo(order)}
       {renderOrderSummary(order)}
     </div>
   );
@@ -386,6 +693,32 @@ const UserOrders = () => {
             style={{ border: 'none', background: 'transparent', color: '#842029', fontWeight: '700', textDecoration: 'underline', cursor: 'pointer' }}
           >
             Reintentar
+          </button>
+        </div>
+      )}
+
+      {paymentError && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          padding: '12px 16px',
+          marginBottom: '20px',
+          borderRadius: '8px',
+          background: '#fff8e1',
+          border: '1px solid #f0c36d',
+          color: '#7a5a00',
+          fontSize: '14px',
+        }}>
+          <i className="fa-solid fa-triangle-exclamation" />
+          <span style={{ flex: 1 }}>{paymentError}</span>
+          <button
+            type="button"
+            onClick={() => setPaymentError('')}
+            style={{ border: 'none', background: 'transparent', color: '#7a5a00', fontWeight: '700', cursor: 'pointer' }}
+            aria-label="Cerrar aviso"
+          >
+            <i className="fa-solid fa-xmark" />
           </button>
         </div>
       )}
@@ -526,6 +859,24 @@ const UserOrders = () => {
           })}
         </div>
       )}
+
+      <ImageLightbox
+        open={Boolean(activeReceiptUrl)}
+        onClose={() => setActiveReceiptUrl('')}
+        src={activeReceiptUrl}
+        alt="Comprobante de pago"
+      />
+
+      <ConfirmModal
+        open={Boolean(receiptToDelete)}
+        onClose={() => setReceiptToDelete(null)}
+        onConfirm={() => confirmDeleteReceipt(receiptToDelete)}
+        variant="danger"
+        title="Eliminar comprobante"
+        description="¿Seguro que deseas eliminar este comprobante de pago? Esta acción no se puede deshacer."
+        confirmLabel="Sí, eliminar"
+        cancelLabel="Cancelar"
+      />
     </div>
   );
 };

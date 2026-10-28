@@ -28,6 +28,7 @@ export default function useOrders({ autoLoad = true } = {}) {
   const [statusSavingId, setStatusSavingId] = useState(null);
   const [rejectSubmitting, setRejectSubmitting] = useState(false);
   const [reprogrammingId, setReprogrammingId] = useState(null);
+  const [paymentSavingId, setPaymentSavingId] = useState(null);
 
   useEffect(() => {
     if (!autoLoad && reloadToken === 0) return undefined;
@@ -114,6 +115,31 @@ export default function useOrders({ autoLoad = true } = {}) {
     }
   }
 
+  async function approvePayment(id, monto) {
+    setPaymentSavingId(id);
+    try {
+      const { pedido, advertencia } = await orderService.aprobarComprobante(
+        id,
+        monto
+      );
+      reemplazar(pedido);
+      return { pedido, advertencia };
+    } finally {
+      setPaymentSavingId(null);
+    }
+  }
+
+  async function rejectPayment(id, motivo, monto) {
+    setPaymentSavingId(id);
+    try {
+      const pedido = await orderService.rechazarComprobante(id, motivo, monto);
+      reemplazar(pedido);
+      return pedido;
+    } finally {
+      setPaymentSavingId(null);
+    }
+  }
+
   async function reprogramOrder(id, fechaEntrega) {
     setReprogrammingId(id);
     try {
@@ -135,11 +161,14 @@ export default function useOrders({ autoLoad = true } = {}) {
     statusSavingId,
     rejectSubmitting,
     reprogrammingId,
+    paymentSavingId,
 
     createOrder,
     updateOrder,
     changeStatus,
     rejectOrder,
+    approvePayment,
+    rejectPayment,
     reprogramOrder,
   };
 }

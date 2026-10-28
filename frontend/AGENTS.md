@@ -19,8 +19,8 @@ conexión se está haciendo **módulo por módulo**, de forma incremental:
   rechazo). La evidencia de entrega es
   exclusiva del repartidor; el panel solo la muestra en el detalle, sin subirla
   ni actualizarla. **Ventas** (`features/admin/sales` contra `/api/ventas`:
-  listado y detalle de pedidos confirmados; los botones de comprobante siguen
-  pendientes). **Reseñas** (`features/reviews` contra
+  listado y detalle de pedidos confirmados; el detalle muestra todos los
+  comprobantes registrados). **Reseñas** (`features/reviews` contra
   `/api/catalogo/resenas` para lectura y `/api/resenas` para publicar;
   `features/admin/admin-reviews` contra `/api/resenas` para listado y cambio
   de estado). **Dashboard** (`features/admin/dashboard` contra

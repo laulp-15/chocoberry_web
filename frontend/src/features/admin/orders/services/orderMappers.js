@@ -31,6 +31,23 @@ export function mapEstadoSlug(nombre) {
   return ESTADO_SLUGS[clave] ?? clave.replace(/\s+/g, "_");
 }
 
+function mapComprobante(comprobante) {
+  if (!comprobante) return null;
+
+  return {
+    id: comprobante.id,
+    url: imageUrl(comprobante.url),
+    monto:
+      comprobante.monto === null || comprobante.monto === undefined
+        ? null
+        : Number(comprobante.monto),
+    fecha: comprobante.fecha,
+    motivoRechazo: comprobante.motivoRechazo ?? "",
+    estadoId: comprobante.estado?.id ?? null,
+    estado: comprobante.estado?.nombre ?? "",
+  };
+}
+
 function mapLinea(linea) {
   if (!linea) return null;
 
@@ -72,6 +89,11 @@ export function mapPedidoAdmin(pedido) {
     pedido.cliente?.nombreCompleto ||
     `${pedido.cliente?.nombres ?? ""} ${pedido.cliente?.apellidos ?? ""}`.trim();
   const precioDomicilio = Number(pedido.precioDomicilio ?? 0);
+  const comprobantes = Array.isArray(pedido.comprobantes)
+    ? pedido.comprobantes.map(mapComprobante)
+    : [];
+  const comprobantePrincipal =
+    comprobantes.find((c) => c.estado === "Aprobado") ?? comprobantes[0] ?? null;
 
   return {
     id: pedido.id,
@@ -97,7 +119,12 @@ export function mapPedidoAdmin(pedido) {
     recipientName: pedido.nombreReceptor ?? "",
     telefonoReceptor: pedido.telefonoReceptor ?? "",
     recipientPhone: pedido.telefonoReceptor ?? "",
-    comprobante: pedido.comprobantePago ?? null,
+    // Compatibilidad con la vista de Ventas y el formulario de edición.
+    comprobante: comprobantePrincipal?.url ?? null,
+    comprobantes,
+    totalPagado: Number(pedido.totalPagado ?? 0),
+    saldo: Number(pedido.saldo ?? 0),
+    puedeSubirComprobante: Boolean(pedido.puedeSubirComprobante),
     motivoRechazo: pedido.motivoRechazo ?? "",
     fechaCancelacion: pedido.fechaCancelacion ?? "",
     instruccionesEntrega: pedido.instruccionesEntrega ?? "",
