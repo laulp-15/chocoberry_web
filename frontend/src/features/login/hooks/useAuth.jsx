@@ -94,6 +94,10 @@ export function AuthProvider({ children }) {
     return authService.requestPasswordReset(email);
   }
 
+  function resetPassword(datos) {
+    return authService.resetPassword(datos);
+  }
+
   function changePassword(datos) {
     return authService.changePassword(datos);
   }
@@ -124,6 +128,7 @@ export function AuthProvider({ children }) {
     login,
     register,
     requestPasswordReset,
+    resetPassword,
     changePassword,
     logout,
     updateUser,
@@ -134,6 +139,7 @@ export function AuthProvider({ children }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const ctx = useContext(AuthContext);
 

@@ -210,11 +210,15 @@ export async function actualizarEntrega(id, campos) {
 }
 
 /** Cambia el estado sin tocar el motivo de rechazo. */
-export async function cambiarEstado(id, idEstado, { marcarCancelacion = false } = {}) {
+export async function cambiarEstado(
+  id,
+  idEstado,
+  { marcarCancelacion = false, observacionesEntrega = null } = {}
+) {
   if (marcarCancelacion) {
     await query(
-      'UPDATE pedido SET id_estado = ?, fecha_cancelacion = NOW() WHERE id = ?',
-      [idEstado, id]
+      'UPDATE pedido SET id_estado = ?, fecha_cancelacion = NOW(), observaciones_entrega = ? WHERE id = ?',
+      [idEstado, observacionesEntrega, id]
     );
   } else {
     await query('UPDATE pedido SET id_estado = ? WHERE id = ?', [idEstado, id]);
@@ -224,11 +228,10 @@ export async function cambiarEstado(id, idEstado, { marcarCancelacion = false } 
 
 /** Actualiza la fecha de entrega y devuelve el pedido a Despachado. */
 export async function reprogramarEntrega(id, fechaEntrega, idEstado) {
-  await query('UPDATE pedido SET fecha_entrega = ?, id_estado = ? WHERE id = ?', [
-    fechaEntrega,
-    idEstado,
-    id,
-  ]);
+  await query(
+    'UPDATE pedido SET fecha_entrega = ?, id_estado = ?, observaciones_entrega = NULL WHERE id = ?',
+    [fechaEntrega, idEstado, id]
+  );
   return buscarPorId(id);
 }
 

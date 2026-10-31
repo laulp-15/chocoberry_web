@@ -93,10 +93,14 @@ export default function useOrders({ autoLoad = true } = {}) {
     }
   }
 
-  async function changeStatus(id, estado) {
+  async function changeStatus(id, estado, observacionesEntrega) {
     setStatusSavingId(id);
     try {
-      const actualizado = await orderService.cambiarEstado(id, estado);
+      const actualizado = await orderService.cambiarEstado(
+        id,
+        estado,
+        observacionesEntrega
+      );
       reemplazar(actualizado);
       return actualizado;
     } finally {

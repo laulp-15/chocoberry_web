@@ -72,7 +72,7 @@ export default function UsersListPage() {
       } else {
         await createUser(payload);
         setNotification({
-          message: `${payload.fullName} ya puede iniciar sesión con el correo registrado.`,
+          message: `Enviamos un correo a ${payload.email} para que ${payload.fullName} establezca su contraseña.`,
         });
       }
       setFormOpen(false);

@@ -50,9 +50,14 @@ export async function actualizar(id, datos) {
   return mapPedidoAdmin(pedido);
 }
 
-/** PATCH /pedidos/:id/estado */
-export async function cambiarEstado(id, estado) {
-  const pedido = await api.patch(`/pedidos/${id}/estado`, { estado });
+/**
+ * PATCH /pedidos/:id/estado
+ * Al cancelar, `observacionesEntrega` lleva el motivo obligatorio.
+ */
+export async function cambiarEstado(id, estado, observacionesEntrega) {
+  const payload = { estado };
+  if (observacionesEntrega) payload.observacionesEntrega = observacionesEntrega;
+  const pedido = await api.patch(`/pedidos/${id}/estado`, payload);
   return mapPedidoAdmin(pedido);
 }
 

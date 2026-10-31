@@ -18,7 +18,6 @@ import {
   validatePhone,
   validateConfirmPassword,
   validateRole,
-  validatePasswordForCreate,
   validatePasswordForEdit,
 } from "../utils/validators";
 import { DOC_TYPE_OPTIONS } from "../../../../shared/utils/documentTypes";
@@ -77,10 +76,7 @@ export default function UserFormModal({
       phone: (v) => validatePhone(v.phone),
       address: (v) => validateAddress(v.address),
       neighborhood: (v) => validateNeighborhood(v.neighborhood),
-      password: (v) =>
-        isEdit
-          ? validatePasswordForEdit(v.password)
-          : validatePasswordForCreate(v.password),
+      password: (v) => (isEdit ? validatePasswordForEdit(v.password) : ""),
       confirmPassword: (v) =>
         v.password ? validateConfirmPassword(v.password, v.confirmPassword) : "",
       role: (v) => validateRole(v.role),
@@ -139,7 +135,7 @@ export default function UserFormModal({
         phone: form.phone,
         address: form.address,
         neighborhood: form.neighborhood,
-        password: form.password,
+        password: isEdit ? form.password : "",
         role: form.role,
         active: form.active,
       });
@@ -165,7 +161,7 @@ export default function UserFormModal({
       subtitle={
         isEdit
           ? "Actualiza la información y permisos del colaborador."
-          : "Completa los datos para habilitar un nuevo perfil de acceso."
+          : "Completa los datos. Enviaremos un correo para que establezca su contraseña."
       }
       maxWidth="sm"
       footer={
@@ -270,58 +266,61 @@ export default function UserFormModal({
           />
         </div>
 
-        {/* Campo Contraseña con botón de ojito */}
-        <FormTextField
-          label={isEdit ? "Nueva contraseña (opcional)" : "Contraseña"}
-          type={showPassword ? "text" : "password"}
-          required={!isEdit}
-          placeholder={isEdit ? "Ingresa una nueva contraseña" : "••••••••"}
-          value={form.password}
-          onChange={(v) => setField("password", v)}
-          onBlur={() => handleBlur("password")}
-          error={errors.password}
-          endAdornment={
-            <InputAdornment position="end">
-              <IconButton
-                type="button"
-                edge="end"
-                disableRipple
-                className="password-toggle"
-                onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-              >
-                <i className={`fa-solid ${showPassword ? "fa-eye-slash" : "fa-eye"}`} />
-              </IconButton>
-            </InputAdornment>
-          }
-        />
+        {isEdit && (
+          <>
+            {/* Campo Contraseña con botón de ojito */}
+            <FormTextField
+              label="Nueva contraseña (opcional)"
+              type={showPassword ? "text" : "password"}
+              placeholder="Ingresa una nueva contraseña"
+              value={form.password}
+              onChange={(v) => setField("password", v)}
+              onBlur={() => handleBlur("password")}
+              error={errors.password}
+              endAdornment={
+                <InputAdornment position="end">
+                  <IconButton
+                    type="button"
+                    edge="end"
+                    disableRipple
+                    className="password-toggle"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  >
+                    <i className={`fa-solid ${showPassword ? "fa-eye-slash" : "fa-eye"}`} />
+                  </IconButton>
+                </InputAdornment>
+              }
+            />
 
-        {/* Campo Confirmar Contraseña con botón de ojito */}
-        {form.password && (
-          <FormTextField
-            label="Confirmar contraseña"
-            type={showConfirmPassword ? "text" : "password"}
-            required
-            placeholder="Repite la contraseña"
-            value={form.confirmPassword}
-            onChange={(v) => setField("confirmPassword", v)}
-            onBlur={() => handleBlur("confirmPassword")}
-            error={errors.confirmPassword}
-            endAdornment={
-              <InputAdornment position="end">
-                <IconButton
-                  type="button"
-                  edge="end"
-                  disableRipple
-                  className="password-toggle"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  aria-label={showConfirmPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                >
-                  <i className={`fa-solid ${showConfirmPassword ? "fa-eye-slash" : "fa-eye"}`} />
-                </IconButton>
-              </InputAdornment>
-            }
-          />
+            {/* Campo Confirmar Contraseña con botón de ojito */}
+            {form.password && (
+              <FormTextField
+                label="Confirmar contraseña"
+                type={showConfirmPassword ? "text" : "password"}
+                required
+                placeholder="Repite la contraseña"
+                value={form.confirmPassword}
+                onChange={(v) => setField("confirmPassword", v)}
+                onBlur={() => handleBlur("confirmPassword")}
+                error={errors.confirmPassword}
+                endAdornment={
+                  <InputAdornment position="end">
+                    <IconButton
+                      type="button"
+                      edge="end"
+                      disableRipple
+                      className="password-toggle"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      aria-label={showConfirmPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    >
+                      <i className={`fa-solid ${showConfirmPassword ? "fa-eye-slash" : "fa-eye"}`} />
+                    </IconButton>
+                  </InputAdornment>
+                }
+              />
+            )}
+          </>
         )}
 
         <div className="user-form-row">

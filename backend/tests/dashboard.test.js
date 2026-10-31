@@ -146,7 +146,11 @@ describe('Módulo de dashboard', () => {
     if (estado === 'en_preparacion') {
       await aprobarPagoCompleto(id);
     }
-    const res = await auth(request(app).patch(`/api/pedidos/${id}/estado`)).send({ estado });
+    const payload = { estado };
+    if (estado === 'cancelado') {
+      payload.observacionesEntrega = 'Cancelación de prueba en dashboard.';
+    }
+    const res = await auth(request(app).patch(`/api/pedidos/${id}/estado`)).send(payload);
     expect(res.status).toBe(200);
     return res.body.data;
   }

@@ -137,8 +137,12 @@ describe('Módulo de pedidos', () => {
     if (estado === 'en_preparacion') {
       await aprobarPagoCompleto(id);
     }
+    const payload = { estado };
+    if (estado === 'cancelado') {
+      payload.observacionesEntrega = 'El cliente canceló la entrega de prueba.';
+    }
     return auth(
-      request(app).patch(`/api/pedidos/${id}/estado`).send({ estado }),
+      request(app).patch(`/api/pedidos/${id}/estado`).send(payload),
       token
     );
   }
@@ -597,10 +601,35 @@ describe('Módulo de pedidos', () => {
       cancelableId = pedido.id;
     });
 
-    it('Despachado → Cancelado, y después ya no admite cambios', async () => {
+    it('exige un motivo de al menos 5 caracteres para cancelar', async () => {
+      const pedido = await crearPedido();
+      await cambiarEstado(pedido.id, 'en_preparacion');
+      await cambiarEstado(pedido.id, 'Despachado');
+
+      const sinMotivo = await auth(
+        request(app)
+          .patch(`/api/pedidos/${pedido.id}/estado`)
+          .send({ estado: 'cancelado' })
+      );
+      expect(sinMotivo.status).toBe(422);
+      expect(sinMotivo.body.errors?.[0]?.campo).toBe('observacionesEntrega');
+
+      const motivoCorto = await auth(
+        request(app)
+          .patch(`/api/pedidos/${pedido.id}/estado`)
+          .send({ estado: 'cancelado', observacionesEntrega: 'abc' })
+      );
+      expect(motivoCorto.status).toBe(422);
+      expect(motivoCorto.body.errors?.[0]?.campo).toBe('observacionesEntrega');
+    });
+
+    it('Despachado → Cancelado guarda el motivo y después ya no admite cambios', async () => {
       const res = await cambiarEstado(cancelableId, 'cancelado');
       expect(res.status).toBe(200);
       expect(res.body.data.estado.nombre).toBe('Cancelado');
+      expect(res.body.data.observacionesEntrega).toBe(
+        'El cliente canceló la entrega de prueba.'
+      );
 
       const otra = await cambiarEstado(cancelableId, 'entregado');
       expect(otra.status).toBe(409);
@@ -630,11 +659,15 @@ describe('Módulo de pedidos', () => {
     it('guarda fechaCancelacion y reprograma para mañana pasando a Despachado', async () => {
       const cancelado = await crearPedidoCancelado();
       expect(cancelado.fechaCancelacion).toBeTruthy();
+      expect(cancelado.observacionesEntrega).toBe(
+        'El cliente canceló la entrega de prueba.'
+      );
 
       const res = await reprogramar(cancelado.id, fechaISO(1));
       expect(res.status).toBe(200);
       expect(res.body.data.estado.nombre).toBe('Despachado');
       expect(res.body.data.fechaEntrega).toBe(fechaISO(1));
+      expect(res.body.data.observacionesEntrega).toBeNull();
 
       const despachados = await auth(
         request(app).get('/api/pedidos').query({ estado: 'despachado' })

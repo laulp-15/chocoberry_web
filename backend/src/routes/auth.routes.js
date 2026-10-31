@@ -2,6 +2,7 @@
 import { Router } from 'express';
 import * as authController from '../controllers/auth.controller.js';
 import { verifyToken } from '../middlewares/auth.js';
+import { passwordResetLimiter } from '../middlewares/rateLimit.js';
 import { validar } from '../middlewares/validate.js';
 import {
   actualizarPerfilSchema,
@@ -17,8 +18,18 @@ const router = Router();
 // Rutas públicas
 router.post('/register', validar(registroSchema), authController.registrar);
 router.post('/login', validar(loginSchema), authController.login);
-router.post('/forgot-password', validar(recuperacionSchema), authController.solicitarRecuperacion);
-router.post('/reset-password', validar(restablecerSchema), authController.restablecerContrasena);
+router.post(
+  '/forgot-password',
+  passwordResetLimiter,
+  validar(recuperacionSchema),
+  authController.solicitarRecuperacion
+);
+router.post(
+  '/reset-password',
+  passwordResetLimiter,
+  validar(restablecerSchema),
+  authController.restablecerContrasena
+);
 
 // Rutas protegidas (requieren sesión)
 router.post('/logout', verifyToken, authController.logout);

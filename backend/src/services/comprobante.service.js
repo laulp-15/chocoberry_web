@@ -12,6 +12,8 @@ import * as comprobantePagoModel from '../models/comprobantePago.model.js';
 import * as estadoComprobanteModel from '../models/estadoComprobante.model.js';
 import { eliminarArchivoSubido } from '../utils/archivos.js';
 import { redondear2 } from '../utils/number.js';
+import * as emailService from './emailService.js';
+import * as pedidoService from './pedido.service.js';
 
 const MAX_COMPROBANTES_ACTIVOS = 3;
 const ESTADO_PENDIENTE = 'Pendiente';
@@ -207,6 +209,9 @@ export async function aprobar(id, monto) {
     };
   });
 
+  const pedido = await pedidoService.obtenerPedidoCompleto(resultado.idPedido);
+  void emailService.enviarComprobanteAprobado({ pedido });
+
   return resultado;
 }
 
@@ -238,7 +243,7 @@ export async function rechazar(id, motivo, monto) {
     resolverEstado('Rechazado'),
   ]);
 
-  return withTransaction(async (conexion) => {
+  const resultado = await withTransaction(async (conexion) => {
     const comprobante = await comprobantePagoModel.buscarConPedido(id, {
       conexion,
       forUpdate: true,
@@ -309,4 +314,13 @@ export async function rechazar(id, motivo, monto) {
 
     return { idPedido: comprobante.id_pedido };
   });
+
+  const pedido = await pedidoService.obtenerPedidoCompleto(resultado.idPedido);
+  void emailService.enviarComprobanteRechazado({
+    pedido,
+    motivo: motivoLimpio,
+    monto: montoEntregado,
+  });
+
+  return resultado;
 }

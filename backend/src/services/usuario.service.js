@@ -1,6 +1,7 @@
 // src/services/usuario.service.js
 // Reglas de negocio del módulo de usuarios. Solo esta capa habla con los modelos.
 import bcrypt from 'bcryptjs';
+import crypto from 'node:crypto';
 import {
   BadRequestError,
   ConflictError,
@@ -10,6 +11,8 @@ import {
 import * as rolModel from '../models/rol.model.js';
 import * as usuarioModel from '../models/usuario.model.js';
 import { serializarUsuario } from '../utils/serializers.js';
+import * as emailService from './emailService.js';
+import * as tokenService from './tokenContrasena.service.js';
 
 const ROUNDS = 10;
 
@@ -81,7 +84,14 @@ export async function crear(datos) {
   await asegurarDocumentoUnico(datos.numeroDocumento);
 
   const idRol = await resolverRol(datos.id_rol ?? datos.rol);
-  const contrasena = await bcrypt.hash(datos.contrasena, ROUNDS);
+
+  // El panel ya no pide contraseña: si no llega, se genera una aleatoria que
+  // nadie conoce y se envía un enlace de activación para establecerla.
+  const debeActivar = !datos.contrasena;
+  const contrasena = await bcrypt.hash(
+    debeActivar ? crypto.randomBytes(32).toString('hex') : datos.contrasena,
+    ROUNDS
+  );
 
   const id = await usuarioModel.crear({
     ...mapearCampos(datos),
@@ -90,7 +100,18 @@ export async function crear(datos) {
     id_rol: idRol,
   });
 
-  return serializarUsuario(await usuarioModel.buscarPorId(id));
+  const usuario = await usuarioModel.buscarPorId(id);
+
+  if (debeActivar) {
+    const token = await tokenService.crearToken(id, 'activacion');
+    void emailService.enviarActivacionCuenta({
+      correo: usuario.correo,
+      nombre: usuario.nombres,
+      token,
+    });
+  }
+
+  return serializarUsuario(usuario);
 }
 
 export async function actualizar(id, datos) {

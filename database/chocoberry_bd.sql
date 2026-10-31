@@ -67,6 +67,21 @@ CREATE TABLE usuario (
         FOREIGN KEY (id_rol) REFERENCES rol(id)
 ) ENGINE=InnoDB;
 
+-- Tokens de un solo uso para recuperación de contraseña y activación de cuentas.
+-- Solo se almacena el hash SHA-256 del token.
+CREATE TABLE tokenContrasena (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_usuario INT NOT NULL,
+    token_hash CHAR(64) NOT NULL UNIQUE,
+    tipo ENUM('recuperacion','activacion') NOT NULL,
+    fecha_expiracion DATETIME NOT NULL,
+    usado BOOLEAN NOT NULL DEFAULT FALSE,
+    CONSTRAINT fk_tokenContrasena_usuario
+        FOREIGN KEY (id_usuario) REFERENCES usuario(id)
+        ON DELETE CASCADE,
+    INDEX idx_token_usuario_tipo_usado (id_usuario, tipo, usado)
+) ENGINE=InnoDB;
+
 -- CATÁLOGOS: PRODUCTOS, PRESENTACIONES, COLORES, ESTADOS, MUNICIPIOS
 
 CREATE TABLE categoria (
