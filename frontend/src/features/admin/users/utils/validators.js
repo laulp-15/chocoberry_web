@@ -36,15 +36,11 @@ export function validateRole(value) {
 }
 
 /**
- * En "Crear usuario" la contraseña es obligatoria y debe cumplir la
- * política. En "Editar usuario" es opcional (CA_10: si se deja en
- * blanco, se conserva la actual) — pero si se escribe algo, sí debe
- * cumplir la política.
+ * En "Crear usuario" el backend genera la contraseña temporal y envía el
+ * correo de activación. En "Editar usuario" la contraseña es opcional
+ * (si se deja en blanco, se conserva la actual), pero si se escribe algo
+ * debe cumplir la política.
  */
-export function validatePasswordForCreate(value) {
-  return validatePassword(value);
-}
-
 export function validatePasswordForEdit(value) {
   if (!value) return "";
   return validatePassword(value);

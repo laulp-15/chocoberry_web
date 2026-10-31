@@ -83,10 +83,9 @@ export async function changePassword({ currentPassword, newPassword }) {
 /**
  * POST /auth/forgot-password.
  *
- * No hay servidor de correo en este alcance: el backend imprime el enlace
- * de recuperación en su consola. La respuesta es siempre genérica (por
- * seguridad no revela si el correo existe), así que un fallo de red
- * tampoco se propaga: la página solo confirma "enlace enviado".
+ * La respuesta es siempre genérica (por seguridad no revela si el correo
+ * existe), así que un fallo de red tampoco se propaga: la página solo
+ * confirma "enlace enviado".
  */
 export async function requestPasswordReset(email) {
   try {
@@ -99,6 +98,23 @@ export async function requestPasswordReset(email) {
     // best effort.
   }
   return { ok: true };
+}
+
+/**
+ * POST /auth/reset-password.
+ * Sirve tanto para el enlace de recuperación como para el de activación;
+ * el backend decide el flujo según el tipo de token.
+ */
+export async function resetPassword({ token, password }) {
+  const data = await api.post(
+    "/auth/reset-password",
+    {
+      token: String(token ?? "").trim(),
+      contrasena: password,
+    },
+    { auth: false }
+  );
+  return data;
 }
 
 /** POST /auth/logout -> el JWT es stateless; se limpia la sesión local. */

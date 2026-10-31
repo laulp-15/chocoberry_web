@@ -19,10 +19,11 @@ import * as usuarioModel from '../models/usuario.model.js';
 import { registrarAcceso } from '../utils/accessLog.js';
 import { CONFIG_INTENTOS, estaBloqueado, limpiarIntentos, registrarIntentoFallido } from '../utils/loginAttempts.js';
 import { serializarUsuario } from '../utils/serializers.js';
+import * as emailService from './emailService.js';
+import * as tokenService from './tokenContrasena.service.js';
 
 const ROUNDS = 10;
 const ROL_CLIENTE = 'Cliente';
-const RESET_EXPIRA = '15m';
 
 const firmarToken = (usuario) =>
   jwt.sign({ sub: usuario.id, correo: usuario.correo }, env.jwt.secret, {
@@ -127,44 +128,45 @@ export async function cerrarSesion(usuario) {
 export async function solicitarRecuperacion(correo) {
   const usuario = await usuarioModel.buscarPorCorreo(correo);
 
-  if (usuario) {
-    const token = jwt.sign({ sub: usuario.id, tipo: 'reset' }, env.jwt.secret, {
-      expiresIn: RESET_EXPIRA,
-    });
+  if (usuario?.estado) {
+    const token = await tokenService.crearToken(usuario.id, 'recuperacion');
     registrarAcceso({ correo, resultado: 'solicitud_recuperacion' });
 
-    // No hay servidor de correo en este alcance: se deja el enlace en consola.
-    const enlace = `${env.frontendUrl}/restablecer-contrasena?correo=${encodeURIComponent(correo)}&token=${token}`;
-    if (env.nodeEnv !== 'test') {
-      // eslint-disable-next-line no-console
-      console.info(`[recuperación] Enlace para ${correo}: ${enlace}`);
-    }
+    void emailService.enviarRecuperacionContrasena({
+      correo: usuario.correo,
+      nombre: usuario.nombres,
+      token,
+    });
   }
 
   return { mensaje: 'Si el correo está registrado, recibirás un enlace de recuperación.' };
 }
 
-/** Restablece la contraseña usando el token enviado al correo. */
+/**
+ * Restablece la contraseña con un token de recuperación o de activación.
+ * El mismo endpoint sirve para ambos flujos; el tipo lo define el token.
+ */
 export async function restablecerContrasena({ token, contrasena }) {
-  let payload;
-  try {
-    payload = jwt.verify(token, env.jwt.secret);
-  } catch {
-    throw new BadRequestError('El enlace de recuperación es inválido o ha expirado.');
-  }
+  const { idUsuario, tipo } = await tokenService.consumirToken(token);
 
-  if (payload.tipo !== 'reset') {
-    throw new BadRequestError('El token no es válido para restablecer la contraseña.');
+  const usuario = await usuarioModel.buscarPorId(idUsuario);
+  if (!usuario) {
+    throw new BadRequestError('El enlace es inválido o ha expirado.');
   }
-
-  const usuario = await usuarioModel.buscarPorId(payload.sub);
-  if (!usuario) throw new NotFoundError('El usuario no existe.');
 
   await usuarioModel.actualizar(usuario.id, { contrasena: await bcrypt.hash(contrasena, ROUNDS) });
   limpiarIntentos(usuario.correo);
-  registrarAcceso({ correo: usuario.correo, resultado: 'restablecimiento_contrasena' });
+  registrarAcceso({
+    correo: usuario.correo,
+    resultado: tipo === 'activacion' ? 'activacion_cuenta' : 'restablecimiento_contrasena',
+  });
 
-  return { mensaje: 'Contraseña actualizada. Ya puedes iniciar sesión.' };
+  return {
+    mensaje:
+      tipo === 'activacion'
+        ? 'Contraseña establecida. Ya puedes iniciar sesión.'
+        : 'Contraseña actualizada. Ya puedes iniciar sesión.',
+  };
 }
 
 /** Cambio de contraseña del propio usuario autenticado. */

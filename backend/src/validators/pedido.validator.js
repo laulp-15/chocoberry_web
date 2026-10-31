@@ -147,6 +147,7 @@ export const cambiarEstadoPedidoSchema = z.object({
     .string({ required_error: 'El estado es obligatorio.' })
     .trim()
     .min(1, 'El estado es obligatorio.'),
+  observacionesEntrega: mensajeField(255, 'El motivo de cancelación'),
 });
 
 export const reprogramarPedidoSchema = z.object({

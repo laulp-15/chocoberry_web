@@ -51,7 +51,8 @@ export const actualizar = asyncHandler(async (req, res) => {
 export const cambiarEstado = asyncHandler(async (req, res) => {
   const pedido = await pedidoService.cambiarEstado(
     req.validado.params.id,
-    req.validado.body.estado
+    req.validado.body.estado,
+    req.validado.body.observacionesEntrega
   );
   return sendSuccess(res, pedido, 'Estado del pedido actualizado exitosamente.');
 });

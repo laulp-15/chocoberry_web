@@ -8,6 +8,7 @@ import OrderDetailModal from "../components/OrderDetailModal";
 import ApprovePaymentModal from "../components/ApprovePaymentModal";
 import RejectPaymentModal from "../components/RejectPaymentModal";
 import RejectReasonModal from "../components/RejectReasonModal";
+import CancelReasonModal from "../components/CancelReasonModal";
 import OrderNotification from "../components/OrderNotification";
 import { usePermissions } from "../../../../shared/hooks/usePermissions";
 import useOrders from "../hooks/useOrders";
@@ -61,6 +62,10 @@ export default function OrdersListPage() {
   // Pedido que se está rechazando: se pide el motivo antes de aplicar el estado.
   const [rejectingOrder, setRejectingOrder] = useState(null);
   const [rejectError, setRejectError] = useState("");
+
+  // Pedido que se está cancelando: el motivo es obligatorio.
+  const [cancelingOrder, setCancelingOrder] = useState(null);
+  const [cancelError, setCancelError] = useState("");
 
   const [approvingPayment, setApprovingPayment] = useState(null); // { order, comprobante }
   const [paymentError, setPaymentError] = useState("");
@@ -133,6 +138,12 @@ export default function OrdersListPage() {
       return;
     }
 
+    if (newStatus === "cancelado") {
+      setCancelError("");
+      setCancelingOrder(order);
+      return;
+    }
+
     try {
       await changeStatus(order.id, newStatus);
       setNotification({
@@ -178,6 +189,24 @@ export default function OrdersListPage() {
     }
   };
 
+  const handleSubmitCancel = async (reason) => {
+    if (!canChangeStatus || !cancelingOrder) return;
+
+    setCancelError("");
+    try {
+      await changeStatus(cancelingOrder.id, "cancelado", reason);
+      setCancelingOrder(null);
+      setNotification({ message: "Pedido cancelado correctamente." });
+    } catch (err) {
+      setCancelError(err?.message || "No se pudo cancelar el pedido.");
+    }
+  };
+
+  const tieneComprobantesPendientes = (pedido) =>
+    (pedido?.comprobantes ?? []).some(
+      (comprobante) => comprobante.estado === "Pendiente"
+    );
+
   const handleOpenApprovePayment = (order, comprobante) => {
     setPaymentError("");
     setApprovingPayment({ order, comprobante });
@@ -192,8 +221,9 @@ export default function OrdersListPage() {
         approvingPayment.comprobante.id,
         monto
       );
-      setDetailOrder(pedido);
       setApprovingPayment(null);
+      // Si ya no quedan comprobantes pendientes, el detalle se cierra solo.
+      setDetailOrder(tieneComprobantesPendientes(pedido) ? pedido : null);
       setNotification({
         message:
           advertencia ||
@@ -432,6 +462,20 @@ export default function OrdersListPage() {
           }
           canManagePayments={canChangeStatus}
           paymentSavingId={paymentSavingId}
+        />
+      )}
+
+      {/* Motivo obligatorio al cancelar */}
+      {cancelingOrder && (
+        <CancelReasonModal
+          open
+          onClose={() => {
+            setCancelingOrder(null);
+            setCancelError("");
+          }}
+          onSubmit={handleSubmitCancel}
+          submitting={String(statusSavingId) === String(cancelingOrder.id)}
+          formError={cancelError}
         />
       )}
 

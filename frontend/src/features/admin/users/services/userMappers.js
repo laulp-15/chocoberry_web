@@ -61,12 +61,14 @@ function camposBase(datos = {}) {
   };
 }
 
-/** POST /usuarios: la contraseña es obligatoria. */
+/**
+ * POST /usuarios: el backend genera la contraseña temporal y envía el
+ * correo de activación, por eso el panel no la solicita.
+ */
 export function toCrearUsuarioPayload(datos = {}) {
   return {
     ...camposBase(datos),
     estado: datos.active !== false,
-    contrasena: datos.password,
   };
 }
 

@@ -14,6 +14,7 @@ import AboutPage from "../features/about/pages/AboutPage";
 import LoginPage from "../features/login/pages/LoginPage";
 import RegisterPage from "../features/login/pages/RegisterPage";
 import ForgotPasswordPage from "../features/login/pages/ForgotPasswordPage";
+import ResetPasswordPage from "../features/login/pages/ResetPasswordPage";
 import ChangePasswordPage from "../features/login/pages/ChangePasswordPage";
 import RequireAuth from "../shared/components/RequireAuth";
 import { RequirePanelAccess } from "../shared/components/RequirePermission";
@@ -58,6 +59,8 @@ export default function AppRoutes() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/registro" element={<RegisterPage />} />
         <Route path="/recuperar-contrasena" element={<ForgotPasswordPage />} />
+        <Route path="/restablecer-contrasena" element={<ResetPasswordPage />} />
+        <Route path="/establecer-contrasena" element={<ResetPasswordPage />} />
         <Route
           path="/cambiar-contrasena"
           element={

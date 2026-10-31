@@ -46,7 +46,9 @@ export default function OrderDetailContent({
 
   const comprobantes = order.comprobantes ?? [];
   const evidenceUrl = getProofUrl(order.evidenciaEntrega);
-  const hasEvidence = Boolean(evidenceUrl || order.observacionesEntrega);
+  const hasDeliveryNotes =
+    order.estado !== "cancelado" && Boolean(order.observacionesEntrega);
+  const hasEvidence = Boolean(evidenceUrl || hasDeliveryNotes);
 
   return (
     <div className="order-detail-content">
@@ -106,6 +108,18 @@ export default function OrderDetailContent({
             Motivo del rechazo
           </div>
           <div className="order-detail-value">{order.motivoRechazo}</div>
+        </div>
+      )}
+
+      {order.estado === "cancelado" && (
+        <div className="detail-section cancel-reason-section">
+          <div className="detail-section-title">
+            <i className="fa-solid fa-ban" />
+            Motivo de la cancelación
+          </div>
+          <div className="order-detail-value">
+            {order.observacionesEntrega || "Sin motivo registrado."}
+          </div>
         </div>
       )}
 
@@ -380,21 +394,25 @@ export default function OrderDetailContent({
             </div>
           ) : (
             <>
-              <div className="order-detail-label" style={{ marginTop: "8px" }}>
-                Observaciones del repartidor
-              </div>
-              <div
-                className="delivery-evidence-comments"
-                style={{
-                  padding: "10px",
-                  background: "var(--secundario-3, #f9f9f9)",
-                  borderRadius: "8px",
-                  marginTop: "4px",
-                  marginBottom: "12px",
-                }}
-              >
-                {order.observacionesEntrega || "Sin observaciones registradas."}
-              </div>
+              {order.estado !== "cancelado" && (
+                <>
+                  <div className="order-detail-label" style={{ marginTop: "8px" }}>
+                    Observaciones del repartidor
+                  </div>
+                  <div
+                    className="delivery-evidence-comments"
+                    style={{
+                      padding: "10px",
+                      background: "var(--secundario-3, #f9f9f9)",
+                      borderRadius: "8px",
+                      marginTop: "4px",
+                      marginBottom: "12px",
+                    }}
+                  >
+                    {order.observacionesEntrega || "Sin observaciones registradas."}
+                  </div>
+                </>
+              )}
 
               <div className="order-detail-label" style={{ marginTop: 14 }}>
                 Foto de evidencia

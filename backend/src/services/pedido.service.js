@@ -18,6 +18,7 @@ import * as presentacionModel from '../models/presentacion.model.js';
 import * as productoModel from '../models/producto.model.js';
 import * as productoPedidoModel from '../models/productoPedido.model.js';
 import * as usuarioModel from '../models/usuario.model.js';
+import * as emailService from './emailService.js';
 import * as municipioService from './municipio.service.js';
 import { eliminarArchivoSubido } from '../utils/archivos.js';
 import { redondear2 } from '../utils/number.js';
@@ -180,7 +181,7 @@ async function cargarPedidoYEstado(id) {
   return { pedido, estado };
 }
 
-async function obtenerPedidoCompleto(id) {
+export async function obtenerPedidoCompleto(id) {
   const fila = await pedidoModel.buscarPorId(id);
   if (!fila) return null;
 
@@ -488,7 +489,7 @@ export async function actualizar(id, datos, usuario) {
   return obtenerPedidoCompleto(id);
 }
 
-export async function cambiarEstado(id, nombreEstado) {
+export async function cambiarEstado(id, nombreEstado, observacionesEntrega) {
   const { estado: estadoActual } = await cargarPedidoYEstado(id);
 
   const destino = normalizarEstado(nombreEstado);
@@ -500,6 +501,30 @@ export async function cambiarEstado(id, nombreEstado) {
     throw new UnprocessableEntityError(
       'Para rechazar un pedido usa el endpoint de rechazo e indica el motivo.'
     );
+  }
+
+  const motivoCancelacion = String(observacionesEntrega ?? '').trim();
+
+  if (destino === ESTADO_CANCELADO) {
+    if (!motivoCancelacion) {
+      throw new UnprocessableEntityError('El motivo de cancelación es obligatorio.', [
+        {
+          campo: 'observacionesEntrega',
+          mensaje: 'Escribe el motivo de la cancelación.',
+        },
+      ]);
+    }
+    if (motivoCancelacion.length < 5) {
+      throw new UnprocessableEntityError(
+        'El motivo de cancelación debe tener al menos 5 caracteres.',
+        [
+          {
+            campo: 'observacionesEntrega',
+            mensaje: 'El motivo debe tener al menos 5 caracteres.',
+          },
+        ]
+      );
+    }
   }
 
   const permitidos = TRANSICIONES[estadoActual.nombre] ?? [];
@@ -535,8 +560,21 @@ export async function cambiarEstado(id, nombreEstado) {
   const estado = await resolverEstado(destino);
   await pedidoModel.cambiarEstado(id, estado.id, {
     marcarCancelacion: destino === ESTADO_CANCELADO,
+    observacionesEntrega: motivoCancelacion || null,
   });
-  return obtenerPedidoCompleto(id);
+
+  const actualizado = await obtenerPedidoCompleto(id);
+
+  if (destino === 'En preparación') {
+    void emailService.enviarPedidoEnPreparacion({ pedido: actualizado });
+  } else if (destino === ESTADO_CANCELADO) {
+    void emailService.enviarPedidoCancelado({
+      pedido: actualizado,
+      motivo: motivoCancelacion,
+    });
+  }
+
+  return actualizado;
 }
 
 function fechaDeValor(valor) {
@@ -611,8 +649,12 @@ export async function rechazar(id, motivo) {
   }
 
   const estadoRechazado = await resolverEstado(ESTADO_RECHAZADO);
-  await pedidoModel.rechazar(id, estadoRechazado.id, motivo.trim());
-  return obtenerPedidoCompleto(id);
+  const motivoLimpio = motivo.trim();
+  await pedidoModel.rechazar(id, estadoRechazado.id, motivoLimpio);
+
+  const actualizado = await obtenerPedidoCompleto(id);
+  void emailService.enviarPedidoRechazado({ pedido: actualizado, motivo: motivoLimpio });
+  return actualizado;
 }
 
 /** El repartidor registra la evidencia sin cambiar el estado del pedido. */
