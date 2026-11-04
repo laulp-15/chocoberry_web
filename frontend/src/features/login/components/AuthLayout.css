@@ -152,7 +152,7 @@
 }
 
 .auth-layout--wide .auth-panel {
-  padding: 28px 44px 36px;
+  padding: 40px 44px 48px;
 }
 
 .auth-panel-inner {
@@ -188,11 +188,15 @@
 
 .auth-logo {
   display: block;
-  width: auto;
-  height: 56px;
+  width: 136px;
+  height: auto;
   object-fit: contain;
   filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.08));
   transition: transform 0.2s ease;
+}
+
+.auth-layout[data-theme="dark"] .auth-logo {
+  width: 125px;
 }
 
 .auth-logo-link:hover .auth-logo {
@@ -364,7 +368,7 @@
   display: block;
   width: auto;
   max-width: 100%;
-  height: 97px;
+  height: 80px;
   object-fit: contain;
   filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.2));
   transition: transform 0.2s ease;
@@ -761,6 +765,10 @@
     border-radius: var(--auth-radius);
   }
 
+  .auth-layout--wide .auth-panel {
+    padding: 36px 28px 40px;
+  }
+
   .auth-layout .auth-panel-inner {
     max-width: 500px;
   }
@@ -782,12 +790,20 @@
     padding: 22px 16px 26px;
   }
 
+  .auth-layout--wide .auth-panel {
+    padding: 30px 16px 34px;
+  }
+
   .auth-panel-topbar {
     margin-bottom: 20px;
   }
 
   .auth-logo {
-    height: 46px;
+    width: 114px;
+  }
+
+  .auth-layout[data-theme="dark"] .auth-logo {
+    width: 104px;
   }
 
   .auth-panel-title {

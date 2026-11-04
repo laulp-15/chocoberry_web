@@ -1,49 +1,45 @@
-// src/home/hooks/useHome.jsx
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
+
 import {
   obtenerProductosDestacados,
   obtenerReseñas,
 } from "../services/homeService";
 
 const useHome = () => {
-  const [productos] = useState(
-    obtenerProductosDestacados()
-  );
+  // Datos iniciales de la página
+  const [productos] = useState(() => obtenerProductosDestacados() ?? []);
+  const [reseñas] = useState(() => obtenerReseñas() ?? []);
 
-  const [reseñas] = useState(
-    obtenerReseñas()
-  );
-
+  // Índice de la reseña actualmente seleccionada
   const [reseñaActual, setReseñaActual] = useState(0);
 
+  // Avanzar a la siguiente reseña
+  const siguienteReseña = useCallback(() => {
+    if (reseñas.length <= 1) return;
 
-  const siguienteReseña = () => {
-    setReseñaActual((actual) => {
-      if (actual === reseñas.length - 1) {
-        return 0;
-      }
+    setReseñaActual((actual) => (actual + 1) % reseñas.length);
+  }, [reseñas.length]);
 
-      return actual + 1;
-    });
-  };
+  // Volver a la reseña anterior
+  const anteriorReseña = useCallback(() => {
+    if (reseñas.length <= 1) return;
 
+    setReseñaActual(
+      (actual) => (actual - 1 + reseñas.length) % reseñas.length
+    );
+  }, [reseñas.length]);
 
-  const anteriorReseña = () => {
-    setReseñaActual((actual) => {
-      if (actual === 0) {
-        return reseñas.length - 1;
-      }
+  // Seleccionar una reseña específica
+  const seleccionarReseña = useCallback(
+    (index) => {
+      if (!Number.isInteger(index)) return;
+      if (index < 0 || index >= reseñas.length) return;
 
-      return actual - 1;
-    });
-  };
-
-
-  const seleccionarReseña = (index) => {
-    setReseñaActual(index);
-  };
-
+      setReseñaActual(index);
+    },
+    [reseñas.length]
+  );
 
   return {
     productos,
@@ -54,6 +50,5 @@ const useHome = () => {
     seleccionarReseña,
   };
 };
-
 
 export default useHome;

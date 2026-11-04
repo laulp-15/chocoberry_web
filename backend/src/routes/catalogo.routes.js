@@ -24,6 +24,9 @@ router.get(
 
 router.get('/productos/:id', validar(idParamSchema, 'params'), catalogoController.obtenerProducto);
 
+// Ranking público de los 4 productos activos con más ventas reales.
+router.get('/mas-vendidos', catalogoController.listarMasVendidos);
+
 // Datos maestros de apoyo al checkout (municipios y colores de glaseado).
 router.get('/municipios', catalogoController.listarMunicipios);
 

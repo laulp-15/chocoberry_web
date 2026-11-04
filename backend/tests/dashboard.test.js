@@ -477,6 +477,19 @@ describe('Módulo de dashboard', () => {
     expect(productoPrueba.unidades).toBeGreaterThanOrEqual(100);
   });
 
+  it('el endpoint público de más vendidos coincide con el ranking del dashboard', async () => {
+    const res = await consultar();
+    expect(res.status).toBe(200);
+
+    const ranking = res.body.data.topProductos;
+    const publico = await request(app).get('/api/catalogo/mas-vendidos');
+
+    expect(publico.status).toBe(200);
+    expect(publico.body.data.map((producto) => producto.id)).toEqual(
+      ranking.slice(0, 4).map((producto) => producto.id)
+    );
+  });
+
   it('las calificaciones incluyen reseñas activas e inactivas', async () => {
     const res = await consultar();
     const data = res.body.data;

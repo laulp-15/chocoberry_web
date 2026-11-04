@@ -5,17 +5,24 @@ import { useCart } from '../../features/cart/hooks/UseCart';
 import { useAuth } from '../../features/login/hooks/useAuth';
 import { usePermissions } from '../hooks/usePermissions';
 import { useTheme } from '../context/ThemeContext';
+import PoliciesMenu from './PoliciesMenu';
+import { POLICY_DOCS } from '../utils/policyDocs';
 import './Navbar.css';
 
 export default function Navbar() {
+  const { pathname } = useLocation();
+  return <NavbarContent key={pathname} />;
+}
+
+function NavbarContent() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { items } = useCart();
   const { isAuthenticated } = useAuth();
   const { canEnterPanel, firstAllowedPath } = usePermissions();
   const { theme, toggleTheme } = useTheme();
   const isDarkMode = theme === 'dark';
   const [menuOpen, setMenuOpen] = useState(false);
+  const [policiesOpen, setPoliciesOpen] = useState(false);
   const navRef = useRef(null);
 
   const cartCount = items.reduce((sum, item) => sum + item.units, 0);
@@ -31,27 +38,37 @@ export default function Navbar() {
     { to: '/reseñas', label: 'Reseñas' },
   ];
 
-  const closeMenu = () => setMenuOpen(false);
-
-  // Cierra el menú al cambiar de ruta
-  useEffect(() => {
+  const closeMenu = () => {
     setMenuOpen(false);
-  }, [location.pathname]);
+    setPoliciesOpen(false);
+  };
+
+  const toggleMenu = () => {
+    if (menuOpen) setPoliciesOpen(false);
+    setMenuOpen((prev) => !prev);
+  };
 
   // Cierra con Escape, al tocar fuera del navbar y al pasar a escritorio
   useEffect(() => {
     if (!menuOpen) return;
 
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') setMenuOpen(false);
+      if (e.key === 'Escape') {
+        setMenuOpen(false);
+        setPoliciesOpen(false);
+      }
     };
     const handleClickOutside = (e) => {
       if (navRef.current && !navRef.current.contains(e.target)) {
         setMenuOpen(false);
+        setPoliciesOpen(false);
       }
     };
     const handleResize = () => {
-      if (window.innerWidth > 991) setMenuOpen(false);
+      if (window.innerWidth > 991) {
+        setMenuOpen(false);
+        setPoliciesOpen(false);
+      }
     };
 
     document.addEventListener('keydown', handleKeyDown);
@@ -109,6 +126,43 @@ export default function Navbar() {
               </NavLink>
             </li>
           ))}
+
+          {/* Políticas en escritorio */}
+          <li className="navbar-policies-desktop">
+            <PoliciesMenu />
+          </li>
+
+          {/* Políticas en móvil: submenú dentro del menú hamburguesa */}
+          <li className="navbar-policy-mobile" style={{ '--i': navLinks.length }}>
+            <button
+              type="button"
+              className="navbar-policy-toggle"
+              onClick={() => setPoliciesOpen((prev) => !prev)}
+              aria-expanded={policiesOpen}
+              aria-controls="navbar-policies-mobile"
+            >
+              Políticas
+              <i className="fa-solid fa-chevron-down" aria-hidden="true" />
+            </button>
+            <ul
+              id="navbar-policies-mobile"
+              className={`navbar-policy-sublist${policiesOpen ? ' open' : ''}`}
+            >
+              {POLICY_DOCS.map((doc) => (
+                <li key={doc.id}>
+                  <a
+                    className="nav-link"
+                    href={doc.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={closeMenu}
+                  >
+                    {doc.title}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </li>
         </ul>
 
         {/* ACCIONES (Derecha) */}
@@ -166,7 +220,7 @@ export default function Navbar() {
         <button
           type="button"
           className={`navbar-hamburger ${menuOpen ? 'is-open' : ''}`}
-          onClick={() => setMenuOpen((prev) => !prev)}
+          onClick={toggleMenu}
           aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'}
           aria-expanded={menuOpen}
           aria-controls="navbar-menu"

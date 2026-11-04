@@ -416,6 +416,24 @@ describe('Módulo de catálogo (categorías, productos y presentaciones)', () =>
       expect(Array.isArray(categorias.body.data)).toBe(true);
       expect(Array.isArray(presentaciones.body.data)).toBe(true);
     });
+
+    it('GET /api/catalogo/mas-vendidos devuelve máximo 4 productos activos', async () => {
+      const res = await request(app).get('/api/catalogo/mas-vendidos');
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body.data)).toBe(true);
+      expect(res.body.data.length).toBeLessThanOrEqual(4);
+      expect(res.body.data.every((producto) => producto.estado === true)).toBe(true);
+
+      const ids = res.body.data.map((producto) => producto.id);
+      expect(new Set(ids).size).toBe(ids.length);
+
+      for (const producto of res.body.data) {
+        expect(producto.nombre).toBeTruthy();
+        expect(producto.categoria.id).toBeGreaterThan(0);
+        expect(Array.isArray(producto.imagenes)).toBe(true);
+      }
+    });
   });
 
   describe('Autorización por permisos', () => {

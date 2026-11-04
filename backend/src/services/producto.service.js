@@ -120,6 +120,16 @@ export async function listar(filtros = {}) {
   return filas.map((fila) => serializarProducto(fila, porProducto.get(fila.id) ?? []));
 }
 
+export async function listarPorIds(ids = [], filtros = {}) {
+  const filas = await productoModel.listarPorIds(ids, { estado: filtros.estado });
+  if (filas.length === 0) return [];
+
+  const imagenes = await imagenProductoModel.listarPorProductos(filas.map((fila) => fila.id));
+  const porProducto = agruparImagenes(imagenes);
+
+  return filas.map((fila) => serializarProducto(fila, porProducto.get(fila.id) ?? []));
+}
+
 export async function obtener(id) {
   const producto = await productoModel.buscarPorId(id);
   if (!producto) throw new NotFoundError('Producto no encontrado.');

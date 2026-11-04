@@ -1,0 +1,129 @@
+/* src/shared/components/PoliciesMenu.css */
+
+.pm {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.pm__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--texto);
+  font-family: var(--font-body, "Poppins", sans-serif);
+  font-size: 0.95rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.25s ease, background-color 0.25s ease;
+}
+
+.pm__trigger:hover,
+.pm[data-open] .pm__trigger {
+  color: var(--primario);
+  background-color: transparent;
+}
+
+.pm__trigger:focus-visible {
+  outline: 2px solid var(--primario-claro);
+  outline-offset: 2px;
+}
+
+.pm__chevron {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  transition: transform 0.3s ease;
+}
+
+.pm[data-open] .pm__chevron,
+.pm:hover .pm__chevron,
+.pm:focus-within .pm__chevron {
+  transform: rotate(180deg);
+}
+
+/* El panel arranca pegado al botón (padding-top) para que el mouse no "caiga" en un hueco */
+.pm__panel {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  z-index: 1100;
+  width: min(340px, calc(100vw - 2rem));
+  margin: 0;
+  padding: 0.5rem;
+  list-style: none;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--bg-card);
+  box-shadow: 0 18px 34px -12px rgba(71, 28, 38, 0.35);
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, 8px) scale(0.97);
+  transform-origin: top center;
+  transition: opacity 0.22s ease, transform 0.22s ease, visibility 0s linear 0.22s;
+}
+
+.pm::after {
+  /* puente invisible entre el botón y el panel */
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 10px;
+}
+
+.pm:hover .pm__panel,
+.pm:focus-within .pm__panel,
+.pm[data-open] .pm__panel {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 8px) scale(1);
+  transition-delay: 0s;
+}
+
+.pm__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  padding: 0.75rem 0.8rem;
+  border-radius: 10px;
+  color: var(--texto);
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+}
+
+.pm__item:hover,
+.pm__item:focus-visible {
+  background: var(--secundario-2);
+  outline: none;
+}
+
+.pm__file {
+  margin-top: 2px;
+  color: var(--primario);
+  font-size: 1.25rem;
+}
+
+.pm__title {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.pm__meta {
+  display: block;
+  margin-top: 2px;
+  color: var(--texto-muted);
+  font-size: 0.75rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pm__panel,
+  .pm__chevron { transition: none; }
+}
