@@ -27,6 +27,12 @@ export async function obtenerProducto(id) {
   return mapProducto(producto);
 }
 
+/** GET /catalogo/mas-vendidos (máximo 4, solo productos activos). */
+export async function listarMasVendidos() {
+  const productos = await api.get('/catalogo/mas-vendidos', { auth: false });
+  return mapProductos(productos);
+}
+
 /** GET /catalogo/categorias */
 export async function listarCategorias() {
   const categorias = await api.get('/catalogo/categorias', { auth: false });

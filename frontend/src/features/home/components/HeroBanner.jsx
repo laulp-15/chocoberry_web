@@ -1,92 +1,157 @@
-// src/features/home/components/HeroBanner.jsx
-import React, { useState, useEffect } from "react";
+
+import { useState, useEffect, useCallback } from "react";
 import "./Home.css";
 
 const bannerImages = [
   {
     id: 1,
-    url: "/img/carrusel/imagen1.png",
-    alt: "Fresas cubiertas de chocolate Chocoberry",
+    url: "/img/carrusel/img(1).jpeg",
+    alt: "I",
   },
   {
     id: 2,
-    url: "/img/carrusel/imagen2.png",
-    alt: "Arreglos florales y detalles dulces",
+    url: "/img/carrusel/img(2).jpeg",
+    alt: "s",
   },
   {
     id: 3,
-    url: "/img/carrusel/imagen3.png",
-    alt: "Regalos sorpresa para ocasiones especiales",
+    url: "/img/carrusel/img(3).jpeg",
+    alt: "s",
   },
   {
     id: 4,
-    url: "/img/carrusel/imagen4.png",
-    alt: "Regalos sorpresa para ocasiones especiales",
+    url: "/img/carrusel/img(4).jpeg",
+    alt: "m",
   },
 ];
+
+const AUTOPLAY_DELAY = 5000;
 
 export default function HeroBanner() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [paused, setPaused] = useState(false);
 
-  // Cambio automático cada 5 segundos. Se reinicia al navegar a mano
-  // y se detiene mientras el mouse está sobre el banner.
+  const totalImages = bannerImages.length;
+
+  // Navegación del carrusel
+  const goToSlide = useCallback((index) => {
+    setCurrentIndex((index + totalImages) % totalImages);
+  }, [totalImages]);
+
+  const handleNext = useCallback(() => {
+    setCurrentIndex((prev) => (prev + 1) % totalImages);
+  }, [totalImages]);
+
+  const handlePrev = useCallback(() => {
+    setCurrentIndex((prev) => (prev - 1 + totalImages) % totalImages);
+  }, [totalImages]);
+
+  // Reproducción automática
   useEffect(() => {
-    if (paused) return undefined;
-    const timer = setTimeout(() => {
-      setCurrentIndex((prev) => (prev + 1) % bannerImages.length);
-    }, 5000);
+    if (paused || totalImages <= 1) return;
+
+    const timer = setTimeout(handleNext, AUTOPLAY_DELAY);
+
     return () => clearTimeout(timer);
-  }, [currentIndex, paused]);
+  }, [currentIndex, paused, handleNext, totalImages]);
 
-  const handleNext = () => {
-    setCurrentIndex((prev) => (prev + 1) % bannerImages.length);
-  };
+  // Desplazamiento al catálogo
+  const goToCatalog = () => {
+    const catalog = document.getElementById("catalogo");
 
-  const handlePrev = () => {
-    setCurrentIndex((prev) => (prev - 1 + bannerImages.length) % bannerImages.length);
+    if (!catalog) return;
+
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+
+    catalog.scrollIntoView({
+      behavior: reduceMotion ? "auto" : "smooth",
+      block: "start",
+    });
   };
 
   return (
-    <div className="full-width-carousel">
-      <div
-        className="carousel-inner"
-        onMouseEnter={() => setPaused(true)}
-        onMouseLeave={() => setPaused(false)}
-      >
-        {/* Todas las imágenes se apilan; solo la activa es visible */}
-        {bannerImages.map((img, index) => (
-          <img
-            key={img.id}
-            src={img.url}
-            alt={img.alt}
-            className={`carousel-img ${index === currentIndex ? "active" : ""}`}
-            aria-hidden={index !== currentIndex}
+    <section
+      className="full-width-carousel"
+      aria-label="Banner principal"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocusCapture={() => setPaused(true)}
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+          setPaused(false);
+        }
+      }}
+    >
+      <div className="carousel-inner">
+
+        {/* Imágenes del carrusel */}
+        {bannerImages.map((img, index) => {
+          const isActive = index === currentIndex;
+
+          return (
+            <img
+              key={img.id}
+              src={img.url}
+              alt={img.alt}
+              className={`carousel-img ${isActive ? "active" : ""}`}
+              aria-hidden={!isActive}
+              loading={index === 0 ? "eager" : "lazy"}
+              fetchPriority={index === 0 ? "high" : "auto"}
+              draggable="false"
+            />
+          );
+        })}
+
+        {/* Navegación anterior */}
+        <button
+          type="button"
+          className="carousel-nav-btn btn-left"
+          onClick={handlePrev}
+          aria-label="Imagen anterior"
+        >
+          <i className="fa-solid fa-chevron-left" aria-hidden="true" />
+        </button>
+
+        {/* Navegación siguiente */}
+        <button
+          type="button"
+          className="carousel-nav-btn btn-right"
+          onClick={handleNext}
+          aria-label="Imagen siguiente"
+        >
+          <i className="fa-solid fa-chevron-right" aria-hidden="true" />
+        </button>
+
+        {/* Acceso al catálogo */}
+        <button
+          type="button"
+          className="carousel-cta"
+          onClick={goToCatalog}
+        >
+          Ver catálogo
+          <i
+            className="fa-solid fa-arrow-down"
+            aria-hidden="true"
           />
-        ))}
-
-        {/* Botón Anterior */}
-        <button className="carousel-nav-btn btn-left" onClick={handlePrev} aria-label="Anterior">
-          <i className="fa-solid fa-chevron-left" />
         </button>
 
-        {/* Botón Siguiente */}
-        <button className="carousel-nav-btn btn-right" onClick={handleNext} aria-label="Siguiente">
-          <i className="fa-solid fa-chevron-right" />
-        </button>
-
-        {/* Puntos Indicadores */}
-        <div className="carousel-dots">
-          {bannerImages.map((_, index) => (
+        {/* Indicadores */}
+        <div className="carousel-dots" aria-label="Seleccionar imagen">
+          {bannerImages.map((img, index) => (
             <button
-              key={index}
+              key={img.id}
+              type="button"
               className={`dot ${currentIndex === index ? "active" : ""}`}
-              onClick={() => setCurrentIndex(index)}
+              onClick={() => goToSlide(index)}
               aria-label={`Ir a imagen ${index + 1}`}
+              aria-current={currentIndex === index ? "true" : undefined}
             />
           ))}
         </div>
+
       </div>
-    </div>
+    </section>
   );
 }

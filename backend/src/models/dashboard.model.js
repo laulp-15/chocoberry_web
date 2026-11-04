@@ -69,8 +69,9 @@ export async function ingresosTotales({ desde, hastaExclusiva, estados }) {
 }
 
 /** Ranking histórico de productos por unidades vendidas. */
-export async function topProductos({ estados, limite = 5 }) {
+export async function topProductos({ estados, limite = 5, soloActivos = false }) {
   const limiteSeguro = Math.min(Math.max(Number(limite) || 5, 1), 50);
+  const filtroActivo = soloActivos ? ' AND pr.estado = 1' : '';
   const sql = `
     SELECT pr.id, pr.nombre,
            SUM(pp.cantidad_productos) AS unidades,
@@ -79,7 +80,7 @@ export async function topProductos({ estados, limite = 5 }) {
       JOIN pedido p ON p.id = pp.id_pedido
       JOIN estadosPedido e ON e.id = p.id_estado
       JOIN producto pr ON pr.id = pp.id_producto
-     WHERE ${filtroEstados(estados)}
+     WHERE ${filtroEstados(estados)}${filtroActivo}
      GROUP BY pr.id, pr.nombre
      ORDER BY unidades DESC, ingresos DESC, pr.nombre ASC
      LIMIT ${limiteSeguro}`;

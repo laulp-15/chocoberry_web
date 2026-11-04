@@ -2,7 +2,7 @@
 // src/features/login/pages/RegisterPage.jsx
 // ============================================================
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import AuthLayout from "../components/AuthLayout";
@@ -27,6 +27,10 @@ import {
 } from "../utils/validators";
 
 import { DOC_TYPE_OPTIONS } from "../../../shared/utils/documentTypes";
+import { POLICY_DOCS } from "../../../shared/utils/policyDocs";
+
+const TERMS_DOCUMENT = POLICY_DOCS.find((doc) => doc.id === "politica");
+const PRIVACY_DOCUMENT = POLICY_DOCS.find((doc) => doc.id === "aviso");
 
 
 // ============================================================
@@ -543,8 +547,23 @@ export default function RegisterPage() {
                 disabled={isDisabled}
               />
               <span>
-                Acepto los <Link to="/terms">Términos y Condiciones</Link> y la{" "}
-                <Link to="/privacy">Política de Privacidad</Link>.
+                Acepto los{" "}
+                <a
+                  href={TERMS_DOCUMENT.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Términos y Condiciones
+                </a>{" "}
+                y la{" "}
+                <a
+                  href={PRIVACY_DOCUMENT.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Política de Privacidad
+                </a>
+                .
               </span>
             </label>
             {errors.acceptTerms && (

@@ -13,6 +13,7 @@ export default function useCatalogo({ autoLoad = true } = {}) {
   const [productos, setProductos] = useState([]);
   const [categorias, setCategorias] = useState([{ value: 'todas', label: 'Todas' }]);
   const [presentaciones, setPresentaciones] = useState([]);
+  const [masVendidos, setMasVendidos] = useState([]);
 
   const [loading, setLoading] = useState(autoLoad);
   const [error, setError] = useState('');
@@ -27,12 +28,14 @@ export default function useCatalogo({ autoLoad = true } = {}) {
       catalogService.listarProductos(),
       catalogService.listarCategorias(),
       catalogService.listarPresentaciones(),
+      catalogService.listarMasVendidos().catch(() => []),
     ])
-      .then(([listaProductos, listaCategorias, listaPresentaciones]) => {
+      .then(([listaProductos, listaCategorias, listaPresentaciones, listaMasVendidos]) => {
         if (!activo) return;
         setProductos(listaProductos);
         setCategorias(listaCategorias);
         setPresentaciones(listaPresentaciones);
+        setMasVendidos(listaMasVendidos);
         setError('');
       })
       .catch((err) => {
@@ -58,6 +61,7 @@ export default function useCatalogo({ autoLoad = true } = {}) {
     productos,
     categorias,
     presentaciones,
+    masVendidos,
     minPrice: minPrecio(presentaciones),
     loading,
     error,

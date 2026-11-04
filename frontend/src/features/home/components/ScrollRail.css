@@ -1,0 +1,89 @@
+/* src/features/home/components/ScrollRail.css */
+
+.rail {
+  position: relative;
+  --rail-gap: 1.5rem;
+  --rail-per-view: 4;
+}
+
+.rail__track {
+  display: flex;
+  gap: var(--rail-gap);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: auto;
+  padding: 0.5rem 0.25rem 1.25rem; /* aire para la sombra y el hover de las tarjetas */
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.rail__track::-webkit-scrollbar {
+  display: none;
+}
+
+.rail__track:focus-visible {
+  outline: 2px solid var(--primario-claro);
+  outline-offset: 2px;
+  border-radius: 12px;
+}
+
+/* Cada tarjeta ocupa 1/N del ancho visible */
+.rail__track > * {
+  flex: 0 0 calc((100% - (var(--rail-per-view) - 1) * var(--rail-gap)) / var(--rail-per-view));
+  min-width: 0;
+  scroll-snap-align: start;
+}
+
+.rail__arrow {
+  position: absolute;
+  top: 42%;
+  z-index: 3;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--borde);
+  border-radius: 50%;
+  background: var(--bg-card);
+  color: var(--primario);
+  box-shadow: 0 6px 16px rgba(71, 28, 38, 0.18);
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition: background-color 0.25s ease, color 0.25s ease, opacity 0.25s ease, transform 0.25s ease;
+}
+
+.rail__arrow[hidden] { display: none; }
+
+.rail__arrow--prev { left: -14px; }
+.rail__arrow--next { right: -14px; }
+
+.rail__arrow:hover:not(:disabled) {
+  background: var(--primario);
+  border-color: var(--primario);
+  color: #ffffff;
+  transform: translateY(-50%) scale(1.08);
+}
+
+.rail__arrow:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.rail__arrow:focus-visible {
+  outline: 2px solid var(--primario-claro);
+  outline-offset: 2px;
+}
+
+@media (max-width: 1100px) {
+  .rail { --rail-per-view: 3; }
+}
+
+@media (max-width: 768px) {
+  .rail { --rail-per-view: 2; --rail-gap: 1rem; }
+  .rail__arrow { display: none; } /* en móvil se desliza con el dedo */
+}
+
+@media (max-width: 520px) {
+  .rail { --rail-per-view: 1.25; }
+}

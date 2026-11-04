@@ -100,8 +100,16 @@
   padding: 0 2rem;
 }
 
-.navbar-links li {
+.navbar-links > li {
   display: flex;
+}
+
+.navbar-links > .navbar-policies-desktop {
+  display: flex;
+}
+
+.navbar-links > .navbar-policy-mobile {
+  display: none;
 }
 
 .nav-link {
@@ -391,8 +399,16 @@
       visibility 0s linear 0s;
   }
 
+  .navbar-links > .navbar-policies-desktop {
+    display: none;
+  }
+
+  .navbar-links > .navbar-policy-mobile {
+    display: block;
+  }
+
   /* Aparición escalonada de cada enlace */
-  .navbar-links li {
+  .navbar-links > li {
     display: block;
     width: 100%;
     border-bottom: 1px solid var(--borde);
@@ -403,11 +419,11 @@
       transform 0.2s ease;
   }
 
-  .navbar-links li:last-child {
+  .navbar-links > li:last-child {
     border-bottom: none;
   }
 
-  .navbar-links.open li {
+  .navbar-links.open > li {
     opacity: 1;
     transform: translateY(0);
     transition:
@@ -435,6 +451,86 @@
 
   .nav-link::after {
     display: none;
+  }
+
+  /* Submenú de Políticas */
+  .navbar-policy-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 14px 0;
+    border: none;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--texto);
+    font-family: "Poppins", sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+      color 0.2s ease,
+      background-color 0.2s ease;
+  }
+
+  .navbar-policy-toggle:hover,
+  .navbar-policy-toggle[aria-expanded="true"] {
+    color: var(--primario);
+    background-color: var(--bg-main);
+  }
+
+  .navbar-policy-toggle:focus-visible {
+    outline: 2px solid var(--primario-claro);
+    outline-offset: 2px;
+  }
+
+  .navbar-policy-toggle i {
+    font-size: 0.7rem;
+    transition: transform 0.3s ease;
+  }
+
+  .navbar-policy-toggle[aria-expanded="true"] i {
+    transform: rotate(180deg);
+  }
+
+  .navbar-policy-sublist {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    max-height: 0;
+    overflow: hidden;
+    visibility: hidden;
+    transition:
+      max-height 0.3s ease,
+      visibility 0s linear 0.3s;
+  }
+
+  .navbar-policy-sublist.open {
+    max-height: 300px;
+    visibility: visible;
+    transition:
+      max-height 0.3s ease,
+      visibility 0s linear 0s;
+  }
+
+  .navbar-policy-sublist li {
+    display: block;
+    width: 100%;
+  }
+
+  .navbar-policy-sublist .nav-link {
+    padding: 10px 12px;
+    font-size: 0.9rem;
+    line-height: 1.35;
+    white-space: normal;
+    color: var(--texto-muted);
+  }
+
+  .navbar-policy-sublist .nav-link:hover,
+  .navbar-policy-sublist .nav-link:focus-visible {
+    color: var(--primario);
+    background-color: var(--bg-main);
   }
 }
 

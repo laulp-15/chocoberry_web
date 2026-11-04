@@ -1,6 +1,6 @@
 // src/features/login/components/AuthLayout.jsx
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTheme } from "../../../shared/context/ThemeContext";
 import "./AuthLayout.css";

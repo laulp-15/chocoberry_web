@@ -43,6 +43,22 @@ export async function buscarPorId(id) {
   return rows[0] ?? null;
 }
 
+/** Lista productos por id, opcionalmente filtrando por estado. */
+export async function listarPorIds(ids = [], { estado } = {}) {
+  if (!ids || ids.length === 0) return [];
+
+  const marcadores = ids.map(() => '?').join(', ');
+  const where = [`p.id IN (${marcadores})`];
+  const params = [...ids];
+
+  if (estado !== undefined) {
+    where.push('p.estado = ?');
+    params.push(estado ? 1 : 0);
+  }
+
+  return query(`${SELECT_BASE} WHERE ${where.join(' AND ')}`, params);
+}
+
 /** ¿Existe un producto con ese nombre? Ignora `excluirId` (al editar). */
 export async function existeNombre(nombre, excluirId = null) {
   const sql = excluirId

@@ -64,17 +64,51 @@
 }
 
 /* Modo oscuro - los estilos internos usan variables CSS */
-[data-theme="dark"] .footer-description { color: var(--texto-muted); }
-[data-theme="dark"] .footer-title { color: var(--texto); }
-[data-theme="dark"] .footer-contact { color: var(--texto-muted); }
-[data-theme="dark"] .footer-contact i { color: var(--primario); }
-[data-theme="dark"] .footer-subtitle { color: var(--texto); }
-[data-theme="dark"] .footer-social a { background-color: var(--secundario-2); color: #ffffff; }
-[data-theme="dark"] .footer-social a:hover { background-color: var(--primario); }
-[data-theme="dark"] .footer-hours-label { color: var(--primario); }
-[data-theme="dark"] .footer-hours-time { color: var(--texto-muted); }
-[data-theme="dark"] .footer-developers { color: var(--texto-muted); }
-[data-theme="dark"] .footer-bottom { border-top: 1px solid var(--borde); color: var(--texto-suave); }
+[data-theme="dark"] .footer-description {
+  color: var(--texto-muted);
+}
+
+[data-theme="dark"] .footer-title {
+  color: var(--texto);
+}
+
+[data-theme="dark"] .footer-contact {
+  color: var(--texto-muted);
+}
+
+[data-theme="dark"] .footer-contact i {
+  color: var(--primario);
+}
+
+[data-theme="dark"] .footer-subtitle {
+  color: var(--texto);
+}
+
+[data-theme="dark"] .footer-social a {
+  background-color: var(--secundario-2);
+  color: #ffffff;
+}
+
+[data-theme="dark"] .footer-social a:hover {
+  background-color: var(--primario);
+}
+
+[data-theme="dark"] .footer-hours-label {
+  color: var(--primario);
+}
+
+[data-theme="dark"] .footer-hours-time {
+  color: var(--texto-muted);
+}
+
+[data-theme="dark"] .footer-developers {
+  color: var(--texto-muted);
+}
+
+[data-theme="dark"] .footer-bottom {
+  border-top: 1px solid var(--borde);
+  color: var(--texto-suave);
+}
 
 .footer-container {
   max-width: 1200px;
@@ -177,6 +211,10 @@
   cursor: default;
 }
 
+.footer .footer-toggle:not(:disabled) {
+  cursor: default;
+}
+
 .footer-chevron {
   display: none;
 }
@@ -190,6 +228,12 @@
 .footer-collapse-inner {
   min-height: 0;
   overflow: hidden;
+}
+
+@media (min-width: 769px) {
+  .footer-collapse-inner {
+    overflow: visible;
+  }
 }
 
 /* Redes: versión móvil oculta en escritorio */
@@ -499,6 +543,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .footer-collapse,
   .footer-chevron,
   .footer-links a,
