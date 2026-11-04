@@ -30,10 +30,10 @@ export function mapUsuarioToSession(usuario) {
     // administrador / repartidor / cliente.
     role: usuario.rol?.slug ?? "",
     roleName: usuario.rol?.nombre ?? "",
+    roleId: usuario.rol?.id ?? null,
     permissions: Array.isArray(usuario.permisos) ? usuario.permisos : [],
     phone: usuario.telefono ?? "",
     address: usuario.direccion ?? "",
-    neighborhood: usuario.barrio ?? "",
     docType: usuario.tipoDocumento ?? "",
     idNumber: usuario.numeroDocumento ?? "",
     active: usuario.estado !== false,
@@ -61,7 +61,6 @@ export function toRegisterPayload(datos = {}) {
     contrasena: datos.password,
     telefono: String(datos.phone ?? "").trim(),
     direccion: String(datos.address ?? "").trim(),
-    barrio: String(datos.neighborhood ?? "").trim(),
   };
 }
 
@@ -95,9 +94,6 @@ export function toProfilePayload(updates = {}) {
   if (updates.phone !== undefined) payload.telefono = String(updates.phone).trim();
   if (updates.address !== undefined) {
     payload.direccion = String(updates.address).trim();
-  }
-  if (updates.neighborhood !== undefined) {
-    payload.barrio = String(updates.neighborhood).trim();
   }
 
   return payload;

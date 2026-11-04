@@ -1,5 +1,4 @@
 // src/features/profile/layout/ProfileLayout.jsx
-import React from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../login/hooks/useAuth';
 import useAuthTheme from '../../login/hooks/useAuthTheme';
@@ -24,10 +23,10 @@ const ProfileLayout = () => {
     sidebarHover: '#fff5f6',
   };
 
-  const handleLogout = (e) => {
+  const handleLogout = async (e) => {
     e.preventDefault();
-    logout();
-    navigate('/login');
+    await logout();
+    navigate('/login', { replace: true });
   };
 
   return (

@@ -45,25 +45,25 @@ export default function RejectPaymentModal({
           return "";
         },
         monto: (v) => {
-          if (!v.monto.trim()) return "Escribe el valor entregado.";
+          if (!v.monto.trim()) return "Escribe el valor recibido.";
           const monto = Number(v.monto);
           if (!Number.isFinite(monto) || monto < 0) {
-            return "El valor entregado debe ser mayor o igual a cero.";
+            return "El valor recibido debe ser mayor o igual a cero.";
           }
           if (monto > 99999999.99) {
-            return "El valor entregado es demasiado alto.";
+            return "El valor recibido es demasiado alto.";
           }
 
           const montoRedondeado = redondear2(monto);
           if (saldoRedondeado > 0) {
             if (montoRedondeado > saldoRedondeado) {
-              return "El valor entregado no puede superar el saldo pendiente.";
+              return "El valor recibido no puede superar el saldo pendiente.";
             }
             if (montoRedondeado === saldoRedondeado) {
               return "Si el valor completa el saldo, usa Aprobar.";
             }
           } else if (montoRedondeado !== 0) {
-            return "Con saldo cero, el valor entregado debe ser 0.";
+            return "Con saldo cero, el valor recibido debe ser 0.";
           }
 
           return "";
@@ -103,7 +103,7 @@ export default function RejectPaymentModal({
       }
     >
       <p style={{ margin: "0 0 16px", fontSize: "13px", lineHeight: 1.5 }}>
-        Registra el valor real entregado. Ese valor reduce el saldo; si completa
+        Registra el valor real recibido. Ese valor reduce el saldo; si completa
         el pago, debes usar Aprobar.
       </p>
       <p style={{ margin: "0 0 16px", fontSize: "13px" }}>
@@ -117,7 +117,7 @@ export default function RejectPaymentModal({
       )}
 
       <FormTextField
-        label="Valor entregado"
+        label="Valor recibido"
         required
         type="number"
         value={values.monto}

@@ -12,7 +12,6 @@ const CAMPOS_ACTUALIZABLES = [
   'correo',
   'contrasena',
   'telefono',
-  'barrio',
   'direccion',
   'estado',
   'id_rol',
@@ -90,8 +89,8 @@ export async function crear(datos) {
   const resultado = await query(
     `INSERT INTO usuario
        (nombres, apellidos, tipo_documento, numero_documento, correo, contrasena,
-        telefono, barrio, direccion, estado, id_rol)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        telefono, direccion, estado, id_rol)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       datos.nombres,
       datos.apellidos,
@@ -100,7 +99,6 @@ export async function crear(datos) {
       datos.correo,
       datos.contrasena,
       datos.telefono ?? null,
-      datos.barrio ?? null,
       datos.direccion ?? null,
       datos.estado ? 1 : 0,
       datos.id_rol,

@@ -318,7 +318,7 @@
 
   .admin-sidebar.collapsed .admin-brand {
     opacity: 0;
-    max-height: 20px;
+    max-height: 76px;
     pointer-events: none;
   }
 

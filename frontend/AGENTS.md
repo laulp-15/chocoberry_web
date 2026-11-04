@@ -63,21 +63,25 @@ npm run preview  # preview del build
 ## Autenticación (JWT por API)
 
 `useAuth()` mantiene la misma API pública (`user`, `isAuthenticated`, `role`,
-`roleName`, `permissions`, `isInitializing`, `login`, `register`,
+`roleName`, `roleId`, `permissions`, `isInitializing`, `login`, `register`,
 `requestPasswordReset`, `changePassword`, `logout`, `updateUser`) pero ahora
 habla con el backend a través de `features/login/services/authService.js`. La
 sesión y el token se guardan con `shared/api/session.js`.
 
-El login y `/auth/me` devuelven los permisos efectivos del rol. El acceso al
-panel usa `Dashboard · Ver` como permiso de entrada, no el slug del rol.
-`RequireAuth` solo valida la sesión; `RequirePanelAccess` y
+El login y `/auth/me` devuelven los permisos efectivos del rol. Cualquier rol
+distinto del Cliente entra al panel si puede ver al menos un módulo del menú;
+no exige `Dashboard · Ver`. El rol Cliente se identifica por su id (`3`) y, como
+respaldo para sesiones antiguas, por el slug `cliente`; es el único que
+permanece en la tienda. `RequireAuth` solo valida la sesión;
+`RequirePanelAccess` y
 `RequirePermission` (`shared/components/RequirePermission.jsx`) validan
 permisos por ruta. El menú se filtra con
 `shared/permissions/panelPermissions.js` y se consulta con
 `shared/hooks/usePermissions.js`. Las acciones de cada módulo deben ocultarse
 con los permisos `Crear`, `Editar`, `Eliminar` o `Cambiar estado`; el backend
-sigue siendo la autoridad final. Reseñas exige `Ver` y `Cambiar estado` para
-entrar al panel de moderación.
+sigue siendo la autoridad final. Reseñas usa `Ver` para listar y ver el detalle
+en modo lectura; `Cambiar estado` solo habilita el botón de moderación. El rol
+Cliente no tiene `Ver Reseñas` porque ese permiso es del panel.
 
 El estado de maestros, productos y usuarios solo se cambia con el toggle
 (`PATCH .../estado`): los formularios de edición lo ocultan y los `PUT` no lo

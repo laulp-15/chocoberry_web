@@ -15,7 +15,6 @@ function mapProducto(linea) {
     color: linea.colorNombre,
     colorHex: linea.colorHex,
     decorativeMessage: linea.mensajePersonalizado,
-    extraCustomization: linea.personalizacionAdicional,
     units: linea.unidades,
     unitPrice: linea.precioUnitario,
     subtotal: linea.subtotal,

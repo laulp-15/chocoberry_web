@@ -124,6 +124,7 @@ export function AuthProvider({ children }) {
     isInitializing,
     role: user?.role ?? null,
     roleName: user?.roleName ?? null,
+    roleId: user?.roleId ?? null,
     permissions: user?.permissions ?? [],
     login,
     register,

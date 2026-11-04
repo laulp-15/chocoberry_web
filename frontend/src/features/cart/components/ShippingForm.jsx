@@ -20,7 +20,6 @@ const MAX_DELIVERY_DATE = addDaysISO(15);
  * @param {string} [props.deliveryDateError]
  * @param {string} [props.municipioError]
  * @param {string} [props.addressError]
- * @param {string} [props.neighborhoodError]
  * @param {string} [props.recipientNameError]
  * @param {string} [props.recipientPhoneError]
  * @param {string} [props.minDeliveryDate] - ISO; mínimo según el total del carrito
@@ -38,14 +37,12 @@ export default function ShippingForm({
   deliveryDateError,
   municipioError,
   addressError,
-  neighborhoodError,
   recipientNameError,
   recipientPhoneError,
 }) {
   const {
     fullName,
     address,
-    neighborhood,
     municipio,
     recipientName,
     recipientPhone,
@@ -57,7 +54,7 @@ export default function ShippingForm({
     <div className="checkout-section">
       <div className="checkout-section-title">
         <i className="fa-solid fa-truck-fast" />
-        Detalles de Envío
+        Detalles del domicilio
       </div>
 
       <div className="form-field">
@@ -90,7 +87,7 @@ export default function ShippingForm({
 
       <div className="form-row">
         <div className="form-field">
-          <label className="form-label">Dirección *</label>
+          <label className="form-label">Dirección de entrega *</label>
           <OutlinedInput
             className={`form-input ${addressError ? "has-error" : ""}`}
             fullWidth
@@ -99,45 +96,38 @@ export default function ShippingForm({
             onChange={(e) => onChange("address", e.target.value)}
             onBlur={() => onBlurField?.("address")}
           />
-          {addressError && <div className="form-error">{addressError}</div>}
+          {addressError ? (
+            <div className="form-error">{addressError}</div>
+          ) : (
+            <div className="form-hint">
+              Para mayor precisión, indícanos en qué barrio será la entrega.
+            </div>
+          )}
         </div>
 
         <div className="form-field">
-          <label className="form-label">Barrio *</label>
-          <OutlinedInput
-            className={`form-input ${neighborhoodError ? "has-error" : ""}`}
+          <label className="form-label">Municipio de entrega *</label>
+          <Select
+            className={`form-input form-select ${municipioError ? "has-error" : ""}`}
             fullWidth
-            placeholder="Ej. El Poblado"
-            value={neighborhood}
-            onChange={(e) => onChange("neighborhood", e.target.value)}
-            onBlur={() => onBlurField?.("neighborhood")}
-          />
-          {neighborhoodError && <div className="form-error">{neighborhoodError}</div>}
-        </div>
-      </div>
-
-      <div className="form-field">
-        <label className="form-label">Municipio de entrega *</label>
-        <Select
-          className={`form-input form-select ${municipioError ? "has-error" : ""}`}
-          fullWidth
-          displayEmpty
-          value={municipio}
-          disabled={municipiosLoading}
-          onChange={(e) => onChange("municipio", e.target.value)}
-        >
-          <MenuItem value="">
-            <span className="form-select-placeholder">
-              {municipiosLoading ? "Cargando municipios..." : "Selecciona un municipio"}
-            </span>
-          </MenuItem>
-          {municipios.map((m) => (
-            <MenuItem key={m.id} value={m.id}>
-              {m.nombre} — {formatPrice(m.precioDomicilio)}
+            displayEmpty
+            value={municipio}
+            disabled={municipiosLoading}
+            onChange={(e) => onChange("municipio", e.target.value)}
+          >
+            <MenuItem value="">
+              <span className="form-select-placeholder">
+                {municipiosLoading ? "Cargando municipios..." : "Selecciona un municipio"}
+              </span>
             </MenuItem>
-          ))}
-        </Select>
-        {municipioError && <div className="form-error">{municipioError}</div>}
+            {municipios.map((m) => (
+              <MenuItem key={m.id} value={m.id}>
+                {m.nombre} — {formatPrice(m.precioDomicilio)}
+              </MenuItem>
+            ))}
+          </Select>
+          {municipioError && <div className="form-error">{municipioError}</div>}
+        </div>
       </div>
 
       <div className="form-row">

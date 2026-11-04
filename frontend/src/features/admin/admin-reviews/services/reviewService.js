@@ -1,7 +1,7 @@
 // src/features/admin/admin-reviews/services/reviewService.js
 //
-// Reseñas del panel: listado completo y cambio de estado. Solo el rol
-// Administrador puede acceder a estas rutas.
+// Reseñas del panel: listado completo y cambio de estado. El listado requiere
+// "Ver Reseñas"; el cambio de estado requiere "Cambiar estado Reseñas".
 
 import { api } from "../../../../shared/api/client";
 import { mapResenaAdmin, mapResenasAdmin } from "./reviewMappers";

@@ -24,6 +24,11 @@ export default function SalesListPage() {
   };
 
   const columns = [
+    {
+      key: "clienteIdentificacion",
+      label: "N. Identificación",
+      render: (row) => row.clienteIdentificacion || "—",
+    },
     { key: "cliente", label: "Cliente" },
     {
       key: "estado",
@@ -77,7 +82,7 @@ export default function SalesListPage() {
         description="Consulta las ventas confirmadas del negocio."
         columns={columns}
         data={sales}
-        searchPlaceholder="Buscar por cliente..."
+        searchPlaceholder="Buscar por cliente o N. identificación..."
         emptyMessage={
           loading
             ? "Cargando ventas..."

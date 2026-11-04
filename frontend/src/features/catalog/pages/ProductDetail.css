@@ -1,5 +1,4 @@
 /* src/features/catalog/pages/ProductDetail.css
-   Tokens de color vienen de shared/styles/tokens.css (importado globalmente).
 */
 
 .detail-page {
@@ -12,7 +11,7 @@
 
 .detail-wrap {
   max-width: 1200px;
-  padding: 32px 20px 40px;
+  padding: 50px 20px 40px;
 }
 
 .detail-top {
@@ -65,7 +64,6 @@
   margin-bottom: 24px;
 }
 
-/* --- Pisa estilos por defecto de MUI Button --- */
 .btn-add-to-cart.MuiButton-root {
   background: var(--primario) !important;
   color: var(--blanco) !important;
@@ -76,11 +74,48 @@
   border-radius: 999px !important;
   padding: 14px 0 !important;
   box-shadow: none !important;
-  margin-top: 8px;
 }
 .btn-add-to-cart.MuiButton-root:hover {
   background: var(--primario-oscuro) !important;
   box-shadow: none !important;
+}
+
+/* Stepper de cajas junto al botón de añadir al carrito. */
+.product-add-block {
+  --add-control-height: 44px;
+  margin-top: 8px;
+}
+.product-add-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.product-add-row .btn-add-to-cart.MuiButton-root {
+  flex: 1;
+  height: var(--add-control-height);
+  margin-top: 0;
+  padding: 0 !important;
+  font-size: 14px;
+}
+.product-add-row .quantity-stepper {
+  height: var(--add-control-height);
+  padding: 0 8px;
+  flex-shrink: 0;
+}
+.product-add-row .quantity-stepper .MuiIconButton-root {
+  width: 30px;
+  height: 30px;
+  font-size: 12px;
+}
+.product-add-row .quantity-stepper-input {
+  width: 50px;
+  height: 100%;
+  font-size: 15px;
+}
+.product-limit-inline {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--error-100);
 }
 
 /* Aviso fijo cuando el carrito ya suma 20 unidades. */
@@ -119,11 +154,37 @@
   font-size: 13px;
 }
 
+@media (max-width: 768px) {
+  .detail-wrap {
+    padding: 40px 16px 32px;
+  }
+}
+
 @media (max-width: 576px) {
   .product-limit-alert {
     left: 16px;
     right: 16px;
     bottom: 16px;
     max-width: none;
+  }
+}
+
+@media (max-width: 400px) {
+  .product-add-row {
+    gap: 8px;
+  }
+  .product-add-row .btn-add-to-cart.MuiButton-root {
+    font-size: 13px;
+  }
+  .product-add-row .quantity-stepper {
+    padding: 0 4px;
+  }
+  .product-add-row .quantity-stepper .MuiIconButton-root {
+    width: 28px;
+    height: 28px;
+  }
+  .product-add-row .quantity-stepper-input {
+    width: 40px;
+    font-size: 14px;
   }
 }

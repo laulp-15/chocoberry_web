@@ -4,6 +4,7 @@ import FormSearchableSelect from "../../../../shared/components/FormSearchableSe
 import FormTextField from "../../../../shared/components/FormTextField";
 import useFormValidation from "../../../../shared/hooks/useFormValidation";
 import { formatPrice } from "../../../../shared/utils/formatPrice";
+import { contarCaracteresSinEspacios } from "../../../../shared/utils/orderRules";
 import "./OrderProductLineForm.css";
 
 const EMPTY_LINE = {
@@ -12,7 +13,6 @@ const EMPTY_LINE = {
   colorId: "",
   unidades: "1",
   mensajePersonalizado: "",
-  personalizacionAdicional: "",
 };
 
 function toLineValues(line) {
@@ -25,12 +25,7 @@ function toLineValues(line) {
     colorId: line.colorId != null ? String(line.colorId) : "",
     unidades: line.unidades != null ? String(line.unidades) : "1",
     mensajePersonalizado: line.mensajePersonalizado ?? "",
-    personalizacionAdicional: line.personalizacionAdicional ?? "",
   };
-}
-
-function contarCaracteres(texto) {
-  return Array.from(String(texto ?? "")).length;
 }
 
 /**
@@ -125,15 +120,11 @@ export default function OrderProductLineForm({
             (p) => String(p.id) === String(l.presentacionId)
           );
           const maximo = presentacion?.cantidadFresas ?? 255;
-          if (contarCaracteres(l.mensajePersonalizado) > maximo) {
-            return `Máximo ${maximo} caracteres para esta presentación (una letra por fresa).`;
+          if (contarCaracteresSinEspacios(l.mensajePersonalizado) > maximo) {
+            return `Máximo ${maximo} caracteres sin contar espacios para esta presentación (una letra por fresa).`;
           }
           return "";
         },
-        personalizacionAdicional: (l) =>
-          contarCaracteres(l.personalizacionAdicional) > 255
-            ? "La personalización adicional no puede superar los 255 caracteres."
-            : "",
       },
       immediate: ["productoId", "presentacionId", "colorId"],
     });
@@ -144,8 +135,8 @@ export default function OrderProductLineForm({
     (p) => String(p.id) === String(line.presentacionId)
   );
   const maxMensaje = presentacion?.cantidadFresas ?? 255;
-  const mensajeValido = contarCaracteres(line.mensajePersonalizado) <= maxMensaje;
-  const extraValido = contarCaracteres(line.personalizacionAdicional) <= 255;
+  const mensajeValido =
+    contarCaracteresSinEspacios(line.mensajePersonalizado) <= maxMensaje;
 
   // Si la línea conserva producto, presentación y glaseado, se mantiene su
   // precio histórico. Al cambiar cualquiera de esos datos se muestra el precio
@@ -177,8 +168,7 @@ export default function OrderProductLineForm({
     line.presentacionId &&
     line.colorId &&
     Number(line.unidades) > 0 &&
-    mensajeValido &&
-    extraValido;
+    mensajeValido;
 
   const handleSubmit = () => {
     if (!validateAll()) return;
@@ -203,7 +193,6 @@ export default function OrderProductLineForm({
       colorNombre: glaseado.nombre,
       colorHex: glaseado.hex,
       mensajePersonalizado: line.mensajePersonalizado.trim(),
-      personalizacionAdicional: line.personalizacionAdicional.trim(),
     };
 
     if (isEditing) {
@@ -273,20 +262,10 @@ export default function OrderProductLineForm({
         onBlur={() => handleBlur("mensajePersonalizado")}
         placeholder={
           presentacion
-            ? `Máximo ${maxMensaje} caracteres (una letra por fresa)`
+            ? `Máximo ${maxMensaje} caracteres sin contar espacios (una letra por fresa)`
             : "Ej: TE AMO"
         }
         error={errors.mensajePersonalizado}
-      />
-      <FormTextField
-        label="Personalización extra"
-        value={line.personalizacionAdicional}
-        onChange={(v) => update("personalizacionAdicional", v)}
-        onBlur={() => handleBlur("personalizacionAdicional")}
-        placeholder="Ej: quitar decoraciones de mariposa"
-        multiline
-        minRows={1}
-        error={errors.personalizacionAdicional}
       />
 
       <div className="order-line-form-footer">

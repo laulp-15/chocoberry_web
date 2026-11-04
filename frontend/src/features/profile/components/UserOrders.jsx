@@ -284,22 +284,6 @@ const UserOrders = () => {
               </div>
             )}
 
-            {linea.personalizacionAdicional && (
-              <div style={{
-                marginTop: '10px',
-                padding: '10px 12px',
-                background: isDark ? '#2d1e22' : '#fff8f0',
-                borderRadius: '8px',
-                border: `1px solid ${colors.divider}`,
-              }}>
-                <span style={{ fontSize: '12px', fontWeight: '600', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  Personalización extra
-                </span>
-                <p style={{ margin: '4px 0 0', fontSize: '13px', color: colors.textMain, lineHeight: 1.4 }}>
-                  {linea.personalizacionAdicional}
-                </p>
-              </div>
-            )}
           </div>
         </div>
       ))}
@@ -309,7 +293,7 @@ const UserOrders = () => {
   const renderDeliveryInfo = (order) => {
     const filas = [
       ['Fecha de entrega', formatFecha(order.fechaEntrega)],
-      ['Dirección', `${order.direccion}${order.barrio ? `, ${order.barrio}` : ''}`],
+      ['Dirección', order.direccion],
       ['Recibe', `${order.nombreReceptor}${order.telefonoReceptor ? ` · ${order.telefonoReceptor}` : ''}`],
     ];
 

@@ -11,7 +11,6 @@ const registroValido = {
   contrasena: 'Segura123!',
   telefono: '300 123 4567',
   direccion: 'Calle 10 #43-12',
-  barrio: 'Centro',
 };
 
 describe('Validadores - registro', () => {
@@ -37,12 +36,11 @@ describe('Validadores - registro', () => {
     expect(r.success).toBe(false);
   });
 
-  it('permite teléfono/dirección/barrio vacíos (opcionales)', () => {
+  it('permite teléfono/dirección vacíos (opcionales)', () => {
     const r = registroSchema.safeParse({
       ...registroValido,
       telefono: '',
       direccion: '',
-      barrio: '',
     });
     expect(r.success).toBe(true);
   });

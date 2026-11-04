@@ -12,6 +12,7 @@ const COMPROBANTE = Buffer.from('89504e470d0a1a0a', 'hex');
 describe('Módulo de comprobantes de pago', () => {
   let tokenAdmin;
   let tokenCliente;
+  let tokenOtroCliente;
   let clienteId;
   let otroClienteId;
 
@@ -61,10 +62,9 @@ describe('Módulo de comprobantes de pago', () => {
   }
 
   async function crearPedido(idUsuario) {
-    const res = await auth(request(app).post('/api/pedidos'))
+    const res = await auth(request(app).post('/api/pedidos'), tokenCliente)
       .field('fechaEntrega', '2026-12-24')
       .field('direccion', 'Calle 10 # 20-30')
-      .field('barrio', 'Centro')
       .field('idMunicipio', String(municipio.id))
       .field('nombreReceptor', 'Receptor Comprobantes')
       .field('telefonoReceptor', '3001234567')
@@ -124,6 +124,9 @@ describe('Módulo de comprobantes de pago', () => {
     });
 
     tokenCliente = await iniciarSesion(`comprobantes.01.${s}@chocoberry.com`);
+    tokenOtroCliente = await iniciarSesion(
+      `comprobantes.02.${s}@chocoberry.com`
+    );
     expect(otroClienteId).toBeGreaterThan(0);
 
     const productos = await request(app).get('/api/catalogo/productos');
@@ -190,9 +193,23 @@ describe('Módulo de comprobantes de pago', () => {
     expect(res.body.data.puedeSubirComprobante).toBe(true);
   });
 
-  it('solo el cliente dueño puede subir comprobantes (404 para el admin)', async () => {
-    const res = await subirComprobante(pedidoId, tokenAdmin);
+  it('un cliente ajeno no puede subir comprobantes (404)', async () => {
+    const res = await subirComprobante(pedidoId, tokenOtroCliente);
     expect(res.status).toBe(404);
+  });
+
+  it('el admin sube un comprobante y queda aprobado por el saldo', async () => {
+    const pedido = await crearPedido(clienteId);
+    const res = await subirComprobante(pedido.id, tokenAdmin);
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.saldo).toBe(0);
+    expect(res.body.data.totalPagado).toBe(pedido.total);
+    expect(res.body.data.puedeSubirComprobante).toBe(false);
+
+    const comprobante = res.body.data.comprobantes.at(-1);
+    expect(comprobante.estado.nombre).toBe('Aprobado');
+    expect(comprobante.monto).toBe(pedido.total);
   });
 
   it('subir sin archivo devuelve 422', async () => {

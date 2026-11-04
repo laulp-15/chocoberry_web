@@ -96,10 +96,9 @@ export default function OrderDetailContent({ order }) {
                     {line.color}
                   </span>
                 </div>
-                {(line.decorativeMessage || line.extraCustomization) && (
+                {line.decorativeMessage && (
                   <div className="order-detail-product-note">
-                    {line.decorativeMessage && <span>“{line.decorativeMessage}”</span>}
-                    {line.extraCustomization && <span>{line.extraCustomization}</span>}
+                    <span>“{line.decorativeMessage}”</span>
                   </div>
                 )}
               </div>

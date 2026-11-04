@@ -29,7 +29,6 @@ export function mapUsuarioAdmin(usuario) {
     email: usuario.correo ?? "",
     phone: usuario.telefono ?? "",
     address: usuario.direccion ?? "",
-    neighborhood: usuario.barrio ?? "",
     // El slug del rol coincide con el que usa el front:
     // administrador / repartidor / cliente.
     role: usuario.rol?.slug ?? "",
@@ -56,7 +55,6 @@ function camposBase(datos = {}) {
     correo: String(datos.email ?? "").trim().toLowerCase(),
     telefono: String(datos.phone ?? "").trim(),
     direccion: String(datos.address ?? "").trim(),
-    barrio: String(datos.neighborhood ?? "").trim(),
     rol: datos.role,
   };
 }
@@ -73,13 +71,11 @@ export function toCrearUsuarioPayload(datos = {}) {
 }
 
 /**
- * PUT /usuarios/:id. Si la contraseña viene vacía NO se envía, para que el
- * backend conserve la actual (la regla de edición del formulario).
+ * PUT /usuarios/:id. La contraseña no se edita desde el panel: las cuentas
+ * nuevas la establecen mediante el enlace de activación.
  */
 export function toActualizarUsuarioPayload(datos = {}) {
-  const payload = camposBase(datos);
-  if (datos.password) payload.contrasena = datos.password;
-  return payload;
+  return camposBase(datos);
 }
 
 // -----------------------------------------------------------------------------

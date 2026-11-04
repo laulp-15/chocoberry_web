@@ -17,6 +17,11 @@ import * as pedidoService from './pedido.service.js';
 
 const MAX_COMPROBANTES_ACTIVOS = 3;
 const ESTADO_PENDIENTE = 'Pendiente';
+const ROL_CLIENTE = 'Cliente';
+
+function esRol(usuario, rol) {
+  return String(usuario?.nombre_rol ?? '').trim().toLowerCase() === rol.toLowerCase();
+}
 
 async function resolverEstado(nombre) {
   const estado = await estadoComprobanteModel.buscarPorNombre(nombre);
@@ -38,16 +43,21 @@ function formatearMonto(valor) {
 }
 
 /**
- * Agrega un comprobante a un pedido propio. Solo se permite mientras el pedido
- * está Pendiente, queda saldo y hay menos de 3 comprobantes activos
- * (Pendientes + Aprobados; los rechazados no cuentan).
+ * Agrega un comprobante a un pedido. El cliente solo puede hacerlo sobre sus
+ * propios pedidos y queda Pendiente de aprobación; el admin/staff puede subirlo
+ * a cualquier pedido y queda Aprobado automáticamente por el saldo pendiente.
+ * En ambos casos el pedido debe seguir Pendiente, tener saldo y menos de 3
+ * comprobantes activos (Pendientes + Aprobados; los rechazados no cuentan).
  */
 export async function agregar(idPedido, url, usuario) {
   if (!url) {
     throw new UnprocessableEntityError('El comprobante de pago es obligatorio.');
   }
 
-  const estadoPendiente = await resolverEstado(ESTADO_PENDIENTE);
+  const esCliente = esRol(usuario, ROL_CLIENTE);
+  const estadoComprobante = await resolverEstado(
+    esCliente ? ESTADO_PENDIENTE : 'Aprobado'
+  );
 
   return withTransaction(async (conexion) => {
     const pedido = await comprobantePagoModel.buscarPedidoParaComprobante(
@@ -55,8 +65,9 @@ export async function agregar(idPedido, url, usuario) {
       conexion
     );
 
-    // Se responde 404 para no revelar pedidos de otros clientes.
-    if (!pedido || pedido.id_usuario !== usuario.id) {
+    // Se responde 404 para no revelar pedidos de otros clientes. El personal
+    // con permiso de creación sí puede subir comprobantes a cualquier pedido.
+    if (!pedido || (esCliente && pedido.id_usuario !== usuario.id)) {
       throw new NotFoundError('Pedido no encontrado.');
     }
 
@@ -82,7 +93,8 @@ export async function agregar(idPedido, url, usuario) {
     await comprobantePagoModel.crear(conexion, {
       url,
       idPedido,
-      idEstado: estadoPendiente.id,
+      idEstado: estadoComprobante.id,
+      monto: esCliente ? null : saldo,
     });
 
     return idPedido;

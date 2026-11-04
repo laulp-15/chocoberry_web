@@ -1,6 +1,6 @@
 // src/shared/layouts/AdminLayout.jsx
 import { useState, useEffect } from "react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { IconButton, useMediaQuery } from "@mui/material";
 import { useAuth } from "../../features/login/hooks/useAuth";
 import { usePermissions } from "../hooks/usePermissions";
@@ -26,6 +26,7 @@ export default function AdminLayout() {
   const { permissions, roleName } = usePermissions();
   const { theme } = useTheme();
   const location = useLocation();
+  const navigate = useNavigate();
   const isDarkMode = theme === "dark";
   const navItems = allowedNavItems(permissions);
 
@@ -52,13 +53,11 @@ export default function AdminLayout() {
     }
   };
 
-  const handleLogout = (e) => {
+  const handleLogout = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    logout();
-    localStorage.removeItem("cb_session");
-    sessionStorage.removeItem("cb_session");
-    window.location.href = "/login";
+    await logout();
+    navigate("/login", { replace: true });
   };
 
   const tip = (label) => (isCollapsed ? label : "");

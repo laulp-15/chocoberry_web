@@ -73,6 +73,15 @@ export async function rechazar(id, motivo) {
   return mapPedidoAdmin(pedido);
 }
 
+/** POST /pedidos/:id/comprobantes (multipart con el comprobante). */
+export async function subirComprobante(id, archivo) {
+  const formData = new FormData();
+  formData.append("comprobante", archivo);
+
+  const pedido = await api.post(`/pedidos/${id}/comprobantes`, formData);
+  return mapPedidoAdmin(pedido);
+}
+
 /** PATCH /comprobantes/:id/aprobar. Devuelve el pedido y una advertencia. */
 export async function aprobarComprobante(id, monto) {
   const resultado = await api.patch(`/comprobantes/${id}/aprobar`, { monto });

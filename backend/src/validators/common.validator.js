@@ -58,8 +58,6 @@ export const telefonoField = z
 
 export const direccionField = z.string().trim().max(200, 'La dirección no puede superar los 200 caracteres.').optional();
 
-export const barrioField = z.string().trim().max(100, 'El barrio no puede superar los 100 caracteres.').optional();
-
 // Acepta true/false, "true"/"false", 1/0, "activo"/"inactivo".
 export const booleanoFlexible = z.preprocess((valor) => {
   if (typeof valor === 'string') {

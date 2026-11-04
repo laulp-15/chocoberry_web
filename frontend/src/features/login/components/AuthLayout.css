@@ -350,7 +350,6 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  /* deja libre el espacio de la estrella a ambos lados */
   max-width: calc(100% - 144px);
   border-radius: 5px;
   text-decoration: none;

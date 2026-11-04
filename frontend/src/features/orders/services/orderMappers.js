@@ -36,7 +36,6 @@ function mapLinea(linea) {
     precioUnitario: Number(linea.precioUnitario ?? 0),
     subtotal: Number(linea.subtotal ?? 0),
     mensajePersonalizado: linea.mensajePersonalizado ?? '',
-    personalizacionAdicional: linea.personalizacionAdicional ?? '',
     colorNombre: linea.colorGlaseado?.nombre ?? '',
     colorHex: linea.colorGlaseado?.codigoHex ?? '',
   };
@@ -56,7 +55,6 @@ export function mapPedido(pedido) {
     municipioId: pedido.municipio?.id ?? null,
     municipio: pedido.municipio?.nombre ?? '',
     direccion: pedido.direccion ?? '',
-    barrio: pedido.barrio ?? '',
     precioDomicilio: Number(pedido.precioDomicilio ?? 0),
     nombreReceptor: pedido.nombreReceptor ?? '',
     telefonoReceptor: pedido.telefonoReceptor ?? '',

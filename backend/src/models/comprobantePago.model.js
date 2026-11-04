@@ -69,11 +69,11 @@ export async function buscarPedidoParaComprobante(idPedido, conexion) {
   return filas[0] ?? null;
 }
 
-export async function crear(conexion, { url, idPedido, idEstado }) {
+export async function crear(conexion, { url, idPedido, idEstado, monto = null }) {
   const resultado = await ejecutar(
-    `INSERT INTO comprobantePago (url, id_pedido, id_estado)
-     VALUES (?, ?, ?)`,
-    [url, idPedido, idEstado],
+    `INSERT INTO comprobantePago (url, id_pedido, id_estado, monto)
+     VALUES (?, ?, ?, ?)`,
+    [url, idPedido, idEstado, monto],
     conexion
   );
   return resultado.insertId;

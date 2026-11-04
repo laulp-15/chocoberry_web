@@ -35,14 +35,9 @@ export default function OrderProductLineItem({
             {line.colorNombre || "—"}
           </span>
         </div>
-        {(line.mensajePersonalizado || line.personalizacionAdicional) && (
+        {line.mensajePersonalizado && (
           <div className="order-line-item-notes">
-            {line.mensajePersonalizado && (
-              <span>“{line.mensajePersonalizado}”</span>
-            )}
-            {line.personalizacionAdicional && (
-              <span>{line.personalizacionAdicional}</span>
-            )}
+            <span>“{line.mensajePersonalizado}”</span>
           </div>
         )}
       </div>

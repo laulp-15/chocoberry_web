@@ -132,7 +132,8 @@ INSERT INTO rolPermiso (id_rol, id_permiso) VALUES
     (2, 34),  -- Ver Pedidos
     (2, 36);  -- Editar Pedidos
 
--- Cliente (id 3): catálogo, carrito, pedidos propios y reseñas
+-- Cliente (id 3): catálogo, carrito, pedidos propios y creación de reseñas.
+-- "Ver Reseñas" no se asigna: el listado del panel es solo para el personal.
 INSERT INTO rolPermiso (id_rol, id_permiso) VALUES
     (3, 14),  -- Ver Categorías
     (3, 19),  -- Ver Productos
@@ -141,7 +142,6 @@ INSERT INTO rolPermiso (id_rol, id_permiso) VALUES
     (3, 26),  -- Editar Carrito
     (3, 34),  -- Ver Pedidos
     (3, 35),  -- Crear Pedidos
-    (3, 29),  -- Ver Reseñas
     (3, 30);  -- Crear Reseñas
 
 -- -----------------------------------------------------------------------------
@@ -150,11 +150,11 @@ INSERT INTO rolPermiso (id_rol, id_permiso) VALUES
 -- -----------------------------------------------------------------------------
 INSERT INTO usuario
     (nombres, apellidos, tipo_documento, numero_documento, correo, contrasena,
-     telefono, barrio, direccion, estado, id_rol)
+     telefono, direccion, estado, id_rol)
 VALUES
     ('Admin', 'ChocoBerry', 'CC', '1000000000', 'admin@chocoberry.com',
      '$2b$10$pSqq5nMdX/2W0iKbNF37LeCzGEqcMcyPrSwXV4iQmAxQLoadrZ8I2',
-     '3000000000', NULL, NULL, TRUE, 1);
+     '3000000000', NULL, TRUE, 1);
 
 -- =============================================================================
 -- CATÁLOGOS PARA QUE LA TIENDA FUNCIONE

@@ -1,7 +1,7 @@
 // src/features/cart/components/PaymentSection.jsx
 import FileDropzone from "../../../shared/components/FileDropZone";
 import { IMAGE_ACCEPT } from "../../../shared/utils/fileValidation";
-import { NEQUI_ACCOUNT } from "../data/paymentInfo";
+import { NEQUI_ACCOUNT, NEQUI_QR } from "../data/paymentInfo";
 import "./PaymentSection.css";
 
 /**
@@ -25,9 +25,43 @@ export default function PaymentSection({
       <p className="payment-intro">
         Por favor, realiza la transferencia y adjunta tu comprobante para procesar tu pedido.
       </p>
+
       <div className="payment-nequi">
         <i className="fa-solid fa-phone" />
         Transferencias a Nequi: <strong>{NEQUI_ACCOUNT}</strong>
+      </div>
+
+      {/* Código QR */}
+      <div className="payment-qr">
+        <div className="payment-qr-image-wrapper">
+          <img
+            src={NEQUI_QR}
+            alt={`Código QR para transferir a la cuenta Nequi ${NEQUI_ACCOUNT}`}
+            className="payment-qr-image"
+            loading="lazy"
+            onError={(e) => {
+              console.warn(
+                `[PaymentSection] No se pudo cargar el QR en la ruta: ${NEQUI_QR}. ` +
+                  "Verifica que el archivo exista en public/ con ese nombre exacto."
+              );
+              e.currentTarget.closest(".payment-qr").style.display = "none";
+            }}
+          />
+        </div>
+
+        <div className="payment-qr-info">
+          <p className="payment-qr-caption">
+            También puedes escanear este código QR para transferir.
+          </p>
+          <a
+            href={NEQUI_QR}
+            download="qr-nequi-chocoberry.png"
+            className="payment-qr-download"
+          >
+            <i className="fa-solid fa-download" />
+            Descargar QR
+          </a>
+        </div>
       </div>
 
       <div className="form-field">

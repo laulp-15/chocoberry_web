@@ -91,7 +91,6 @@ describe('Módulo de dashboard', () => {
       .field('mensajeTarjeta', 'Dashboard de prueba')
       .field('fechaEntrega', fechaISO(2))
       .field('direccion', 'Calle 10 # 20-30')
-      .field('barrio', 'Centro')
       .field('idMunicipio', String(municipio.id))
       .field('nombreReceptor', 'Receptor Dashboard')
       .field('telefonoReceptor', '3001234567')

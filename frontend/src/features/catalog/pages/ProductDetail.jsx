@@ -9,20 +9,27 @@ import ColorSelector from "../components/ColorSelector";
 import FeatureHighlights from "../components/FeatureHighlights";
 import RelatedProducts from "../components/RelatedProducts";
 import useProducto from "../hooks/useProducto";
+import QuantityStepper from "../../../shared/components/QuantityStepper";
 import { formatPrice } from "../../../shared/utils/formatPrice";
-import { CONTACT_MESSAGE } from "../../../shared/utils/orderRules";
+import {
+  CONTACT_MESSAGE,
+  MAX_CART_UNITS,
+  totalUnidades,
+} from "../../../shared/utils/orderRules";
 import "./ProductDetail.css";
 
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { addItem } = useCart();
+  const { addItem, items } = useCart();
   const { producto, relacionados, presentaciones, glaseados, loading, error, reload } =
     useProducto(id);
 
   // Cantidad de fresas elegida; se ajusta a las presentaciones disponibles.
   const [quantity, setQuantity] = useState(12);
+  // Número de cajas/unidades que se añadirán al carrito.
+  const [units, setUnits] = useState(1);
   const [color, setColor] = useState("");
   const [limitAlertOpen, setLimitAlertOpen] = useState(false);
 
@@ -85,7 +92,15 @@ export default function ProductDetail() {
   const selectedColor =
     glaseados.find((c) => c.value === color) ?? defaultColor;
   const selectedColorValue = selectedColor?.value ?? "";
-  const canAddToCart = Boolean(selectedPresentation && selectedColor);
+
+  // Cupo disponible según las unidades que ya hay en el carrito.
+  const totalEnCarrito = totalUnidades(items);
+  const remainingUnits = Math.max(0, MAX_CART_UNITS - totalEnCarrito);
+  const maxUnits = Math.max(1, remainingUnits);
+  const selectedUnits = Math.min(Math.max(1, units), maxUnits);
+  const canAddToCart = Boolean(
+    selectedPresentation && selectedColor && remainingUnits > 0
+  );
 
   const handleAddToCart = () => {
     if (!canAddToCart) return;
@@ -101,6 +116,7 @@ export default function ProductDetail() {
         colorId: Number(selectedColor.id),
         color: selectedColor.label,
         colorHex: selectedColor.hex,
+        units: selectedUnits,
       },
       { fromPath: location.pathname }
     );
@@ -160,17 +176,31 @@ export default function ProductDetail() {
                 </p>
               )}
 
-              <Button
-                className="btn-add-to-cart"
-                variant="contained"
-                disableRipple
-                fullWidth
-                onClick={handleAddToCart}
-                disabled={!canAddToCart}
-                startIcon={<i className="fa-solid fa-cart-plus" />}
-              >
-                Añadir al Carrito
-              </Button>
+              <div className="product-add-block">
+                <div className="selector-label">Cantidad de cajas</div>
+                <div className="product-add-row">
+                  <QuantityStepper
+                    value={selectedUnits}
+                    onChange={setUnits}
+                    max={maxUnits}
+                    disabled={remainingUnits <= 0}
+                    ariaLabel="Cantidad de cajas"
+                  />
+                  <Button
+                    className="btn-add-to-cart"
+                    variant="contained"
+                    disableRipple
+                    onClick={handleAddToCart}
+                    disabled={!canAddToCart}
+                    startIcon={<i className="fa-solid fa-cart-plus" />}
+                  >
+                    Añadir al Carrito
+                  </Button>
+                </div>
+                {remainingUnits <= 0 && (
+                  <p className="product-limit-inline">{CONTACT_MESSAGE}</p>
+                )}
+              </div>
             </div>
           </div>
         </div>

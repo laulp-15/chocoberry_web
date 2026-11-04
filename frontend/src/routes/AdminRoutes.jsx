@@ -149,10 +149,7 @@ export default function AdminRoutes() {
           <Route
             path="resenas"
             element={
-              <RequirePermission
-                module="Reseñas"
-                actions={["Ver", "Cambiar estado"]}
-              >
+              <RequirePermission module="Reseñas" actions={["Ver"]}>
                 <ReviewsListPage />
               </RequirePermission>
             }

@@ -65,7 +65,6 @@ function mapLinea(linea) {
     colorId: linea.colorGlaseado?.id ?? null,
     colorNombre: linea.colorGlaseado?.nombre ?? "",
     colorHex: linea.colorGlaseado?.codigoHex ?? "",
-    personalizacionAdicional: linea.personalizacionAdicional ?? "",
   };
 }
 
@@ -112,7 +111,6 @@ export function mapPedidoAdmin(pedido) {
     municipioId: pedido.municipio?.id ?? null,
     municipio: pedido.municipio?.nombre ?? "",
     direccion: pedido.direccion ?? "",
-    barrio: pedido.barrio ?? "",
     precioDomicilio,
     shippingCost: precioDomicilio,
     nombreReceptor: pedido.nombreReceptor ?? "",
@@ -158,9 +156,6 @@ function toLineaPayload(linea) {
   const mensaje = String(linea.mensajePersonalizado ?? "").trim();
   if (mensaje) payload.mensajePersonalizado = mensaje;
 
-  const extra = String(linea.personalizacionAdicional ?? "").trim();
-  if (extra) payload.personalizacionAdicional = extra;
-
   return payload;
 }
 
@@ -168,10 +163,9 @@ function toLineaPayload(linea) {
 export function toCrearPedidoFormData(datos = {}) {
   const formData = new FormData();
 
-  formData.append("comprobante", datos.comprobante);
+  if (datos.comprobante) formData.append("comprobante", datos.comprobante);
   formData.append("fechaEntrega", datos.fechaEntrega);
   formData.append("direccion", String(datos.direccion ?? "").trim());
-  formData.append("barrio", String(datos.barrio ?? "").trim());
   formData.append("idMunicipio", String(datos.idMunicipio));
   formData.append("nombreReceptor", String(datos.nombreReceptor ?? "").trim());
   formData.append("telefonoReceptor", String(datos.telefonoReceptor ?? "").trim());
@@ -195,7 +189,6 @@ export function toActualizarPedidoPayload(datos = {}) {
   return {
     fechaEntrega: datos.fechaEntrega,
     direccion: String(datos.direccion ?? "").trim(),
-    barrio: String(datos.barrio ?? "").trim(),
     idMunicipio: Number(datos.idMunicipio),
     nombreReceptor: String(datos.nombreReceptor ?? "").trim(),
     telefonoReceptor: String(datos.telefonoReceptor ?? "").trim(),

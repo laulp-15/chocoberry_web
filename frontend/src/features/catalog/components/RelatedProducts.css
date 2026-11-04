@@ -1,9 +1,5 @@
 /* src/features/catalog/components/RelatedProducts.css */
 
-.related-products {
-  margin-bottom: 40px;
-}
-
 .related-header {
   display: flex;
   align-items: baseline;
@@ -13,21 +9,40 @@
 
 .related-title {
   font-weight: 700;
-  font-size: 24px; /* H2 */
+  font-size: 24px;
   line-height: 32px;
 }
 
 .related-view-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
   border: none;
-  background: none;
+  background: transparent;
+
   color: var(--primario);
-  font-size: 13px;
-  font-weight: 700;
-  text-decoration: underline;
+  font-size: 14px;
+  font-weight: 600;
+
+  padding: 6px 0;
   cursor: pointer;
+
+  transition: color 0.2s ease;
 }
+
 .related-view-all:hover {
   color: var(--primario-oscuro);
+}
+
+.related-view-all::after {
+  content: "→";
+  font-size: 17px;
+  transition: transform 0.2s ease;
+}
+
+.related-view-all:hover::after {
+  transform: translateX(4px);
 }
 
 .related-products .product-col {

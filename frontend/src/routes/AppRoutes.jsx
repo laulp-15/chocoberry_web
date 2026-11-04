@@ -70,7 +70,7 @@ export default function AppRoutes() {
           }
         />
         
-        {/* Panel de administración: requiere el permiso Dashboard · Ver */}
+        {/* Panel de administración: requiere al menos un módulo visible */}
         <Route
           path="/admin/*"
           element={

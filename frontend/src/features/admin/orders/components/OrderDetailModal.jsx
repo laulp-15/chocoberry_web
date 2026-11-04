@@ -11,8 +11,11 @@ import OrderDetailContent from "./OrderDetailContent";
  * @param {boolean} [props.reprogramming]
  * @param {(comprobante: object) => void} [props.onApprovePayment]
  * @param {(comprobante: object) => void} [props.onRejectPayment]
+ * @param {() => void} [props.onUploadPayment]
  * @param {boolean} [props.canManagePayments]
+ * @param {boolean} [props.canUploadPayments]
  * @param {number|string|null} [props.paymentSavingId]
+ * @param {boolean} [props.uploadingPayment]
  */
 export default function OrderDetailModal({
   open,
@@ -22,8 +25,11 @@ export default function OrderDetailModal({
   reprogramming = false,
   onApprovePayment,
   onRejectPayment,
+  onUploadPayment,
   canManagePayments = false,
+  canUploadPayments = false,
   paymentSavingId = null,
+  uploadingPayment = false,
 }) {
   if (!order) return null;
 
@@ -40,8 +46,11 @@ export default function OrderDetailModal({
         reprogramming={reprogramming}
         onApprovePayment={onApprovePayment}
         onRejectPayment={onRejectPayment}
+        onUploadPayment={onUploadPayment}
         canManagePayments={canManagePayments}
+        canUploadPayments={canUploadPayments}
         paymentSavingId={paymentSavingId}
+        uploadingPayment={uploadingPayment}
       />
     </Modal>
   );

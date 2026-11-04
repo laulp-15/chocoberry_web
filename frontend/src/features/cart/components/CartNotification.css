@@ -41,14 +41,6 @@
   min-width: 0;
 }
 
-.cart-notification-title {
-  font-family: "Poppins", sans-serif;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--texto);
-  margin-bottom: 3px;
-}
-
 .cart-notification-message {
   font-family: "Poppins", sans-serif;
   font-size: 12px;
@@ -67,4 +59,46 @@
 }
 .cart-notification-close:hover {
   color: var(--texto-muted);
+}
+
+.cart-notification--success {
+  background: #e8f6ec;
+  border-color: #9cd3a7;
+}
+.cart-notification--success .cart-notification-icon {
+  background: var(--success-100);
+}
+.cart-notification--success .cart-notification-message {
+  color: #1f6b2d;
+  font-weight: 600;
+}
+
+.cart-notification--warning {
+  background: #fef3c7;
+  border-color: #f59e0b;
+}
+.cart-notification--warning .cart-notification-icon {
+  background: #f59e0b;
+}
+.cart-notification--warning .cart-notification-message {
+  color: #92400e;
+}
+
+/* --- Modo oscuro: fondo y textos legibles en todas las variantes --- */
+[data-theme="dark"] .cart-notification {
+  background: var(--bg-card);
+  border-color: var(--borde);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+}
+[data-theme="dark"] .cart-notification--success {
+  border-color: var(--success-80);
+}
+[data-theme="dark"] .cart-notification--success .cart-notification-message {
+  color: #8dda99;
+}
+[data-theme="dark"] .cart-notification--warning {
+  border-color: var(--warning-80);
+}
+[data-theme="dark"] .cart-notification--warning .cart-notification-message {
+  color: var(--warning-80);
 }

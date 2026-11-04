@@ -27,8 +27,11 @@ const COMPROBANTE_COLORS = {
  * @param {boolean} [props.reprogramming]
  * @param {(comprobante: object) => void} [props.onApprovePayment]
  * @param {(comprobante: object) => void} [props.onRejectPayment]
+ * @param {() => void} [props.onUploadPayment]
  * @param {boolean} [props.canManagePayments]
+ * @param {boolean} [props.canUploadPayments]
  * @param {number|string|null} [props.paymentSavingId]
+ * @param {boolean} [props.uploadingPayment]
  */
 export default function OrderDetailContent({
   order,
@@ -36,8 +39,11 @@ export default function OrderDetailContent({
   reprogramming = false,
   onApprovePayment,
   onRejectPayment,
+  onUploadPayment,
   canManagePayments = false,
+  canUploadPayments = false,
   paymentSavingId = null,
+  uploadingPayment = false,
 }) {
   const [activeReceiptUrl, setActiveReceiptUrl] = useState(null);
   const [evidenceLightboxOpen, setEvidenceLightboxOpen] = useState(false);
@@ -138,10 +144,6 @@ export default function OrderDetailContent({
               <div className="order-detail-value">{order.direccion || "—"}</div>
             </div>
             <div>
-              <div className="order-detail-label">Barrio</div>
-              <div className="order-detail-value">{order.barrio || "—"}</div>
-            </div>
-            <div>
               <div className="order-detail-label">Municipio</div>
               <div className="order-detail-value">{order.municipio || "—"}</div>
             </div>
@@ -209,15 +211,9 @@ export default function OrderDetailContent({
                       {linea.colorNombre || "—"}
                     </span>
                   </div>
-                  {(linea.mensajePersonalizado ||
-                    linea.personalizacionAdicional) && (
+                  {linea.mensajePersonalizado && (
                     <div className="order-detail-product-note">
-                      {linea.mensajePersonalizado && (
-                        <span>“{linea.mensajePersonalizado}”</span>
-                      )}
-                      {linea.personalizacionAdicional && (
-                        <span>{linea.personalizacionAdicional}</span>
-                      )}
+                      <span>“{linea.mensajePersonalizado}”</span>
                     </div>
                   )}
                 </div>
@@ -367,6 +363,22 @@ export default function OrderDetailContent({
               })}
             </div>
           )}
+
+          {canUploadPayments &&
+            order.estado === "pendiente" &&
+            order.puedeSubirComprobante && (
+              <div className="order-detail-payment-actions">
+                <button
+                  type="button"
+                  className="order-detail-receipt-btn upload"
+                  disabled={uploadingPayment}
+                  onClick={() => onUploadPayment?.()}
+                >
+                  <i className="fa-solid fa-cloud-arrow-up" />
+                  {uploadingPayment ? "Subiendo..." : "Subir comprobante"}
+                </button>
+              </div>
+            )}
 
           <div className="order-detail-payment-summary">
             <div>

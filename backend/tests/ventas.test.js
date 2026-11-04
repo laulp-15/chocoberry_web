@@ -67,7 +67,6 @@ describe('Módulo de ventas', () => {
       .field('mensajeTarjeta', 'Venta de prueba')
       .field('fechaEntrega', '2026-12-24')
       .field('direccion', 'Calle 10 # 20-30')
-      .field('barrio', 'Centro')
       .field('idMunicipio', String(municipio.id))
       .field('nombreReceptor', 'Receptor Ventas')
       .field('telefonoReceptor', '3001234567')
@@ -244,6 +243,8 @@ describe('Módulo de ventas', () => {
     expect(
       res.body.data.every((venta) => ESTADOS_VENTA.includes(venta.estado.nombre))
     ).toBe(true);
+    const entregada = res.body.data.find((venta) => venta.id === entregadoId);
+    expect(entregada.cliente.numeroDocumento).toMatch(/^\d+$/);
   });
 
   it('ordena las ventas por fecha descendente', async () => {
@@ -261,6 +262,7 @@ describe('Módulo de ventas', () => {
     expect(res.status).toBe(200);
     expect(res.body.data.id).toBe(entregadoId);
     expect(res.body.data.estado.nombre).toBe('Entregado');
+    expect(res.body.data.cliente.numeroDocumento).toMatch(/^\d+$/);
     expect(res.body.data.lineas).toHaveLength(1);
     expect(res.body.data.total).toBeGreaterThan(0);
     expect(res.body.data.comprobantes).toHaveLength(1);

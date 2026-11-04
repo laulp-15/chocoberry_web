@@ -39,6 +39,11 @@ export function mensajeLimiteCarrito() {
   return CONTACT_MESSAGE;
 }
 
+/** Cuenta caracteres visibles ignorando los espacios en blanco. */
+export function contarCaracteresSinEspacios(texto) {
+  return Array.from(String(texto ?? "").replace(/\s/g, "")).length;
+}
+
 /** Normaliza lo escrito en el input: entero >= 1 (0 o vacío -> 1). */
 export function normalizarCantidad(valor) {
   const numero = Number.parseInt(String(valor ?? "").trim(), 10);

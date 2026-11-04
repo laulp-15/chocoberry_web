@@ -35,7 +35,6 @@ describe('Unicidad del número de documento', () => {
     contrasena: PASSWORD,
     telefono: '3001234567',
     direccion: 'Calle 1 # 2-3',
-    barrio: 'Centro',
     estado: true,
     rol: 'cliente',
   });
@@ -105,6 +104,46 @@ describe('Unicidad del número de documento', () => {
     expect(res.body.data.estado).toBe(true);
   });
 
+  it('el cambio de rol se refleja en el login y en /auth/me', async () => {
+    const loginAnterior = await request(app).post('/api/auth/login').send({
+      correo: correoA,
+      contrasena: PASSWORD,
+    });
+    const tokenAnterior = loginAnterior.body?.data?.token;
+
+    expect(loginAnterior.status).toBe(200);
+    expect(loginAnterior.body.data.usuario.rol.slug).toBe('cliente');
+    expect(tokenAnterior).toBeTruthy();
+
+    const actualizado = await auth(
+      request(app).put(`/api/usuarios/${usuarioAId}`)
+    ).send({ rol: 'repartidor' });
+
+    expect(actualizado.status).toBe(200);
+    expect(actualizado.body.data.rol.slug).toBe('repartidor');
+
+    const perfil = await request(app)
+      .get('/api/auth/me')
+      .set('Authorization', `Bearer ${tokenAnterior}`);
+
+    expect(perfil.status).toBe(200);
+    expect(perfil.body.data.rol.slug).toBe('repartidor');
+    expect(perfil.body.data.permisos).toEqual(
+      expect.arrayContaining([{ modulo: 'Dashboard', accion: 'Ver' }])
+    );
+
+    const loginNuevo = await request(app).post('/api/auth/login').send({
+      correo: correoA,
+      contrasena: PASSWORD,
+    });
+
+    expect(loginNuevo.status).toBe(200);
+    expect(loginNuevo.body.data.usuario.rol.slug).toBe('repartidor');
+    expect(loginNuevo.body.data.usuario.permisos).toEqual(
+      expect.arrayContaining([{ modulo: 'Dashboard', accion: 'Ver' }])
+    );
+  });
+
   it('rechaza el registro público con un documento existente', async () => {
     const res = await request(app).post('/api/auth/register').send({
       nombres: 'Tercer',
@@ -115,7 +154,6 @@ describe('Unicidad del número de documento', () => {
       contrasena: PASSWORD,
       telefono: '3001234567',
       direccion: 'Calle 1 # 2-3',
-      barrio: 'Centro',
     });
 
     expect(res.status).toBe(409);
@@ -136,5 +174,55 @@ describe('Unicidad del número de documento', () => {
 
     expect(res.status).toBe(409);
     expect(res.body.code).toBe('DOCUMENT_TAKEN');
+  });
+
+  it('rechaza editar el propio perfil con el correo de otro', async () => {
+    const login = await request(app).post('/api/auth/login').send({
+      correo: correoB,
+      contrasena: PASSWORD,
+    });
+    const tokenB = login.body?.data?.token;
+
+    const res = await request(app)
+      .put('/api/auth/me')
+      .set('Authorization', `Bearer ${tokenB}`)
+      .send({ correo: correoA });
+
+    expect(res.status).toBe(409);
+    expect(res.body.message).toMatch(/correo/i);
+  });
+
+  it('devuelve los errores 422 por campo al editar el perfil', async () => {
+    const login = await request(app).post('/api/auth/login').send({
+      correo: correoB,
+      contrasena: PASSWORD,
+    });
+    const tokenB = login.body?.data?.token;
+
+    const res = await request(app)
+      .put('/api/auth/me')
+      .set('Authorization', `Bearer ${tokenB}`)
+      .send({
+        nombres: 'A',
+        apellidos: 'B',
+        tipoDocumento: 'XX',
+        numeroDocumento: 'abc',
+        correo: 'no-es-correo',
+        telefono: 'abc',
+        direccion: 'x'.repeat(201),
+      });
+
+    expect(res.status).toBe(422);
+    expect(res.body.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ campo: 'nombres' }),
+        expect.objectContaining({ campo: 'apellidos' }),
+        expect.objectContaining({ campo: 'tipoDocumento' }),
+        expect.objectContaining({ campo: 'numeroDocumento' }),
+        expect.objectContaining({ campo: 'correo' }),
+        expect.objectContaining({ campo: 'telefono' }),
+        expect.objectContaining({ campo: 'direccion' }),
+      ])
+    );
   });
 });

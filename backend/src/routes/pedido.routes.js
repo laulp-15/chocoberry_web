@@ -63,7 +63,8 @@ router.post(
   pedidoController.crear
 );
 
-// Subida de un comprobante adicional para un pedido propio.
+// Subida de un comprobante adicional: el cliente solo en pedidos propios; el
+// admin/staff, en cualquiera. El service decide el estado resultante.
 router.post(
   '/:id/comprobantes',
   checkPermiso('Pedidos', 'Crear'),
