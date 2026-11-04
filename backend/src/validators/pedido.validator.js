@@ -73,7 +73,6 @@ const lineaPedidoSchema = z.object({
     .max(100, 'La cantidad de productos es demasiado alta.'),
   mensajePersonalizado: mensajeField(255, 'El mensaje personalizado'),
   idColorGlaseado: enteroPositivo('El color del glaseado es obligatorio.'),
-  personalizacionAdicional: mensajeField(255, 'La personalización adicional'),
 });
 
 /**
@@ -104,11 +103,6 @@ export const crearPedidoSchema = z.object({
     .trim()
     .min(5, 'La dirección es demasiado corta.')
     .max(200, 'La dirección no puede superar los 200 caracteres.'),
-  barrio: z
-    .string({ required_error: 'El barrio es obligatorio.' })
-    .trim()
-    .min(2, 'El barrio es demasiado corto.')
-    .max(100, 'El barrio no puede superar los 100 caracteres.'),
   idMunicipio: enteroPositivo('El municipio es obligatorio.'),
   nombreReceptor: z
     .string({ required_error: 'El nombre del receptor es obligatorio.' })
@@ -129,7 +123,6 @@ export const actualizarPedidoSchema = z.object({
   mensajeTarjeta: mensajeField(255, 'El mensaje de la tarjeta'),
   fechaEntrega: fechaEntregaField.optional(),
   direccion: z.string().trim().min(5, 'La dirección es demasiado corta.').max(200).optional(),
-  barrio: z.string().trim().min(2, 'El barrio es demasiado corto.').max(100).optional(),
   idMunicipio: idOpcional('El municipio debe ser un id numérico.'),
   nombreReceptor: z
     .string()

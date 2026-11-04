@@ -7,6 +7,7 @@ import OrderFormModal from "../components/OrderFormModal";
 import OrderDetailModal from "../components/OrderDetailModal";
 import ApprovePaymentModal from "../components/ApprovePaymentModal";
 import RejectPaymentModal from "../components/RejectPaymentModal";
+import UploadPaymentModal from "../components/UploadPaymentModal";
 import RejectReasonModal from "../components/RejectReasonModal";
 import CancelReasonModal from "../components/CancelReasonModal";
 import OrderNotification from "../components/OrderNotification";
@@ -45,10 +46,12 @@ export default function OrdersListPage() {
     rejectSubmitting,
     reprogrammingId,
     paymentSavingId,
+    paymentUploadingId,
     createOrder,
     updateOrder,
     changeStatus,
     rejectOrder,
+    uploadPayment,
     approvePayment,
     rejectPayment,
     reprogramOrder,
@@ -70,6 +73,8 @@ export default function OrdersListPage() {
   const [approvingPayment, setApprovingPayment] = useState(null); // { order, comprobante }
   const [paymentError, setPaymentError] = useState("");
   const [rejectingPayment, setRejectingPayment] = useState(null); // { order, comprobante }
+  const [uploadingPaymentOrder, setUploadingPaymentOrder] = useState(null);
+  const [uploadPaymentError, setUploadPaymentError] = useState("");
 
   const [notification, setNotification] = useState(null); // { message, variant }
 
@@ -256,6 +261,27 @@ export default function OrdersListPage() {
       });
     } catch (err) {
       setPaymentError(err?.message || "No se pudo rechazar el comprobante.");
+    }
+  };
+
+  const handleOpenUploadPayment = (order) => {
+    setUploadPaymentError("");
+    setUploadingPaymentOrder(order);
+  };
+
+  const handleSubmitUploadPayment = async (file) => {
+    if (!uploadingPaymentOrder) return;
+
+    setUploadPaymentError("");
+    try {
+      const pedido = await uploadPayment(uploadingPaymentOrder.id, file);
+      setDetailOrder(pedido);
+      setUploadingPaymentOrder(null);
+      setNotification({ message: "Comprobante subido correctamente." });
+    } catch (err) {
+      setUploadPaymentError(
+        err?.message || "No se pudo subir el comprobante."
+      );
     }
   };
 
@@ -460,8 +486,13 @@ export default function OrdersListPage() {
           onRejectPayment={(comprobante) =>
             handleOpenRejectPayment(detailOrder, comprobante)
           }
+          onUploadPayment={() => handleOpenUploadPayment(detailOrder)}
           canManagePayments={canChangeStatus}
+          canUploadPayments={canCreate}
           paymentSavingId={paymentSavingId}
+          uploadingPayment={
+            String(paymentUploadingId) === String(detailOrder.id)
+          }
         />
       )}
 
@@ -520,6 +551,22 @@ export default function OrdersListPage() {
           submitting={String(paymentSavingId) === String(rejectingPayment.comprobante.id)}
           formError={paymentError}
           saldo={rejectingPayment.order.saldo}
+        />
+      )}
+
+      {uploadingPaymentOrder && (
+        <UploadPaymentModal
+          key={uploadingPaymentOrder.id}
+          open
+          onClose={() => {
+            setUploadingPaymentOrder(null);
+            setUploadPaymentError("");
+          }}
+          onSubmit={handleSubmitUploadPayment}
+          submitting={
+            String(paymentUploadingId) === String(uploadingPaymentOrder.id)
+          }
+          formError={uploadPaymentError}
         />
       )}
 

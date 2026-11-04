@@ -37,7 +37,6 @@ describe('Activación y recuperación de contraseña', () => {
       correo,
       telefono: '3001234567',
       direccion: 'Calle 1 # 2-3',
-      barrio: 'Centro',
       estado: true,
       rol: 'cliente',
     });

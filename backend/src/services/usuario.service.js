@@ -24,7 +24,6 @@ const CAMPOS = {
   numeroDocumento: 'numero_documento',
   correo: 'correo',
   telefono: 'telefono',
-  barrio: 'barrio',
   direccion: 'direccion',
 };
 

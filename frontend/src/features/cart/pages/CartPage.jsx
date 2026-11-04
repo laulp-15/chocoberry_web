@@ -22,17 +22,12 @@ export default function CartPage() {
     () => Boolean(location.state?.merged)
   );
 
-  // Si venimos de "Añadir al Carrito" y el producto se fusionó con una línea
-  // ya existente (mismo producto + cantidad + color), avisamos aquí. El aviso
-  // se inicializa desde el estado de navegación y este se limpia de la historia.
   useEffect(() => {
     if (!location.state?.merged) return;
     navigate(location.pathname, { replace: true, state: {} });
   }, [location.state, location.pathname, navigate]);
 
   const handleCheckout = () => {
-    // El botón ya se deshabilita, pero se valida de nuevo por si el estado
-    // cambia justo antes de navegar.
     if (excedeLimiteCarrito(items)) return;
     navigate("/carrito/pago");
   };
@@ -44,12 +39,24 @@ export default function CartPage() {
     setClearModalOpen(false);
   };
 
+  const cantidadProductos = items.length;
+
   return (
     <div className="cart-page">
       <div className="container cart-wrap">
-        {items.length > 0 && <h1 className="cart-title">Tu Carrito</h1>}
+        {cantidadProductos > 0 && (
+          <header className="cart-header">
+            <div className="cart-heading-row">
+              <span className="cart-icon" aria-hidden="true">
+                <i className="fa-solid fa-cart-shopping" />
+              </span>
+              <h1 className="cart-title">Tu Carrito</h1>
+            </div>
+            <span className="cart-title-line" aria-hidden="true" />
+          </header>
+        )}
 
-        {items.length === 0 ? (
+        {cantidadProductos === 0 ? (
           <div className="cart-empty">
             <i className="fa-solid fa-cart-plus" />
 
@@ -121,7 +128,6 @@ export default function CartPage() {
       <CartNotification
         open={mergedNotificationOpen}
         onClose={() => setMergedNotificationOpen(false)}
-        title="Producto ya en el carrito"
         message="El producto ya estaba en el carrito. Se ha añadido una cantidad más."
       />
     </div>

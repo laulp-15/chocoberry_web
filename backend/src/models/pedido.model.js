@@ -11,7 +11,6 @@ const CAMPOS_ACTUALIZABLES = [
   'mensaje_tarjeta',
   'fecha_entrega',
   'direccion',
-  'barrio',
   'precio_domicilio',
   'nombre_receptor',
   'telefono_receptor',
@@ -104,22 +103,21 @@ export async function buscarPorId(id) {
 }
 
 /**
- * Inserta la cabecera, sus líneas y el comprobante inicial en una sola
- * transacción. Devuelve el id del pedido creado.
+ * Inserta la cabecera, sus líneas y, si existe, el comprobante inicial en una
+ * sola transacción. Devuelve el id del pedido creado.
  */
 export async function crearConLineas({ pedido, lineas, comprobante }) {
   return withTransaction(async (conexion) => {
     const [resultado] = await conexion.execute(
       `INSERT INTO pedido
-         (mensaje_tarjeta, fecha_entrega, direccion, barrio, precio_domicilio,
+         (mensaje_tarjeta, fecha_entrega, direccion, precio_domicilio,
           nombre_receptor, telefono_receptor, instrucciones_entrega,
           id_usuario, id_estado, id_municipio)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         pedido.mensaje_tarjeta ?? null,
         pedido.fecha_entrega,
         pedido.direccion,
-        pedido.barrio,
         pedido.precio_domicilio,
         pedido.nombre_receptor,
         pedido.telefono_receptor,
@@ -132,11 +130,16 @@ export async function crearConLineas({ pedido, lineas, comprobante }) {
 
     const idPedido = resultado.insertId;
     await productoPedidoModel.insertarLineas(conexion, idPedido, lineas);
-    await comprobantePagoModel.crear(conexion, {
-      url: comprobante.url,
-      idPedido,
-      idEstado: comprobante.id_estado,
-    });
+
+    if (comprobante) {
+      await comprobantePagoModel.crear(conexion, {
+        url: comprobante.url,
+        idPedido,
+        idEstado: comprobante.id_estado,
+        monto: comprobante.monto ?? null,
+      });
+    }
+
     return idPedido;
   });
 }

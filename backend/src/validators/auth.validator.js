@@ -3,7 +3,6 @@
 import { z } from 'zod';
 import {
   apellidosField,
-  barrioField,
   contrasenaField,
   correoField,
   direccionField,
@@ -23,7 +22,6 @@ export const registroSchema = z.object({
   contrasena: contrasenaField,
   telefono: telefonoField,
   direccion: direccionField,
-  barrio: barrioField,
 });
 
 // Login: no se re-exige la política de contraseña (puede ser antigua).
@@ -55,5 +53,4 @@ export const actualizarPerfilSchema = z.object({
   correo: correoField.optional(),
   telefono: telefonoField,
   direccion: direccionField,
-  barrio: barrioField,
 });

@@ -15,9 +15,12 @@ describe('Módulo de reseñas', () => {
   let tokenAdmin;
   let tokenCliente;
   let tokenRepartidor;
+  let tokenVendedor;
 
   let clienteId;
   let repartidorId;
+  let vendedorId;
+  let rolVendedorId;
 
   let resenaActivaId;
   let resenaInactivaId;
@@ -79,8 +82,23 @@ describe('Módulo de reseñas', () => {
       apellidos: 'Reseñas',
     });
 
+    const rolVendedor = await auth(request(app).post('/api/roles')).send({
+      nombre: `Rol reseñas ${s}`,
+      permisos: [29],
+    });
+    expect(rolVendedor.status).toBe(201);
+    rolVendedorId = rolVendedor.body.data.id;
+
+    vendedorId = await crearUsuario({
+      rol: rolVendedorId,
+      sufijo: '03',
+      nombres: 'Vendedor',
+      apellidos: 'Reseñas',
+    });
+
     tokenCliente = await iniciarSesion(`resenas.01.${s}@chocoberry.com`);
     tokenRepartidor = await iniciarSesion(`resenas.02.${s}@chocoberry.com`);
+    tokenVendedor = await iniciarSesion(`resenas.03.${s}@chocoberry.com`);
 
     const activa = await crearResena({
       calificacion: 5,
@@ -115,8 +133,12 @@ describe('Módulo de reseñas', () => {
       await query(`DELETE FROM resena WHERE id IN (${marcadores})`, resenasCreadas);
     }
 
-    for (const id of [repartidorId, clienteId]) {
+    for (const id of [vendedorId, repartidorId, clienteId]) {
       if (id) await auth(request(app).delete(`/api/usuarios/${id}`));
+    }
+
+    if (rolVendedorId) {
+      await auth(request(app).delete(`/api/roles/${rolVendedorId}`));
     }
   });
 
@@ -209,7 +231,7 @@ describe('Módulo de reseñas', () => {
     expect(res.status).toBe(422);
   });
 
-  it('GET /api/resenas es solo para administradores', async () => {
+  it('GET /api/resenas solo permite roles con Ver Reseñas', async () => {
     const admin = await auth(request(app).get('/api/resenas'));
     expect(admin.status).toBe(200);
     const ids = admin.body.data.map((resena) => resena.id);
@@ -220,6 +242,27 @@ describe('Módulo de reseñas', () => {
 
     const repartidor = await auth(request(app).get('/api/resenas'), tokenRepartidor);
     expect(repartidor.status).toBe(403);
+  });
+
+  it('un rol con solo Ver Reseñas lista y ve el detalle, pero no cambia el estado', async () => {
+    const lista = await auth(request(app).get('/api/resenas'), tokenVendedor);
+    expect(lista.status).toBe(200);
+    expect(lista.body.data.map((resena) => resena.id)).toEqual(
+      expect.arrayContaining([resenaActivaId, resenaInactivaId])
+    );
+
+    const detalle = await auth(
+      request(app).get(`/api/resenas/${resenaActivaId}`),
+      tokenVendedor
+    );
+    expect(detalle.status).toBe(200);
+    expect(detalle.body.data.id).toBe(resenaActivaId);
+
+    const cambiarEstado = await auth(
+      request(app).patch(`/api/resenas/${resenaActivaId}/estado`),
+      tokenVendedor
+    ).send({ estado: false });
+    expect(cambiarEstado.status).toBe(403);
   });
 
   it('el panel filtra por estado inactivo y por cliente', async () => {

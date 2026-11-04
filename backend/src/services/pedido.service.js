@@ -279,11 +279,13 @@ async function resolverUsuarioPedido(idUsuario, usuario) {
 
 /** Valida la regla de las letras de chocolate (una letra por fresa). */
 function validarMensajeLinea(mensaje, fresas, numero, indice) {
-  const caracteres = mensaje ? Array.from(mensaje).length : 0;
+  const caracteres = mensaje
+    ? Array.from(mensaje.replace(/\s/g, '')).length
+    : 0;
 
   if (mensaje && caracteres > fresas) {
     throw new UnprocessableEntityError(
-      `Línea ${numero}: el mensaje personalizado tiene ${caracteres} caracteres y la presentación solo admite ${fresas} (una letra de chocolate por fresa).`,
+      `Línea ${numero}: el mensaje personalizado tiene ${caracteres} caracteres sin contar espacios y la presentación solo admite ${fresas} (una letra de chocolate por fresa).`,
       [
         {
           campo: `lineas.${indice}.mensajePersonalizado`,
@@ -352,7 +354,6 @@ async function prepararLineas(lineas, existentes = []) {
         subtotal: redondear2(precioUnitario * cantidad),
         mensaje_personalizado: mensaje,
         id_color_glaseado: existente.id_color_glaseado,
-        personalizacion_adicional: limpiarTexto(linea.personalizacionAdicional),
       });
       continue;
     }
@@ -384,7 +385,6 @@ async function prepararLineas(lineas, existentes = []) {
       subtotal: redondear2(precioUnitario * cantidad),
       mensaje_personalizado: mensaje,
       id_color_glaseado: color.id,
-      personalizacion_adicional: limpiarTexto(linea.personalizacionAdicional),
     });
   }
 
@@ -392,30 +392,56 @@ async function prepararLineas(lineas, existentes = []) {
 }
 
 export async function crear(datos, usuario, comprobante) {
-  if (!comprobante) {
+  const esCliente = esRol(usuario, ROL_CLIENTE);
+
+  // El checkout del cliente exige comprobante; el panel del admin puede crear
+  // el pedido sin él y subirlo después.
+  if (esCliente && !comprobante) {
     throw new UnprocessableEntityError('El comprobante de pago es obligatorio.');
   }
 
   const idUsuario = await resolverUsuarioPedido(datos.idUsuario, usuario);
   const municipio = await municipioService.resolverActivo(datos.idMunicipio);
   const estado = await resolverEstado(ESTADO_PENDIENTE);
-  const estadoComprobante = await estadoComprobanteModel.buscarPorNombre('Pendiente');
-  if (!estadoComprobante) {
-    throw new AppError(
-      'El estado "Pendiente" de comprobantes no está configurado en la base de datos.',
-      500
-    );
-  }
 
   const lineas = await prepararLineas(datos.lineas);
   validarLimitesPedido(lineas, datos.fechaEntrega, usuario);
+
+  let comprobanteInicial = null;
+  if (comprobante) {
+    // Un comprobante subido por el admin/staff no pasa por aprobación manual:
+    // se registra ya aprobado por el total del pedido.
+    const autoAprobado = !esCliente;
+    const nombreEstadoComprobante = autoAprobado ? 'Aprobado' : 'Pendiente';
+    const estadoComprobante = await estadoComprobanteModel.buscarPorNombre(
+      nombreEstadoComprobante
+    );
+
+    if (!estadoComprobante) {
+      throw new AppError(
+        `El estado "${nombreEstadoComprobante}" de comprobantes no está configurado en la base de datos.`,
+        500
+      );
+    }
+
+    const subtotal = lineas.reduce(
+      (suma, linea) => suma + Number(linea.subtotal ?? 0),
+      0
+    );
+    const total = redondear2(subtotal + Number(municipio.precio_domicilio));
+
+    comprobanteInicial = {
+      url: comprobante,
+      id_estado: estadoComprobante.id,
+      monto: autoAprobado ? total : null,
+    };
+  }
 
   const id = await pedidoModel.crearConLineas({
     pedido: {
       mensaje_tarjeta: limpiarTexto(datos.mensajeTarjeta),
       fecha_entrega: normalizarFechaEntrega(datos.fechaEntrega),
       direccion: datos.direccion,
-      barrio: datos.barrio,
       // Snapshot: si el municipio cambia de precio, el pedido conserva el suyo.
       precio_domicilio: redondear2(municipio.precio_domicilio),
       nombre_receptor: datos.nombreReceptor,
@@ -426,7 +452,7 @@ export async function crear(datos, usuario, comprobante) {
       id_municipio: municipio.id,
     },
     lineas,
-    comprobante: { url: comprobante, id_estado: estadoComprobante.id },
+    comprobante: comprobanteInicial,
   });
 
   return obtenerPedidoCompleto(id);
@@ -456,7 +482,6 @@ export async function actualizar(id, datos, usuario) {
   if (datos.mensajeTarjeta !== undefined) campos.mensaje_tarjeta = limpiarTexto(datos.mensajeTarjeta);
   if (datos.fechaEntrega !== undefined) campos.fecha_entrega = normalizarFechaEntrega(datos.fechaEntrega);
   if (datos.direccion !== undefined) campos.direccion = datos.direccion;
-  if (datos.barrio !== undefined) campos.barrio = datos.barrio;
   if (datos.nombreReceptor !== undefined) campos.nombre_receptor = datos.nombreReceptor;
   if (datos.telefonoReceptor !== undefined) campos.telefono_receptor = datos.telefonoReceptor;
   if (datos.instruccionesEntrega !== undefined) {

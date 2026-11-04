@@ -24,7 +24,6 @@ import {
   validateNombres,
   validateApellidos,
   validateAddress,
-  validateNeighborhood,
 } from "../utils/validators";
 
 import { DOC_TYPE_OPTIONS } from "../../../shared/utils/documentTypes";
@@ -90,7 +89,6 @@ export default function RegisterPage() {
     nombres: "",
     apellidos: "",
     address: "",
-    neighborhood: "",
     email: "",
     phone: "",
     password: "",
@@ -152,9 +150,6 @@ export default function RegisterPage() {
 
       case "address":
         return validateAddress(values.address);
-
-      case "neighborhood":
-        return validateNeighborhood(values.neighborhood);
 
       case "phone":
         return validateRegisterPhone(values.phone);
@@ -242,7 +237,6 @@ export default function RegisterPage() {
       nombres: validateNombres(values.nombres),
       apellidos: validateApellidos(values.apellidos),
       address: validateAddress(values.address),
-      neighborhood: validateNeighborhood(values.neighborhood),
       email: validateEmail(values.email),
       phone: validateRegisterPhone(values.phone),
       password: validatePassword(values.password),
@@ -283,7 +277,6 @@ export default function RegisterPage() {
       email: normalizeEmail(form.email),
       phone: form.phone.trim(),
       address: form.address.trim(),
-      neighborhood: form.neighborhood.trim(),
     };
 
     setLoading(true);
@@ -434,7 +427,7 @@ export default function RegisterPage() {
             />
           </div>
 
-          {/* DIRECCIÓN Y BARRIO */}
+          {/* DIRECCIÓN */}
           <div className="auth-register-field">
             <AuthInput
               label="Dirección de entrega"
@@ -446,22 +439,6 @@ export default function RegisterPage() {
               onBlur={() => handleBlur("address")}
               error={errors.address}
               autoComplete="street-address"
-              disabled={isDisabled}
-              required
-            />
-          </div>
-
-          <div className="auth-register-field">
-            <AuthInput
-              label="Barrio"
-              name="neighborhood"
-              icon="map-location-dot"
-              placeholder="Ej. El Poblado"
-              value={form.neighborhood}
-              onChange={(value) => updateField("neighborhood", value)}
-              onBlur={() => handleBlur("neighborhood")}
-              error={errors.neighborhood}
-              autoComplete="address-level3"
               disabled={isDisabled}
               required
             />

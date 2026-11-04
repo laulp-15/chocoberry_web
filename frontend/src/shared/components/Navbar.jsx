@@ -1,30 +1,75 @@
 // src/shared/components/Navbar.jsx
-import { useState } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useCart } from '../../features/cart/hooks/UseCart';
 import { useAuth } from '../../features/login/hooks/useAuth';
-import { useTheme } from '../context/ThemeContext'; // <--- 1. Importa tu hook de tema global
+import { usePermissions } from '../hooks/usePermissions';
+import { useTheme } from '../context/ThemeContext';
 import './Navbar.css';
 
 export default function Navbar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { items } = useCart();
   const { isAuthenticated } = useAuth();
+  const { canEnterPanel, firstAllowedPath } = usePermissions();
   const { theme, toggleTheme } = useTheme();
   const isDarkMode = theme === 'dark';
   const [menuOpen, setMenuOpen] = useState(false);
+  const navRef = useRef(null);
 
   const cartCount = items.reduce((sum, item) => sum + item.units, 0);
+  const accountPath =
+    isAuthenticated && canEnterPanel
+      ? firstAllowedPath || '/admin'
+      : '/users/orders';
 
   const navLinks = [
-    { to: "/", label: "Inicio", end: true },
-    { to: "/conocenos", label: "Conócenos" },
-    { to: "/productos", label: "Catálogo" },
-    { to: "/reseñas", label: "Reseñas" },
+    { to: '/', label: 'Inicio', end: true },
+    { to: '/conocenos', label: 'Conócenos' },
+    { to: '/productos', label: 'Catálogo' },
+    { to: '/reseñas', label: 'Reseñas' },
   ];
+
+  const closeMenu = () => setMenuOpen(false);
+
+  // Cierra el menú al cambiar de ruta
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
+
+  // Cierra con Escape, al tocar fuera del navbar y al pasar a escritorio
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setMenuOpen(false);
+    };
+    const handleClickOutside = (e) => {
+      if (navRef.current && !navRef.current.contains(e.target)) {
+        setMenuOpen(false);
+      }
+    };
+    const handleResize = () => {
+      if (window.innerWidth > 991) setMenuOpen(false);
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [menuOpen]);
 
   return (
     <nav
+      ref={navRef}
       className="navbar"
       style={{
         backgroundColor: 'var(--bg-card)',
@@ -40,31 +85,25 @@ export default function Navbar() {
     >
       <div className="navbar-container">
         {/* LOGO */}
-        <Link to="/" className="navbar-logo" onClick={() => setMenuOpen(false)}>
+        <Link to="/" className="navbar-logo" onClick={closeMenu}>
           <img
-            src={isDarkMode ? "/img/Logo/LogoDark_2.png" : "/img/Logo/LogoLight_2.png"}
+            src={isDarkMode ? '/img/Logo/LogoDark_2.png' : '/img/Logo/LogoLight_2.png'}
             alt="ChocoBerry Logo"
           />
         </Link>
 
-        {/* BOTÓN HAMBURGUESA (solo móvil) */}
-        <button
-          className="navbar-hamburger"
-          onClick={() => setMenuOpen(!menuOpen)}
-          aria-label="Abrir menú"
-        >
-          <i className={`fa-solid ${menuOpen ? 'fa-xmark' : 'fa-bars'}`} />
-        </button>
-
         {/* ENLACES DE NAVEGACIÓN */}
-        <ul className={`navbar-links ${menuOpen ? 'open' : ''}`}>
-          {navLinks.map((link) => (
-            <li key={link.to}>
+        <ul
+          id="navbar-menu"
+          className={`navbar-links ${menuOpen ? 'open' : ''}`}
+        >
+          {navLinks.map((link, index) => (
+            <li key={link.to} style={{ '--i': index }}>
               <NavLink
                 to={link.to}
                 end={link.end}
                 className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
-                onClick={() => setMenuOpen(false)}
+                onClick={closeMenu}
               >
                 {link.label}
               </NavLink>
@@ -79,11 +118,10 @@ export default function Navbar() {
             type="button"
             onClick={toggleTheme}
             className="navbar-theme-btn"
-            title={isDarkMode ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+            title={isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+            aria-label={isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
           >
-            <i
-              className={isDarkMode ? "fa-solid fa-sun" : "fa-solid fa-moon"}
-            />
+            <i className={isDarkMode ? 'fa-solid fa-sun' : 'fa-solid fa-moon'} />
           </button>
 
           {/* Carrito */}
@@ -92,12 +130,11 @@ export default function Navbar() {
             onClick={() => navigate('/carrito')}
             className="navbar-cart-btn"
             title="Carrito de compras"
+            aria-label="Carrito de compras"
           >
             <i className="fa-solid fa-cart-shopping" />
             {cartCount > 0 && (
-              <span className="navbar-cart-badge">
-                {cartCount}
-              </span>
+              <span className="navbar-cart-badge">{cartCount}</span>
             )}
           </button>
 
@@ -105,8 +142,9 @@ export default function Navbar() {
           {isAuthenticated ? (
             <button
               type="button"
-              onClick={() => navigate('/users/orders')}
+              onClick={() => navigate(accountPath)}
               className="navbar-account-btn"
+              aria-label="Mi cuenta"
             >
               <i className="fa-solid fa-user" />
               <span>Mi Cuenta</span>
@@ -117,11 +155,25 @@ export default function Navbar() {
               onClick={() => navigate('/login')}
               className="navbar-login-btn"
               title="Iniciar Sesión"
+              aria-label="Iniciar sesión"
             >
               <i className="fa-solid fa-user" />
             </button>
           )}
         </div>
+
+        {/* BOTÓN HAMBURGUESA (solo móvil/tablet) */}
+        <button
+          type="button"
+          className={`navbar-hamburger ${menuOpen ? 'is-open' : ''}`}
+          onClick={() => setMenuOpen((prev) => !prev)}
+          aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'}
+          aria-expanded={menuOpen}
+          aria-controls="navbar-menu"
+        >
+          <i className="fa-solid fa-bars icon-bars" />
+          <i className="fa-solid fa-xmark icon-close" />
+        </button>
       </div>
     </nav>
   );

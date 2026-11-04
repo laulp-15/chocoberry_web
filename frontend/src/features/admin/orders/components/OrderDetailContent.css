@@ -509,6 +509,17 @@
   border-color: #f5c2c7;
 }
 
+.order-detail-receipt-btn.upload {
+  color: var(--primario);
+  background: var(--secundario-2);
+  border-color: var(--borde);
+}
+
+.order-detail-payment-actions {
+  display: flex;
+  margin-top: 12px;
+}
+
 .order-detail-receipt-btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;

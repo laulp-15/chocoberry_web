@@ -8,6 +8,7 @@ import useMunicipiosEntrega from "../hooks/useMunicipiosEntrega";
 import useFormValidation from "../../../shared/hooks/useFormValidation";
 import { validatePhone } from "../../login/utils/validators";
 import {
+  contarCaracteresSinEspacios,
   esPedidoGrande,
   excedeLimiteCarrito,
   fechaMinimaEntrega,
@@ -24,7 +25,6 @@ import "./CheckoutPage.css";
 const INITIAL_FORM = {
   fullName: "",
   address: "",
-  neighborhood: "",
   municipio: "",
   recipientName: "",
   recipientPhone: "",
@@ -40,7 +40,6 @@ function initialFormForUser(user) {
     ...INITIAL_FORM,
     fullName: user?.fullName ?? "",
     address: user?.address ?? "",
-    neighborhood: user?.neighborhood ?? "",
     recipientName: user?.fullName ?? "",
     recipientPhone: user?.phone ?? "",
   };
@@ -64,15 +63,11 @@ function validarLineas(items, cardMessage) {
       return `La configuración de "${item.name}" está incompleta. Vuelve a agregarla al carrito.`;
     }
 
-    const mensaje = String(item.decorativeMessage ?? "").trim();
     const maximo = Math.min(Number(item.quantity) || 0, 255);
-    if (mensaje.length > maximo) {
-      return `El mensaje decorativo de "${item.name}" no puede superar ${maximo} caracteres (una letra por fresa).`;
+    if (contarCaracteresSinEspacios(item.decorativeMessage) > maximo) {
+      return `El mensaje decorativo de "${item.name}" no puede superar ${maximo} caracteres sin contar espacios (una letra por fresa).`;
     }
 
-    if (String(item.extraCustomization ?? "").trim().length > 255) {
-      return `La personalización adicional de "${item.name}" no puede superar los 255 caracteres.`;
-    }
   }
 
   return "";
@@ -112,7 +107,6 @@ export default function CheckoutPage() {
       },
       municipio: (v) => (v.municipio ? "" : "Selecciona el municipio de entrega."),
       address: (v) => (v.address.trim() ? "" : "Debe escribir una dirección para su entrega."),
-      neighborhood: (v) => (v.neighborhood.trim() ? "" : "Debe escribir un barrio para su entrega."),
       recipientName: (v) => (v.recipientName.trim() ? "" : "El nombre de quien recibe es obligatorio."),
       recipientPhone: (v) =>
         v.recipientPhone.trim() ? validatePhone(v.recipientPhone) : "El teléfono de quien recibe es obligatorio.",
@@ -151,7 +145,6 @@ export default function CheckoutPage() {
     datos.append("comprobante", form.proofFile);
     datos.append("fechaEntrega", form.deliveryDate);
     datos.append("direccion", form.address.trim());
-    datos.append("barrio", form.neighborhood.trim());
     datos.append("idMunicipio", String(form.municipio));
     datos.append("nombreReceptor", form.recipientName.trim());
     datos.append("telefonoReceptor", form.recipientPhone.trim());
@@ -173,9 +166,6 @@ export default function CheckoutPage() {
           idColorGlaseado: item.colorId,
           ...(String(item.decorativeMessage ?? "").trim()
             ? { mensajePersonalizado: item.decorativeMessage.trim() }
-            : {}),
-          ...(String(item.extraCustomization ?? "").trim()
-            ? { personalizacionAdicional: item.extraCustomization.trim() }
             : {}),
         }))
       )
@@ -211,12 +201,21 @@ export default function CheckoutPage() {
   return (
     <div className="checkout-page">
       <div className="container checkout-wrap">
-        <div className="checkout-header">
-          <IconButton className="checkout-back" disableRipple onClick={() => navigate("/carrito")}>
-            <i className="fa-solid fa-arrow-left-long" />
-          </IconButton>
-          <h1 className="checkout-title">Finalizar Pedido</h1>
-        </div>
+        <header className="checkout-header">
+          <div className="checkout-heading-row">
+            <IconButton
+              className="checkout-back"
+              disableRipple
+              aria-label="Volver al carrito"
+              onClick={() => navigate("/carrito")}
+            >
+              <i className="fa-solid fa-arrow-left-long" />
+            </IconButton>
+
+            <h1 className="checkout-title">Finalizar Pedido</h1>
+          </div>
+          <span className="checkout-title-line" aria-hidden="true" />
+        </header>
 
         {submitError && (
           <div className="checkout-error" role="alert">
@@ -253,7 +252,6 @@ export default function CheckoutPage() {
               deliveryDateError={errors.deliveryDate}
               municipioError={errors.municipio}
               addressError={errors.address}
-              neighborhoodError={errors.neighborhood}
               recipientNameError={errors.recipientName}
               recipientPhoneError={errors.recipientPhone}
             />

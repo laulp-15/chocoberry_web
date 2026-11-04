@@ -3,7 +3,6 @@
 import { z } from 'zod';
 import {
   apellidosField,
-  barrioField,
   booleanoFlexible,
   contrasenaOpcionalField,
   correoField,
@@ -40,7 +39,6 @@ export const crearUsuarioSchema = z.object({
   contrasena: contrasenaOpcionalField,
   telefono: telefonoField,
   direccion: direccionField,
-  barrio: barrioField,
   estado: booleanoFlexible.optional(),
   ...rolFields,
 });
@@ -55,7 +53,6 @@ export const actualizarUsuarioSchema = z.object({
   contrasena: contrasenaOpcionalField,
   telefono: telefonoField,
   direccion: direccionField,
-  barrio: barrioField,
   ...rolFields,
 });
 

@@ -79,7 +79,6 @@ describe('Módulo de pedidos', () => {
       mensajeTarjeta: '¡Feliz cumpleaños!',
       fechaEntrega: '2026-12-24',
       direccion: 'Calle 10 # 20-30',
-      barrio: 'Centro',
       idMunicipio: municipio.id,
       nombreReceptor: 'Receptor Prueba',
       telefonoReceptor: '3001234567',
@@ -256,9 +255,36 @@ describe('Módulo de pedidos', () => {
       expect(res.status).toBe(401);
     });
 
-    it('POST /api/pedidos sin comprobante devuelve 422', async () => {
+    it('POST /api/pedidos sin comprobante devuelve 422 para clientes', async () => {
       const res = await solicitudPedido({ conComprobante: false });
       expect(res.status).toBe(422);
+    });
+
+    it('el admin puede crear un pedido sin comprobante', async () => {
+      const pedido = await crearPedido({
+        token: tokenAdmin,
+        datos: { idUsuario: clienteId },
+        conComprobante: false,
+      });
+
+      expect(pedido.estado.nombre).toBe('Pendiente');
+      expect(pedido.comprobantes).toHaveLength(0);
+      expect(pedido.totalPagado).toBe(0);
+      expect(pedido.saldo).toBe(pedido.total);
+      expect(pedido.puedeSubirComprobante).toBe(true);
+    });
+
+    it('el comprobante creado por el admin queda aprobado por el total', async () => {
+      const pedido = await crearPedido({
+        token: tokenAdmin,
+        datos: { idUsuario: clienteId },
+      });
+
+      expect(pedido.comprobantes).toHaveLength(1);
+      expect(pedido.comprobantes[0].estado.nombre).toBe('Aprobado');
+      expect(pedido.comprobantes[0].monto).toBe(pedido.total);
+      expect(pedido.totalPagado).toBe(pedido.total);
+      expect(pedido.saldo).toBe(0);
     });
 
     it('crea el pedido, calcula precios en el servidor y lo deja Pendiente', async () => {
@@ -318,6 +344,15 @@ describe('Módulo de pedidos', () => {
 
     it('acepta un mensaje del tamaño exacto de la presentación', async () => {
       const mensaje = 'A'.repeat(presentacion.cantidadFresas);
+      const pedido = await crearPedido({
+        lineas: [{ ...lineaBase(), mensajePersonalizado: mensaje }],
+      });
+
+      expect(pedido.lineas[0].mensajePersonalizado).toBe(mensaje);
+    });
+
+    it('ignora los espacios al contar el mensaje personalizado', async () => {
+      const mensaje = 'A '.repeat(presentacion.cantidadFresas).trim();
       const pedido = await crearPedido({
         lineas: [{ ...lineaBase(), mensajePersonalizado: mensaje }],
       });

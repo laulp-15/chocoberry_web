@@ -63,7 +63,6 @@ export async function registrarCliente(datos) {
     correo: datos.correo,
     contrasena,
     telefono: datos.telefono || null,
-    barrio: datos.barrio || null,
     direccion: datos.direccion || null,
     estado: true,
     id_rol: rolCliente.id,

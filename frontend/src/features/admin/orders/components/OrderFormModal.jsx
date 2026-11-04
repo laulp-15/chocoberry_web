@@ -30,7 +30,6 @@ const EMPTY_ORDER = {
   clienteIdentificacion: "",
   fecha: "",
   direccion: "",
-  barrio: "",
   municipioId: "",
   recipientName: "",
   recipientPhone: "",
@@ -50,7 +49,6 @@ function toFormValues(order) {
     clienteIdentificacion: order.clienteIdentificacion ?? "",
     fecha: order.fechaEntrega ?? "",
     direccion: order.direccion ?? "",
-    barrio: order.barrio ?? "",
     municipioId:
       order.municipioId != null ? String(order.municipioId) : "",
     recipientName: order.nombreReceptor ?? order.recipientName ?? "",
@@ -65,7 +63,8 @@ function toFormValues(order) {
 /**
  * Modal de Crear/Editar pedido en una sola vista continua.
  *
- * Crear: exige cliente registrado, comprobante y al menos una línea.
+ * Crear: exige cliente registrado y al menos una línea; el comprobante es
+ * opcional.
  * Editar: solo pedidos pendientes; permite cabecera y líneas. El comprobante
  * no se cambia.
  *
@@ -95,6 +94,7 @@ export default function OrderFormModal({
   const [formError, setFormError] = useState("");
   const [editingLine, setEditingLine] = useState(null);
   const nextLineId = useRef(0);
+  const formContainerRef = useRef(null);
 
   const {
     values: order,
@@ -127,15 +127,6 @@ export default function OrderFormModal({
         }
         return "";
       },
-      barrio: (o) => {
-        const valor = o.barrio.trim();
-        if (!valor) return "El barrio es obligatorio.";
-        if (valor.length < 2) return "El barrio es demasiado corto.";
-        if (valor.length > 100) {
-          return "El barrio no puede superar los 100 caracteres.";
-        }
-        return "";
-      },
       municipioId: (o) => (o.municipioId ? "" : "El municipio es obligatorio."),
       recipientName: (o) => {
         const valor = o.recipientName.trim();
@@ -150,10 +141,6 @@ export default function OrderFormModal({
         o.recipientPhone.trim()
           ? validatePhone(o.recipientPhone)
           : "El teléfono de quien recibe es obligatorio.",
-      comprobante: (o) =>
-        isEditing || o.comprobante
-          ? ""
-          : "Debes adjuntar el comprobante de pago.",
       instrucciones: (o) =>
         o.instrucciones.trim().length > 255
           ? "Las instrucciones no pueden superar los 255 caracteres."
@@ -171,13 +158,7 @@ export default function OrderFormModal({
       },
     },
     dependents: { lineas: ["fecha"] },
-    immediate: [
-      "clienteId",
-      "fecha",
-      "municipioId",
-      "comprobante",
-      "lineas",
-    ],
+    immediate: ["clienteId", "fecha", "municipioId", "lineas"],
   });
 
   const clientes = options?.clientes ?? [];
@@ -192,7 +173,6 @@ export default function OrderFormModal({
       cliente: client.fullName,
       clienteIdentificacion: client.idNumber,
       direccion: client.address ?? "",
-      barrio: client.neighborhood ?? "",
       recipientName: client.fullName ?? "",
       recipientPhone: client.phone ?? "",
     });
@@ -312,18 +292,43 @@ export default function OrderFormModal({
     onClose();
   };
 
+  const scrollToFirstError = () => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const container = formContainerRef.current;
+        const firstError = container?.querySelector(
+          ".has-error, .form-error"
+        );
+        if (!firstError) return;
+
+        firstError.scrollIntoView({ behavior: "smooth", block: "center" });
+
+        const focusable = firstError.matches(
+          "input, textarea, select, button, [tabindex]"
+        )
+          ? firstError
+          : firstError.querySelector(
+              "input, textarea, select, button, [tabindex]"
+            );
+        focusable?.focus({ preventScroll: true });
+      });
+    });
+  };
+
   const handleSave = async () => {
     if (submitting) return;
 
     setFormError("");
-    if (!validateAll()) return;
+    if (!validateAll()) {
+      scrollToFirstError();
+      return;
+    }
 
     try {
       if (isEditing) {
         await onSubmit({
           fechaEntrega: order.fecha,
           direccion: order.direccion.trim(),
-          barrio: order.barrio.trim(),
           idMunicipio: Number(order.municipioId),
           nombreReceptor: order.recipientName.trim(),
           telefonoReceptor: order.recipientPhone.trim(),
@@ -337,7 +342,6 @@ export default function OrderFormModal({
           comprobante: order.comprobante,
           fechaEntrega: order.fecha,
           direccion: order.direccion.trim(),
-          barrio: order.barrio.trim(),
           idMunicipio: Number(order.municipioId),
           nombreReceptor: order.recipientName.trim(),
           telefonoReceptor: order.recipientPhone.trim(),
@@ -400,7 +404,7 @@ export default function OrderFormModal({
         </div>
       }
     >
-      <div className="order-form-continuous-container">
+      <div className="order-form-continuous-container" ref={formContainerRef}>
         {optionsError && (
           <div className="form-error form-error-block" role="alert">
             <i className="fa-solid fa-triangle-exclamation" /> {optionsError}
@@ -513,26 +517,15 @@ export default function OrderFormModal({
             />
           </div>
 
-          <div className="order-form-row">
-            <FormTextField
-              label="Dirección"
-              required
-              value={order.direccion}
-              onChange={(v) => setField("direccion", v)}
-              onBlur={() => handleBlur("direccion")}
-              placeholder="Ej. Calle 48 # 72-18"
-              error={errors.direccion}
-            />
-            <FormTextField
-              label="Barrio"
-              required
-              value={order.barrio}
-              onChange={(v) => setField("barrio", v)}
-              onBlur={() => handleBlur("barrio")}
-              placeholder="Ej. El Poblado"
-              error={errors.barrio}
-            />
-          </div>
+          <FormTextField
+            label="Dirección"
+            required
+            value={order.direccion}
+            onChange={(v) => setField("direccion", v)}
+            onBlur={() => handleBlur("direccion")}
+            placeholder="Ej. Calle 48 # 72-18"
+            error={errors.direccion}
+          />
 
           <div className="order-form-row">
             <FormTextField
@@ -658,7 +651,7 @@ export default function OrderFormModal({
             </div>
           ) : (
             <div className="form-field">
-              <label className="form-label">Comprobante de pago *</label>
+              <label className="form-label">Comprobante de pago (opcional)</label>
               <FileDropzone
                 file={order.comprobante}
                 onChange={(file) => setField("comprobante", file)}
@@ -666,7 +659,6 @@ export default function OrderFormModal({
                 hint="PNG, JPG o WEBP (máx. 5 MB)"
                 accept={IMAGE_ACCEPT}
                 allowPdf={false}
-                error={errors.comprobante}
               />
             </div>
           )}

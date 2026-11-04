@@ -14,9 +14,7 @@ const DEFAULT_VISUAL = {
   role: "Reseña de cliente",
 };
 
-// El panel visual siempre es chocolate (oscuro), así que lleva
-// la versión del logo pensada para fondos oscuros.
-const VISUAL_LOGO_SRC = "/img/Login/logo_login.png  ";
+const VISUAL_LOGO_SRC = "/img/Login/logo_login_dark.png";
 
 /**
  * Recuerda si la página anterior usaba el layout ancho (registro).
@@ -67,8 +65,8 @@ export default function AuthLayout({
   // vista centrada o pantallas pequeñas).
   const formLogoSrc =
     theme === "dark"
-      ? "/img/Logo/LogoDark_2.png"
-      : "/img/Login/logo_login.png";
+      ? "/img/Login/logo_login_dark.png"
+      : "/img/Login/logo_login_light.png";
 
   const showVisual = variant === "split" && image;
 

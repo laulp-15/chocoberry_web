@@ -82,6 +82,16 @@ el archivo de `pedido.comprobante_pago` como comprobante Pendiente y solo
 elimina esa columna si todavía existe. Las bases nuevas creadas desde
 `chocoberry_bd.sql` ya incluyen la nueva estructura.
 
+El listado del panel de reseñas ahora requiere solo `Ver Reseñas`, que ya no
+pertenece al rol Cliente. Si tu base ya estaba creada, ejecuta:
+
+```bash
+mysql -u TU_USUARIO -p chocoberry < ../database/migrations/008_resenas_ver_solo_panel.sql
+```
+
+La migración es repetible y solo elimina `Ver Reseñas` del rol Cliente. Los
+clientes conservan `Crear Reseñas` y la lectura pública del catálogo.
+
 ## Instalación
 
 ```bash
@@ -311,7 +321,7 @@ Base: `/api`
 | GET | `/pedidos/:id` | Detalle de un pedido | Pedidos · Ver |
 | GET | `/pedidos/mios` | Pedidos del usuario autenticado | Pedidos · Ver |
 | GET | `/pedidos/mios/:id` | Detalle de un pedido propio | Pedidos · Ver |
-| POST | `/pedidos` | Crea un pedido con su comprobante (multipart) | Pedidos · Crear |
+| POST | `/pedidos` | Crea un pedido con comprobante opcional para admin/staff (multipart) | Pedidos · Crear |
 | POST | `/pedidos/:id/comprobantes` | Agrega un comprobante al pedido (multipart) | Pedidos · Crear |
 | PUT | `/pedidos/:id` | Edita cabecera y líneas de un pedido Pendiente | Pedidos · Editar |
 | PATCH | `/pedidos/:id/estado` | Cambia el estado (`{ estado }`) | Pedidos · Cambiar estado |
@@ -347,13 +357,15 @@ Base: `/api`
 > se calculan con el precio actual del catálogo. Cabecera y líneas se guardan en
 > una sola transacción. El comprobante no se modifica desde la edición.
 
-> **Creación (multipart/form-data):** campo `comprobante`
-> (PNG/JPG/WEBP, máx. 5 MB) + `fechaEntrega` (`YYYY-MM-DD`, se guarda a las
-> 00:00), `direccion`, `barrio`, `idMunicipio`, `nombreReceptor`,
+> **Creación (multipart/form-data):** `fechaEntrega` (`YYYY-MM-DD`, se guarda a
+> las 00:00), `direccion`, `idMunicipio`, `nombreReceptor`,
 > `telefonoReceptor`, `lineas` (array JSON **como texto**) y los opcionales
 > `mensajeTarjeta`, `instruccionesEntrega`, `idUsuario` (solo el admin puede
-> crear a nombre de otro usuario). Cada línea es
-> `{ idProducto, idPresentacion, cantidadProductos, idColorGlaseado, mensajePersonalizado?, personalizacionAdicional? }`.
+> crear a nombre de otro usuario). El campo `comprobante` (PNG/JPG/WEBP, máx.
+> 5 MB) es obligatorio para el cliente y opcional para admin/staff. Si lo envía
+> admin/staff, queda `Aprobado` por el total del pedido; si no, el pedido nace
+> sin comprobantes y puede subirse después. Cada línea es
+> `{ idProducto, idPresentacion, cantidadProductos, idColorGlaseado, mensajePersonalizado? }`.
 
 > **Precios:** se calculan siempre en el servidor; al crear se usa el
 > `presentacion.precio` actual y al editar se conserva el `precio_unitario`
@@ -379,12 +391,15 @@ Base: `/api`
 | PATCH | `/comprobantes/:id/aprobar` | Aprueba con `{ monto }` (debe igualar el saldo) | Pedidos · Cambiar estado |
 | PATCH | `/comprobantes/:id/rechazar` | Rechaza con `{ motivo, monto }` (valor entregado) | Pedidos · Cambiar estado |
 
-> **Varios comprobantes por pedido:** la creación del pedido exige uno inicial en
-> estado `Pendiente`. Luego, el cliente dueño puede subir hasta **3 comprobantes
-> activos** (`Pendiente` + `Aprobado`) con `POST /pedidos/:id/comprobantes`
-> (campo `comprobante`, PNG/JPG/WEBP, máx. 5 MB) y eliminar los suyos mientras
-> sigan `Pendiente`. Un comprobante `Rechazado` no cuenta para el límite y queda
-> como historial.
+> **Varios comprobantes por pedido:** el cliente debe enviar uno inicial en
+> estado `Pendiente` al crear; admin/staff puede omitirlo. Cualquier usuario con
+> `Pedidos · Crear` puede subir hasta **3 comprobantes activos**
+> (`Pendiente` + `Aprobado`) con `POST /pedidos/:id/comprobantes` (campo
+> `comprobante`, PNG/JPG/WEBP, máx. 5 MB). El cliente solo opera sobre sus
+> pedidos y el comprobante queda `Pendiente`; admin/staff puede hacerlo sobre
+> cualquier pedido y queda `Aprobado` automáticamente por el saldo pendiente. El
+> cliente puede eliminar los suyos mientras sigan `Pendiente`. Un comprobante
+> `Rechazado` no cuenta para el límite y queda como historial.
 
 > **Aprobación y saldo:** aprobar exige que el **monto verificado** coincida
 > exactamente con el saldo pendiente; no se permiten abonos parciales ni
@@ -434,10 +449,10 @@ Base: `/api`
 | Método | Ruta | Descripción | Acceso |
 | --- | --- | --- | --- |
 | GET | `/catalogo/resenas` | Reseñas activas para la tienda; filtro opcional `calificacion` | Público |
-| GET | `/resenas` | Panel: todas las reseñas; filtros `cliente`, `calificacion`, `estado` | Administrador + Reseñas · Ver |
-| GET | `/resenas/:id` | Detalle de una reseña | Administrador + Reseñas · Ver |
+| GET | `/resenas` | Panel: todas las reseñas; filtros `cliente`, `calificacion`, `estado` | Reseñas · Ver |
+| GET | `/resenas/:id` | Detalle de una reseña | Reseñas · Ver |
 | POST | `/resenas` | Crea una reseña con `{ calificacion, comentario }` | Reseñas · Crear |
-| PATCH | `/resenas/:id/estado` | Activa/desactiva (`{ estado: true }`) | Administrador + Reseñas · Cambiar estado |
+| PATCH | `/resenas/:id/estado` | Activa/desactiva (`{ estado: true }`) | Reseñas · Cambiar estado |
 
 > **La reseña es general:** no está asociada a un producto ni a un pedido. El
 > esquema permite varias reseñas por usuario (1:N), así que no se impone una

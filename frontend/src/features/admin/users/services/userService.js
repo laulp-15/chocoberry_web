@@ -59,7 +59,7 @@ export async function crear(datos) {
   }
 }
 
-/** PUT /usuarios/:id -> actualiza un usuario (contraseña opcional). */
+/** PUT /usuarios/:id -> actualiza los datos y el rol de un usuario. */
 export async function actualizar(id, datos) {
   try {
     const usuario = await api.put(`/usuarios/${id}`, toActualizarUsuarioPayload(datos));

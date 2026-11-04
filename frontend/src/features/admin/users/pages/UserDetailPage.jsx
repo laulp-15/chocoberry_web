@@ -158,15 +158,6 @@ export default function UserDetailPage() {
               </div>
               <div className="user-detail-field">
                 <span className="user-detail-field-icon">
-                  <i className="fa-solid fa-map" />
-                </span>
-                <div className="user-detail-field-body">
-                  <dt>Barrio</dt>
-                  <dd>{user.neighborhood || "—"}</dd>
-                </div>
-              </div>
-              <div className="user-detail-field">
-                <span className="user-detail-field-icon">
                   <i className="fa-solid fa-user-shield" />
                 </span>
                 <div className="user-detail-field-body">

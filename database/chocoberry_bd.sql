@@ -57,7 +57,6 @@ CREATE TABLE usuario (
     correo VARCHAR(150) NOT NULL UNIQUE,
     contrasena VARCHAR(255) NOT NULL,
     telefono VARCHAR(20),
-    barrio VARCHAR(100),
     direccion VARCHAR(200),
     fecha DATE NOT NULL DEFAULT (CURRENT_DATE),
     estado BOOLEAN NOT NULL DEFAULT TRUE,
@@ -152,7 +151,6 @@ CREATE TABLE pedido (
     fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     fecha_entrega DATETIME,
     direccion VARCHAR(200) NOT NULL,
-    barrio VARCHAR(100) NOT NULL,
     precio_domicilio DECIMAL(10,2) NOT NULL,
     nombre_receptor VARCHAR(100) NOT NULL,
     telefono_receptor VARCHAR(20) NOT NULL,
@@ -183,7 +181,6 @@ CREATE TABLE productoPedido (
     subtotal DECIMAL(10,2) NOT NULL,
     mensaje_personalizado VARCHAR(255),
     id_color_glaseado INT,
-    personalizacion_adicional VARCHAR(255),
     CONSTRAINT fk_prodPedido_pedido
         FOREIGN KEY (id_pedido) REFERENCES pedido(id)
         ON DELETE CASCADE,

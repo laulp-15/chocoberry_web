@@ -1,19 +1,29 @@
 // src/features/cart/components/CartNotification.jsx
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import "./CartNotification.css";
 
+const ICONS = {
+  info: "fa-circle-exclamation",
+  success: "fa-circle-check",
+  warning: "fa-triangle-exclamation",
+};
+
 /**
- * Notificación flotante informativa, específica del carrito (ej. cuando un
- * producto se fusiona con una línea existente en vez de crear una nueva).
- * Se cierra sola a los 4 segundos, o con la X.
+ * Notificaci��n flotante del carrito (fusiones, éxito tras login y avisos de
+ * sesión). Se cierra sola a los 6 segundos, o con la X.
  *
  * @param {object} props
  * @param {boolean} props.open
  * @param {() => void} props.onClose
- * @param {string} props.title
  * @param {string} props.message
+ * @param {"info" | "success" | "warning"} [props.variant]
  */
-export default function CartNotification({ open, onClose, title, message }) {
+export default function CartNotification({
+  open,
+  onClose,
+  message,
+  variant = "info",
+}) {
   useEffect(() => {
     if (!open) return;
     const timer = setTimeout(onClose, 6000);
@@ -23,12 +33,14 @@ export default function CartNotification({ open, onClose, title, message }) {
   if (!open) return null;
 
   return (
-    <div className="cart-notification">
+    <div
+      className={`cart-notification cart-notification--${variant}`}
+      role="status"
+    >
       <div className="cart-notification-icon">
-        <i className="fa-solid fa-circle-exclamation" />
+        <i className={`fa-solid ${ICONS[variant] ?? ICONS.info}`} />
       </div>
       <div className="cart-notification-body">
-        <div className="cart-notification-title">{title}</div>
         <div className="cart-notification-message">{message}</div>
       </div>
       <button type="button" className="cart-notification-close" onClick={onClose}>

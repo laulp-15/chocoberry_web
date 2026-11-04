@@ -16,7 +16,6 @@ export function serializarUsuario(row) {
     numeroDocumento: row.numero_documento,
     correo: row.correo,
     telefono: row.telefono,
-    barrio: row.barrio,
     direccion: row.direccion,
     fechaRegistro: row.fecha,
     estado: Boolean(row.estado),
@@ -180,7 +179,6 @@ export function serializarLineaPedido(row) {
     colorGlaseado: row.id_color_glaseado
       ? { id: row.id_color_glaseado, nombre: row.color_nombre, codigoHex: row.color_hex }
       : null,
-    personalizacionAdicional: row.personalizacion_adicional,
   };
 }
 
@@ -244,7 +242,6 @@ export function serializarPedido(row, lineas = [], comprobantes = []) {
     },
     municipio: { id: row.id_municipio, nombre: row.municipio },
     direccion: row.direccion,
-    barrio: row.barrio,
     precioDomicilio,
     nombreReceptor: row.nombre_receptor,
     telefonoReceptor: row.telefono_receptor,

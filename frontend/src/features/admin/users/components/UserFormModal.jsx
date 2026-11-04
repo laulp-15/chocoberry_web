@@ -1,6 +1,5 @@
 // src/features/admin/users/components/UserFormModal.jsx
 import { useEffect, useState } from "react";
-import { InputAdornment, IconButton } from "@mui/material";
 import Modal from "../../../../shared/components/Modal";
 import FormTextField from "../../../../shared/components/FormTextField";
 import FormSelect from "../../../../shared/components/FormSelect";
@@ -14,11 +13,8 @@ import {
   validateApellidos,
   validateEmail,
   validateAddress,
-  validateNeighborhood,
   validatePhone,
-  validateConfirmPassword,
   validateRole,
-  validatePasswordForEdit,
 } from "../utils/validators";
 import { DOC_TYPE_OPTIONS } from "../../../../shared/utils/documentTypes";
 import "./UserFormModal.css";
@@ -31,16 +27,13 @@ const EMPTY_FORM = {
   email: "",
   phone: "",
   address: "",
-  neighborhood: "",
-  password: "",
-  confirmPassword: "",
   role: "cliente",
   active: true,
 };
 
 /**
  * Un solo modal para Crear Y Editar usuario con soporte para teléfono,
- * dirección y visibilidad de contraseña.
+ * dirección y rol. La contraseña no se edita desde el panel.
  */
 export default function UserFormModal({
   open,
@@ -52,10 +45,6 @@ export default function UserFormModal({
 }) {
   const isEdit = !!initialData;
   const [formError, setFormError] = useState("");
-
-  // Estados para controlar la visibilidad de las contraseñas (el "ojito")
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const {
     values: form,
@@ -75,13 +64,8 @@ export default function UserFormModal({
       email: (v) => validateEmail(v.email),
       phone: (v) => validatePhone(v.phone),
       address: (v) => validateAddress(v.address),
-      neighborhood: (v) => validateNeighborhood(v.neighborhood),
-      password: (v) => (isEdit ? validatePasswordForEdit(v.password) : ""),
-      confirmPassword: (v) =>
-        v.password ? validateConfirmPassword(v.password, v.confirmPassword) : "",
       role: (v) => validateRole(v.role),
     },
-    dependents: { password: ["confirmPassword"] },
     immediate: ["docType", "role"],
   });
 
@@ -98,9 +82,6 @@ export default function UserFormModal({
         email: initialData.email || "",
         phone: initialData.phone || "",
         address: initialData.address || "",
-        neighborhood: initialData.neighborhood || "",
-        password: "",
-        confirmPassword: "",
         role: initialData.role || "",
         active: initialData.active !== false,
       });
@@ -111,8 +92,6 @@ export default function UserFormModal({
 
   function handleClose() {
     setFormError("");
-    setShowPassword(false);
-    setShowConfirmPassword(false);
     onClose();
   }
 
@@ -134,14 +113,10 @@ export default function UserFormModal({
         email: form.email,
         phone: form.phone,
         address: form.address,
-        neighborhood: form.neighborhood,
-        password: isEdit ? form.password : "",
         role: form.role,
         active: form.active,
       });
       setFormError("");
-      setShowPassword(false);
-      setShowConfirmPassword(false);
     } catch (err) {
       if (err.code === "EMAIL_TAKEN") {
         setFieldError("email", err.message);
@@ -245,83 +220,15 @@ export default function UserFormModal({
           error={errors.phone}
         />
 
-        <div className="user-form-row user-form-row--fields">
-          <FormTextField
-            label="Dirección"
-            required
-            placeholder="Ej. Calle 50 # 45-20"
-            value={form.address}
-            onChange={(v) => setField("address", v)}
-            onBlur={() => handleBlur("address")}
-            error={errors.address}
-          />
-          <FormTextField
-            label="Barrio"
-            required
-            placeholder="Ej. El Poblado"
-            value={form.neighborhood}
-            onChange={(v) => setField("neighborhood", v)}
-            onBlur={() => handleBlur("neighborhood")}
-            error={errors.neighborhood}
-          />
-        </div>
-
-        {isEdit && (
-          <>
-            {/* Campo Contraseña con botón de ojito */}
-            <FormTextField
-              label="Nueva contraseña (opcional)"
-              type={showPassword ? "text" : "password"}
-              placeholder="Ingresa una nueva contraseña"
-              value={form.password}
-              onChange={(v) => setField("password", v)}
-              onBlur={() => handleBlur("password")}
-              error={errors.password}
-              endAdornment={
-                <InputAdornment position="end">
-                  <IconButton
-                    type="button"
-                    edge="end"
-                    disableRipple
-                    className="password-toggle"
-                    onClick={() => setShowPassword(!showPassword)}
-                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                  >
-                    <i className={`fa-solid ${showPassword ? "fa-eye-slash" : "fa-eye"}`} />
-                  </IconButton>
-                </InputAdornment>
-              }
-            />
-
-            {/* Campo Confirmar Contraseña con botón de ojito */}
-            {form.password && (
-              <FormTextField
-                label="Confirmar contraseña"
-                type={showConfirmPassword ? "text" : "password"}
-                required
-                placeholder="Repite la contraseña"
-                value={form.confirmPassword}
-                onChange={(v) => setField("confirmPassword", v)}
-                onBlur={() => handleBlur("confirmPassword")}
-                error={errors.confirmPassword}
-                endAdornment={
-                  <InputAdornment position="end">
-                    <IconButton
-                      type="button"
-                      edge="end"
-                      disableRipple
-                      className="password-toggle"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      aria-label={showConfirmPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                    >
-                      <i className={`fa-solid ${showConfirmPassword ? "fa-eye-slash" : "fa-eye"}`} />
-                    </IconButton>
-                  </InputAdornment>
-                }
-              />
-            )}
-          </>
-        )}
+        <FormTextField
+          label="Dirección"
+          required
+          placeholder="Ej. Calle 50 # 45-20"
+          value={form.address}
+          onChange={(v) => setField("address", v)}
+          onBlur={() => handleBlur("address")}
+          error={errors.address}
+        />
 
         <div className="user-form-row">
           <FormSelect

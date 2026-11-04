@@ -12,7 +12,11 @@ import AuthLayout from "../components/AuthLayout";
 import AuthInput from "../components/AuthInput";
 import GoogleButton from "../components/GoogleButton";
 import Navbar from "../../../shared/components/Navbar";
-import { firstAllowedAdminPath } from "../../../shared/permissions/panelPermissions";
+import {
+  canEnterPanel,
+  firstAllowedAdminPath,
+  isAllowedAdminPath,
+} from "../../../shared/permissions/panelPermissions";
 
 import { useAuth } from "../hooks/useAuth";
 
@@ -139,13 +143,25 @@ export default function LoginPage() {
       });
 
       const userRole = sessionUser?.role || sessionUser?.rol || sessionUser?.tipo;
+      const from = location.state?.from;
+      const panelPath = canEnterPanel(
+        sessionUser?.permissions,
+        sessionUser?.role,
+        sessionUser?.roleId
+      )
+        ? firstAllowedAdminPath(sessionUser?.permissions)
+        : null;
 
-      let redirectTo = location.state?.from;
+      let redirectTo;
 
-      if (!redirectTo) {
-        redirectTo =
-          firstAllowedAdminPath(sessionUser?.permissions) ||
-          defaultRouteForRole(userRole);
+      if (panelPath) {
+        // El destino administrativo manda sobre un "from" viejo (por ejemplo,
+        // /users/orders cuando el usuario era cliente).
+        redirectTo = isAllowedAdminPath(from, sessionUser?.permissions)
+          ? from
+          : panelPath;
+      } else {
+        redirectTo = from || defaultRouteForRole(userRole);
       }
 
       navigate(redirectTo, {
@@ -337,8 +353,8 @@ export default function LoginPage() {
 }
 
 /**
- * Ruta inicial de respaldo cuando el rol no tiene acceso al panel
- * (sin Dashboard · Ver). Los roles con panel usan firstAllowedAdminPath.
+ * Ruta inicial de respaldo cuando el rol es Cliente o no tiene módulos de
+ * panel. Los roles con panel usan firstAllowedAdminPath.
  */
 function defaultRouteForRole(role) {
   const normalizedRole = role ? String(role).trim().toLowerCase() : "";
