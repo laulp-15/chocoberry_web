@@ -1,6 +1,7 @@
 // src/utils/serializers.js
 // Transforman las filas crudas de MySQL (snake_case) a la forma que devuelve
 // la API (camelCase). Así la BD queda desacoplada del contrato de la API.
+import { resolverUrlImagen } from './cloudinaryStorage.js';
 import { redondear2 } from './number.js';
 import { slugify } from './text.js';
 
@@ -81,10 +82,12 @@ export function serializarProducto(row, imagenes = []) {
     id: row.id,
     nombre: row.nombre,
     descripcion: row.descripcion,
-    imagen: lista[0]?.url ?? null,
+    imagen: lista[0]
+      ? resolverUrlImagen(lista[0].url, lista[0].public_id, 'producto')
+      : null,
     imagenes: lista.map((imagen) => ({
       id: imagen.id,
-      url: imagen.url,
+      url: resolverUrlImagen(imagen.url, imagen.public_id, 'producto'),
       orden: imagen.orden,
     })),
     estado: Boolean(row.estado),
@@ -187,7 +190,7 @@ export function serializarComprobante(row) {
   if (!row) return null;
   return {
     id: row.id,
-    url: row.url,
+    url: resolverUrlImagen(row.url, row.public_id, 'comprobante'),
     monto:
       row.monto === null || row.monto === undefined ? null : Number(row.monto),
     fecha: row.fecha,
@@ -249,7 +252,11 @@ export function serializarPedido(row, lineas = [], comprobantes = []) {
     fechaCancelacion: row.fecha_cancelacion,
     instruccionesEntrega: row.instrucciones_entrega,
     observacionesEntrega: row.observaciones_entrega,
-    evidenciaEntrega: row.evidencia_entrega,
+    evidenciaEntrega: resolverUrlImagen(
+      row.evidencia_entrega,
+      row.evidencia_public_id,
+      'evidencia'
+    ),
     lineas: lineasSerializadas,
     comprobantes: comprobantesSerializados,
     subtotal,

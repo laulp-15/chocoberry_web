@@ -10,7 +10,10 @@ import {
 } from '../errors/index.js';
 import * as comprobantePagoModel from '../models/comprobantePago.model.js';
 import * as estadoComprobanteModel from '../models/estadoComprobante.model.js';
-import { eliminarArchivoSubido } from '../utils/archivos.js';
+import {
+  borrarImagenComprobante,
+  subirImagenComprobante,
+} from '../utils/cloudinaryStorage.js';
 import { redondear2 } from '../utils/number.js';
 import * as emailService from './emailService.js';
 import * as pedidoService from './pedido.service.js';
@@ -49,8 +52,8 @@ function formatearMonto(valor) {
  * En ambos casos el pedido debe seguir Pendiente, tener saldo y menos de 3
  * comprobantes activos (Pendientes + Aprobados; los rechazados no cuentan).
  */
-export async function agregar(idPedido, url, usuario) {
-  if (!url) {
+export async function agregar(idPedido, archivo, usuario) {
+  if (!archivo) {
     throw new UnprocessableEntityError('El comprobante de pago es obligatorio.');
   }
 
@@ -58,47 +61,54 @@ export async function agregar(idPedido, url, usuario) {
   const estadoComprobante = await resolverEstado(
     esCliente ? ESTADO_PENDIENTE : 'Aprobado'
   );
+  const subida = await subirImagenComprobante(archivo);
 
-  return withTransaction(async (conexion) => {
-    const pedido = await comprobantePagoModel.buscarPedidoParaComprobante(
-      idPedido,
-      conexion
-    );
-
-    // Se responde 404 para no revelar pedidos de otros clientes. El personal
-    // con permiso de creación sí puede subir comprobantes a cualquier pedido.
-    if (!pedido || (esCliente && pedido.id_usuario !== usuario.id)) {
-      throw new NotFoundError('Pedido no encontrado.');
-    }
-
-    if (pedido.estado_pedido !== 'Pendiente') {
-      throw new ConflictError(
-        'Solo se pueden subir comprobantes mientras el pedido está Pendiente.'
+  try {
+    return await withTransaction(async (conexion) => {
+      const pedido = await comprobantePagoModel.buscarPedidoParaComprobante(
+        idPedido,
+        conexion
       );
-    }
 
-    const resumen = await comprobantePagoModel.resumenPago(idPedido, conexion);
-    const saldo = calcularSaldo(resumen);
+      // Se responde 404 para no revelar pedidos de otros clientes. El personal
+      // con permiso de creación sí puede subir comprobantes a cualquier pedido.
+      if (!pedido || (esCliente && pedido.id_usuario !== usuario.id)) {
+        throw new NotFoundError('Pedido no encontrado.');
+      }
 
-    if (saldo <= 0) {
-      throw new ConflictError('El pedido no tiene saldo pendiente por pagar.');
-    }
+      if (pedido.estado_pedido !== 'Pendiente') {
+        throw new ConflictError(
+          'Solo se pueden subir comprobantes mientras el pedido está Pendiente.'
+        );
+      }
 
-    if (Number(resumen?.activos ?? 0) >= MAX_COMPROBANTES_ACTIVOS) {
-      throw new ConflictError(
-        `Solo se permiten ${MAX_COMPROBANTES_ACTIVOS} comprobantes activos por pedido.`
-      );
-    }
+      const resumen = await comprobantePagoModel.resumenPago(idPedido, conexion);
+      const saldo = calcularSaldo(resumen);
 
-    await comprobantePagoModel.crear(conexion, {
-      url,
-      idPedido,
-      idEstado: estadoComprobante.id,
-      monto: esCliente ? null : saldo,
+      if (saldo <= 0) {
+        throw new ConflictError('El pedido no tiene saldo pendiente por pagar.');
+      }
+
+      if (Number(resumen?.activos ?? 0) >= MAX_COMPROBANTES_ACTIVOS) {
+        throw new ConflictError(
+          `Solo se permiten ${MAX_COMPROBANTES_ACTIVOS} comprobantes activos por pedido.`
+        );
+      }
+
+      await comprobantePagoModel.crear(conexion, {
+        url: subida.url,
+        publicId: subida.public_id,
+        idPedido,
+        idEstado: estadoComprobante.id,
+        monto: esCliente ? null : saldo,
+      });
+
+      return idPedido;
     });
-
-    return idPedido;
-  });
+  } catch (error) {
+    await borrarImagenComprobante(subida.public_id);
+    throw error;
+  }
 }
 
 /**
@@ -131,10 +141,13 @@ export async function eliminar(id, usuario) {
       throw new ConflictError('El comprobante ya no se encuentra Pendiente.');
     }
 
-    return { idPedido: comprobante.id_pedido, url: comprobante.url };
+    return {
+      idPedido: comprobante.id_pedido,
+      publicId: comprobante.public_id,
+    };
   });
 
-  await eliminarArchivoSubido(eliminado.url);
+  await borrarImagenComprobante(eliminado.publicId);
   return eliminado.idPedido;
 }
 

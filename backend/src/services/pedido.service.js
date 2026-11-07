@@ -20,7 +20,12 @@ import * as productoPedidoModel from '../models/productoPedido.model.js';
 import * as usuarioModel from '../models/usuario.model.js';
 import * as emailService from './emailService.js';
 import * as municipioService from './municipio.service.js';
-import { eliminarArchivoSubido } from '../utils/archivos.js';
+import {
+  borrarImagenComprobante,
+  borrarImagenEvidencia,
+  subirImagenComprobante,
+  subirImagenEvidencia,
+} from '../utils/cloudinaryStorage.js';
 import { redondear2 } from '../utils/number.js';
 import {
   fechaActualLocal,
@@ -408,6 +413,8 @@ export async function crear(datos, usuario, comprobante) {
   validarLimitesPedido(lineas, datos.fechaEntrega, usuario);
 
   let comprobanteInicial = null;
+  let comprobanteSubido = null;
+
   if (comprobante) {
     // Un comprobante subido por el admin/staff no pasa por aprobación manual:
     // se registra ya aprobado por el total del pedido.
@@ -430,32 +437,43 @@ export async function crear(datos, usuario, comprobante) {
     );
     const total = redondear2(subtotal + Number(municipio.precio_domicilio));
 
+    comprobanteSubido = await subirImagenComprobante(comprobante);
     comprobanteInicial = {
-      url: comprobante,
+      url: comprobanteSubido.url,
+      public_id: comprobanteSubido.public_id,
       id_estado: estadoComprobante.id,
       monto: autoAprobado ? total : null,
     };
   }
 
-  const id = await pedidoModel.crearConLineas({
-    pedido: {
-      mensaje_tarjeta: limpiarTexto(datos.mensajeTarjeta),
-      fecha_entrega: normalizarFechaEntrega(datos.fechaEntrega),
-      direccion: datos.direccion,
-      // Snapshot: si el municipio cambia de precio, el pedido conserva el suyo.
-      precio_domicilio: redondear2(municipio.precio_domicilio),
-      nombre_receptor: datos.nombreReceptor,
-      telefono_receptor: datos.telefonoReceptor,
-      instrucciones_entrega: limpiarTexto(datos.instruccionesEntrega),
-      id_usuario: idUsuario,
-      id_estado: estado.id,
-      id_municipio: municipio.id,
-    },
-    lineas,
-    comprobante: comprobanteInicial,
-  });
+  let creado = false;
+  try {
+    const id = await pedidoModel.crearConLineas({
+      pedido: {
+        mensaje_tarjeta: limpiarTexto(datos.mensajeTarjeta),
+        fecha_entrega: normalizarFechaEntrega(datos.fechaEntrega),
+        direccion: datos.direccion,
+        // Snapshot: si el municipio cambia de precio, el pedido conserva el suyo.
+        precio_domicilio: redondear2(municipio.precio_domicilio),
+        nombre_receptor: datos.nombreReceptor,
+        telefono_receptor: datos.telefonoReceptor,
+        instrucciones_entrega: limpiarTexto(datos.instruccionesEntrega),
+        id_usuario: idUsuario,
+        id_estado: estado.id,
+        id_municipio: municipio.id,
+      },
+      lineas,
+      comprobante: comprobanteInicial,
+    });
 
-  return obtenerPedidoCompleto(id);
+    creado = true;
+    return await obtenerPedidoCompleto(id);
+  } catch (error) {
+    if (!creado && comprobanteSubido) {
+      await borrarImagenComprobante(comprobanteSubido.public_id);
+    }
+    throw error;
+  }
 }
 
 /**
@@ -701,13 +719,33 @@ export async function registrarEntrega(id, datos, evidencia, usuario) {
   }
 
   const campos = {};
-  if (evidencia) campos.evidencia_entrega = evidencia;
-  if (datos.observacionesEntrega !== undefined) {
-    campos.observaciones_entrega = limpiarTexto(datos.observacionesEntrega);
-  }
+  let subida = null;
+  let guardado = false;
 
-  await pedidoModel.actualizarEntrega(id, campos);
-  return obtenerPedidoCompleto(id);
+  try {
+    if (evidencia) {
+      subida = await subirImagenEvidencia(evidencia);
+      campos.evidencia_entrega = subida.url;
+      campos.evidencia_public_id = subida.public_id;
+    }
+    if (datos.observacionesEntrega !== undefined) {
+      campos.observaciones_entrega = limpiarTexto(datos.observacionesEntrega);
+    }
+
+    await pedidoModel.actualizarEntrega(id, campos);
+    guardado = true;
+
+    if (subida && pedido.evidencia_public_id) {
+      await borrarImagenEvidencia(pedido.evidencia_public_id);
+    }
+
+    return await obtenerPedidoCompleto(id);
+  } catch (error) {
+    if (!guardado && subida) {
+      await borrarImagenEvidencia(subida.public_id);
+    }
+    throw error;
+  }
 }
 
 export async function eliminar(id) {
@@ -718,7 +756,10 @@ export async function eliminar(id) {
 
   // Las líneas y los comprobantes se eliminan en cascada por sus FKs.
   await pedidoModel.eliminar(id);
-  await Promise.all(
-    comprobantes.map((comprobante) => eliminarArchivoSubido(comprobante.url))
-  );
+  await Promise.all([
+    ...comprobantes.map((comprobante) =>
+      borrarImagenComprobante(comprobante.public_id)
+    ),
+    borrarImagenEvidencia(actual.evidencia_public_id),
+  ]);
 }

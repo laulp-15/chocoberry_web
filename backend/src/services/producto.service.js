@@ -9,7 +9,10 @@ import {
 import * as categoriaModel from '../models/categoria.model.js';
 import * as imagenProductoModel from '../models/imagenProducto.model.js';
 import * as productoModel from '../models/producto.model.js';
-import { eliminarArchivoSubido } from '../utils/archivos.js';
+import {
+  borrarImagenProducto,
+  subirImagenProducto,
+} from '../utils/cloudinaryStorage.js';
 import { serializarProducto } from '../utils/serializers.js';
 
 const limpiarVacio = (valor) => (valor === '' ? null : valor);
@@ -30,22 +33,29 @@ function agruparImagenes(filas = []) {
 }
 
 /**
- * Resuelve la lista final de URLs de imágenes a partir de:
+ * Resuelve la lista final de imágenes a partir de:
  * - `actuales`: imágenes que ya tiene el producto (edición).
- * - `subidas`: archivos nuevos, en el orden en que llegaron.
- * - `urls`: rutas enviadas como texto/JSON.
+ * - `subidas`: imágenes nuevas ya subidas a Cloudinary.
+ * - `urls`: rutas enviadas como texto/JSON (sin public_id).
  * - `orden`: orden final. Cada elemento es una URL existente o `nueva:N`
- *   (el archivo N de `subidas`). Si no se envía, se conservan las actuales y
+ *   (la imagen N de `subidas`). Si no se envía, se conservan las actuales y
  *   se agregan las nuevas al final.
  */
 function resolverImagenes({ actuales = [], subidas = [], urls = [], orden } = {}) {
-  const existentes = new Set(actuales.map((imagen) => imagen.url));
-  const disponibles = new Set([...existentes, ...subidas, ...urls]);
+  const nuevas = subidas.map((imagen) =>
+    typeof imagen === 'string' ? { url: imagen, public_id: null } : imagen
+  );
+  const textos = urls.map((url) => ({ url, public_id: null }));
+  const porUrl = new Map();
+
+  for (const imagen of [...actuales, ...nuevas, ...textos]) {
+    if (!porUrl.has(imagen.url)) porUrl.set(imagen.url, imagen);
+  }
 
   let resultado;
 
   if (orden === undefined) {
-    resultado = [...actuales.map((imagen) => imagen.url), ...subidas, ...urls];
+    resultado = [...actuales, ...nuevas, ...textos];
   } else {
     resultado = [];
 
@@ -56,22 +66,24 @@ function resolverImagenes({ actuales = [], subidas = [], urls = [], orden } = {}
       const nueva = /^nueva:(\d+)$/.exec(valor);
       if (nueva) {
         const indice = Number(nueva[1]);
-        const url = subidas[indice];
-        if (!url) {
+        const imagen = nuevas[indice];
+        if (!imagen) {
           throw new UnprocessableEntityError('Una de las imágenes nuevas no es válida.');
         }
-        resultado.push(url);
+        resultado.push(imagen);
         continue;
       }
 
-      if (!disponibles.has(valor)) {
+      const imagen = porUrl.get(valor);
+      if (!imagen) {
         throw new UnprocessableEntityError('Una de las imágenes indicadas no es válida.');
       }
-      resultado.push(valor);
+      resultado.push(imagen);
     }
   }
 
-  if (new Set(resultado).size !== resultado.length) {
+  const urlsResultado = resultado.map((imagen) => imagen.url);
+  if (new Set(urlsResultado).size !== urlsResultado.length) {
     throw new UnprocessableEntityError('No repitas la misma imagen en el producto.');
   }
 
@@ -83,7 +95,19 @@ function resolverImagenes({ actuales = [], subidas = [], urls = [], orden } = {}
     throw new UnprocessableEntityError(`Puedes subir hasta ${MAX_IMAGENES} imágenes por producto.`);
   }
 
-  return resultado;
+  return resultado.map((imagen) => ({
+    url: imagen.url,
+    public_id: imagen.public_id ?? null,
+  }));
+}
+
+async function borrarSubidasNoUsadas(subidas, finales) {
+  const usadas = new Set(finales.map((imagen) => imagen.url));
+  await Promise.all(
+    subidas
+      .filter((imagen) => !usadas.has(imagen.url))
+      .map((imagen) => borrarImagenProducto(imagen.public_id))
+  );
 }
 
 /**
@@ -154,24 +178,42 @@ export async function crear(datos) {
   }
 
   const id_categoria = await resolverCategoria(datos);
+  const archivos = datos.imagenesArchivos ?? [];
+  const subidas = [];
+  let guardado = false;
 
-  const imagenes = resolverImagenes({
-    subidas: datos.imagenesSubidas ?? [],
-    urls: datos.imagenesUrl ?? [],
-    orden: datos.ordenImagenes,
-  });
+  try {
+    for (const archivo of archivos) {
+      subidas.push(await subirImagenProducto(archivo));
+    }
 
-  const id = await productoModel.crearConImagenes(
-    {
-      nombre: datos.nombre,
-      descripcion: limpiarVacio(datos.descripcion),
-      estado: datos.estado ?? true,
-      id_categoria,
-    },
-    imagenes.map((url) => ({ url }))
-  );
+    const imagenes = resolverImagenes({
+      subidas,
+      urls: datos.imagenesUrl ?? [],
+      orden: datos.ordenImagenes,
+    });
 
-  return obtener(id);
+    const id = await productoModel.crearConImagenes(
+      {
+        nombre: datos.nombre,
+        descripcion: limpiarVacio(datos.descripcion),
+        estado: datos.estado ?? true,
+        id_categoria,
+      },
+      imagenes
+    );
+    guardado = true;
+
+    await borrarSubidasNoUsadas(subidas, imagenes);
+    return await obtener(id);
+  } catch (error) {
+    if (!guardado) {
+      await Promise.all(
+        subidas.map((imagen) => borrarImagenProducto(imagen.public_id))
+      );
+    }
+    throw error;
+  }
 }
 
 export async function actualizar(id, datos) {
@@ -190,48 +232,64 @@ export async function actualizar(id, datos) {
   }
 
   const actuales = await imagenProductoModel.listarPorProducto(id);
+  const archivos = datos.imagenesArchivos ?? [];
   const hayCambiosImagenes =
     datos.ordenImagenes !== undefined ||
-    (datos.imagenesSubidas?.length ?? 0) > 0 ||
+    archivos.length > 0 ||
     (datos.imagenesUrl?.length ?? 0) > 0;
 
-  let imagenes;
-  if (hayCambiosImagenes) {
-    imagenes = resolverImagenes({
-      actuales,
-      subidas: datos.imagenesSubidas ?? [],
-      urls: datos.imagenesUrl ?? [],
-      orden: datos.ordenImagenes,
-    });
+  const subidas = [];
+  let guardado = false;
+
+  try {
+    for (const archivo of archivos) {
+      subidas.push(await subirImagenProducto(archivo));
+    }
+
+    let imagenes;
+    if (hayCambiosImagenes) {
+      imagenes = resolverImagenes({
+        actuales,
+        subidas,
+        urls: datos.imagenesUrl ?? [],
+        orden: datos.ordenImagenes,
+      });
+    }
+
+    const imagenesFinales =
+      imagenes ?? actuales.map((imagen) => ({ url: imagen.url, public_id: imagen.public_id }));
+
+    if (imagenesFinales.length === 0) {
+      throw new UnprocessableEntityError('Debes subir al menos una imagen.');
+    }
+
+    if (imagenesFinales.length > MAX_IMAGENES) {
+      throw new UnprocessableEntityError(`Puedes subir hasta ${MAX_IMAGENES} imágenes por producto.`);
+    }
+
+    await productoModel.actualizarConImagenes(id, campos, imagenes);
+    guardado = true;
+
+    // Borra de Cloudinary las imágenes que ya no pertenecen al producto.
+    if (imagenes) {
+      const conservadas = new Set(imagenes.map((imagen) => imagen.url));
+      const eliminadas = actuales.filter((imagen) => !conservadas.has(imagen.url));
+
+      for (const imagen of eliminadas) {
+        await borrarImagenProducto(imagen.public_id);
+      }
+      await borrarSubidasNoUsadas(subidas, imagenes);
+    }
+
+    return await obtener(id);
+  } catch (error) {
+    if (!guardado) {
+      await Promise.all(
+        subidas.map((imagen) => borrarImagenProducto(imagen.public_id))
+      );
+    }
+    throw error;
   }
-
-  const imagenesFinales = imagenes ?? actuales.map((imagen) => imagen.url);
-
-  if (imagenesFinales.length === 0) {
-    throw new UnprocessableEntityError('Debes subir al menos una imagen.');
-  }
-
-  if (imagenesFinales.length > MAX_IMAGENES) {
-    throw new UnprocessableEntityError(`Puedes subir hasta ${MAX_IMAGENES} imágenes por producto.`);
-  }
-
-  await productoModel.actualizarConImagenes(
-    id,
-    campos,
-    imagenes ? imagenes.map((url) => ({ url })) : undefined
-  );
-
-  // Borra del disco las imágenes que ya no pertenecen al producto.
-  if (imagenes) {
-    const conservadas = new Set(imagenes);
-    const eliminadas = actuales
-      .map((imagen) => imagen.url)
-      .filter((url) => !conservadas.has(url));
-
-    for (const url of eliminadas) await eliminarArchivoSubido(url);
-  }
-
-  return obtener(id);
 }
 
 export async function cambiarEstado(id, estado) {
@@ -258,6 +316,7 @@ export async function eliminar(id) {
   const imagenes = await imagenProductoModel.listarPorProducto(id);
   await productoModel.eliminar(id);
 
-  // La tabla hija se limpia con ON DELETE CASCADE; aquí se borran los archivos.
-  for (const imagen of imagenes) await eliminarArchivoSubido(imagen.url);
+  // La tabla hija se limpia con ON DELETE CASCADE; aquí se borran las imágenes
+  // de Cloudinary. Las filas antiguas (public_id NULL) se omiten.
+  for (const imagen of imagenes) await borrarImagenProducto(imagen.public_id);
 }

@@ -2,11 +2,8 @@
 // Pruebas de integración del módulo de Ventas: vista de solo lectura de los
 // pedidos confirmados. Cubre permisos, inclusión de Cancelado, exclusión de
 // Pendiente/Rechazado, detalle y filtros.
-import fs from 'node:fs';
-import path from 'node:path';
 import request from 'supertest';
 import app from '../src/app.js';
-import { uploadsDir } from '../src/middlewares/upload.js';
 
 const ADMIN = { correo: 'admin@chocoberry.com', contrasena: 'Admin123!' };
 const CLAVE_PRUEBA = 'Prueba123!';
@@ -34,7 +31,6 @@ describe('Módulo de ventas', () => {
   let rechazadoId;
 
   const pedidosCreados = [];
-  const archivosCreados = new Set();
   const s = Date.now().toString().slice(-7);
 
   const auth = (peticion, token = tokenAdmin) =>
@@ -90,11 +86,6 @@ describe('Módulo de ventas', () => {
 
     expect(res.status).toBe(201);
     pedidosCreados.push(res.body.data.id);
-    for (const comprobante of res.body.data.comprobantes ?? []) {
-      if (comprobante.url) {
-        archivosCreados.add(path.join(uploadsDir, path.basename(comprobante.url)));
-      }
-    }
     return res.body.data;
   }
 
@@ -207,10 +198,6 @@ describe('Módulo de ventas', () => {
     for (const id of [repartidorId, clienteId]) {
       if (id) await auth(request(app).delete(`/api/usuarios/${id}`));
     }
-
-    for (const archivo of archivosCreados) {
-      fs.rmSync(archivo, { force: true });
-    }
   });
 
   it('GET /api/ventas sin token devuelve 401', async () => {
@@ -266,7 +253,7 @@ describe('Módulo de ventas', () => {
     expect(res.body.data.lineas).toHaveLength(1);
     expect(res.body.data.total).toBeGreaterThan(0);
     expect(res.body.data.comprobantes).toHaveLength(1);
-    expect(res.body.data.comprobantes[0].url).toMatch(/^\/uploads\//);
+    expect(res.body.data.comprobantes[0].url).toMatch(/^https:\/\/res\.cloudinary\.com\/test\//);
   });
 
   it('un pedido Pendiente o Rechazado no se puede ver como venta (404)', async () => {

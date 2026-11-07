@@ -3,8 +3,6 @@
 // Las imágenes pueden llegar como archivos (multipart, campo "imagenes") o como
 // rutas/URLs de texto en el cuerpo (`imagenesUrl` y el antiguo `imagen`).
 import * as productoService from '../services/producto.service.js';
-import { eliminarArchivoSubido } from '../utils/archivos.js';
-import { rutaDeArchivo } from '../middlewares/upload.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { sendCreated, sendSuccess } from '../utils/response.js';
 
@@ -14,29 +12,12 @@ import { sendCreated, sendSuccess } from '../utils/response.js';
  */
 function datosConImagenes(req) {
   const body = req.validado.body;
-  const imagenesSubidas = (req.files ?? []).map(rutaDeArchivo).filter(Boolean);
+  const imagenesArchivos = req.files ?? [];
   const imagenesUrl = [...(body.imagenesUrl ?? [])];
 
   if (body.imagen) imagenesUrl.push(body.imagen);
 
-  return { ...body, imagenesSubidas, imagenesUrl };
-}
-
-/** Borra los archivos subidos que no quedaron asociados al producto. */
-async function limpiarArchivosNoUsados(req, producto) {
-  const usadas = new Set((producto.imagenes ?? []).map((imagen) => imagen.url));
-
-  for (const file of req.files ?? []) {
-    const url = rutaDeArchivo(file);
-    if (url && !usadas.has(url)) await eliminarArchivoSubido(url);
-  }
-}
-
-/** Borra todos los archivos subidos (cuando el guardado falla). */
-async function limpiarArchivosSubidos(req) {
-  for (const file of req.files ?? []) {
-    await eliminarArchivoSubido(rutaDeArchivo(file));
-  }
+  return { ...body, imagenesArchivos, imagenesUrl };
 }
 
 export const listar = asyncHandler(async (req, res) => {
@@ -50,28 +31,16 @@ export const obtener = asyncHandler(async (req, res) => {
 });
 
 export const crear = asyncHandler(async (req, res) => {
-  try {
-    const producto = await productoService.crear(datosConImagenes(req));
-    await limpiarArchivosNoUsados(req, producto);
-    return sendCreated(res, producto, 'Producto creado exitosamente.');
-  } catch (error) {
-    await limpiarArchivosSubidos(req);
-    throw error;
-  }
+  const producto = await productoService.crear(datosConImagenes(req));
+  return sendCreated(res, producto, 'Producto creado exitosamente.');
 });
 
 export const actualizar = asyncHandler(async (req, res) => {
-  try {
-    const producto = await productoService.actualizar(
-      req.validado.params.id,
-      datosConImagenes(req)
-    );
-    await limpiarArchivosNoUsados(req, producto);
-    return sendSuccess(res, producto, 'Producto actualizado exitosamente.');
-  } catch (error) {
-    await limpiarArchivosSubidos(req);
-    throw error;
-  }
+  const producto = await productoService.actualizar(
+    req.validado.params.id,
+    datosConImagenes(req)
+  );
+  return sendSuccess(res, producto, 'Producto actualizado exitosamente.');
 });
 
 export const cambiarEstado = asyncHandler(async (req, res) => {

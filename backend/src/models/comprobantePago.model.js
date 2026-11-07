@@ -3,14 +3,14 @@
 // aprobados y rechazados se conservan como historial.
 import { query } from '../config/db.js';
 
-const SELECT_BASE = `SELECT cp.id, cp.url, cp.monto, cp.fecha, cp.motivo_rechazo,
-                            cp.id_pedido, cp.id_estado,
+const SELECT_BASE = `SELECT cp.id, cp.url, cp.public_id, cp.monto, cp.fecha,
+                            cp.motivo_rechazo, cp.id_pedido, cp.id_estado,
                             ec.nombre AS estado_comprobante
                        FROM comprobantePago cp
                        JOIN estadosComprobante ec ON ec.id = cp.id_estado`;
 
-const SELECT_CON_PEDIDO = `SELECT cp.id, cp.url, cp.monto, cp.fecha, cp.motivo_rechazo,
-                                  cp.id_pedido, cp.id_estado,
+const SELECT_CON_PEDIDO = `SELECT cp.id, cp.url, cp.public_id, cp.monto, cp.fecha,
+                                  cp.motivo_rechazo, cp.id_pedido, cp.id_estado,
                                   ec.nombre AS estado_comprobante,
                                   p.id_usuario, p.id_estado AS id_estado_pedido,
                                   ep.nombre AS estado_pedido
@@ -69,11 +69,14 @@ export async function buscarPedidoParaComprobante(idPedido, conexion) {
   return filas[0] ?? null;
 }
 
-export async function crear(conexion, { url, idPedido, idEstado, monto = null }) {
+export async function crear(
+  conexion,
+  { url, publicId = null, idPedido, idEstado, monto = null }
+) {
   const resultado = await ejecutar(
-    `INSERT INTO comprobantePago (url, id_pedido, id_estado, monto)
-     VALUES (?, ?, ?, ?)`,
-    [url, idPedido, idEstado, monto],
+    `INSERT INTO comprobantePago (url, public_id, id_pedido, id_estado, monto)
+     VALUES (?, ?, ?, ?, ?)`,
+    [url, publicId, idPedido, idEstado, monto],
     conexion
   );
   return resultado.insertId;

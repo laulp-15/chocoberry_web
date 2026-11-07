@@ -1,12 +1,11 @@
 // src/app.js
 // Configuración de Express: middlewares globales, rutas y manejo de errores.
 // No arranca el servidor (eso lo hace server.js), lo que facilita las pruebas.
-import path from 'node:path';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import env, { rootDir } from './config/env.js';
+import env from './config/env.js';
 import routes from './routes/index.js';
 import notFound from './middlewares/notFound.js';
 import errorHandler from './middlewares/errorHandler.js';
@@ -16,13 +15,9 @@ const app = express();
 // No revelar el framework en la cabecera.
 app.disable('x-powered-by');
 
-// Cabeceras de seguridad. crossOriginResourcePolicy permite que el frontend
-// (otro origen) muestre las imágenes servidas desde /uploads.
-app.use(
-  helmet({
-    crossOriginResourcePolicy: { policy: 'cross-origin' },
-  })
-);
+// Cabeceras de seguridad. Las imágenes se sirven desde Cloudinary, no desde
+// este backend.
+app.use(helmet());
 
 // CORS: solo se permite el origen configurado en FRONTEND_URL.
 app.use(
@@ -40,9 +35,6 @@ app.use(express.urlencoded({ extended: true }));
 if (env.nodeEnv !== 'test') {
   app.use(morgan('dev'));
 }
-
-// Servir los archivos subidos (imágenes de producto, comprobantes, evidencias).
-app.use('/uploads', express.static(path.join(rootDir, 'uploads')));
 
 // Rutas de la API.
 app.use('/api', routes);

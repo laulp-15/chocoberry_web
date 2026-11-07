@@ -2,12 +2,9 @@
 // Pruebas de integración del Dashboard. Cubren permisos, reglas de ingresos
 // (incluido Cancelado), gráficas semanales/mensuales, navegación de períodos y
 // reseñas activas/inactivas.
-import fs from 'node:fs';
-import path from 'node:path';
 import request from 'supertest';
 import app from '../src/app.js';
 import { query } from '../src/config/db.js';
-import { uploadsDir } from '../src/middlewares/upload.js';
 
 const ADMIN = { correo: 'admin@chocoberry.com', contrasena: 'Admin123!' };
 const CLAVE_PRUEBA = 'Prueba123!';
@@ -55,7 +52,6 @@ describe('Módulo de dashboard', () => {
 
   const pedidosCreados = [];
   const resenasCreadas = [];
-  const archivosCreados = new Set();
   const s = Date.now().toString().slice(-7);
 
   const auth = (peticion, token = tokenAdmin) =>
@@ -113,11 +109,6 @@ describe('Módulo de dashboard', () => {
 
     expect(res.status).toBe(201);
     pedidosCreados.push(res.body.data.id);
-    for (const comprobante of res.body.data.comprobantes ?? []) {
-      if (comprobante.url) {
-        archivosCreados.add(path.join(uploadsDir, path.basename(comprobante.url)));
-      }
-    }
     return res.body.data;
   }
 
@@ -291,10 +282,6 @@ describe('Módulo de dashboard', () => {
 
     for (const id of [repartidorId, clienteId]) {
       if (id) await auth(request(app).delete(`/api/usuarios/${id}`));
-    }
-
-    for (const archivo of archivosCreados) {
-      fs.rmSync(archivo, { force: true });
     }
   });
 

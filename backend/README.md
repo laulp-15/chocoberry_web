@@ -12,7 +12,7 @@ Node.js + Express (JavaScript, ES Modules) y MySQL.
 | Base de datos | MySQL con `mysql2/promise` (pool + consultas parametrizadas) |
 | Validación | Zod |
 | Autenticación | JWT + bcrypt |
-| Utilidades | dotenv, cors, helmet, morgan, multer |
+| Utilidades | dotenv, cors, helmet, morgan, multer, Cloudinary |
 | Pruebas | Jest + Supertest |
 
 ## Requisitos
@@ -92,6 +92,31 @@ mysql -u TU_USUARIO -p chocoberry < ../database/migrations/008_resenas_ver_solo_
 La migración es repetible y solo elimina `Ver Reseñas` del rol Cliente. Los
 clientes conservan `Crear Reseñas` y la lectura pública del catálogo.
 
+Las imágenes ahora se guardan en Cloudinary y las tablas conservan el
+`public_id` necesario para borrarlas o firmar su acceso. Si tu base ya estaba
+creada, ejecuta:
+
+```bash
+mysql -u TU_USUARIO -p chocoberry < ../database/migrations/009_cloudinary_public_id.sql
+```
+
+La migración es repetible: agrega `public_id` a `imagenProducto` y
+`comprobantePago`, y `evidencia_public_id` a `pedido`, y amplía las columnas de
+URL a `VARCHAR(500)`. Las bases nuevas creadas desde `chocoberry_bd.sql` ya
+incluyen estos cambios.
+
+Después de configurar Cloudinary, migra los archivos históricos de
+`backend/uploads` con:
+
+```bash
+npm run migrar:imagenes          # simulacro: solo lista lo que haría
+npm run migrar:imagenes -- --apply
+```
+
+El script solo procesa filas con `public_id` NULL y URL `/uploads/...`; no borra
+los archivos locales. Los productos públicos se suben como `upload` y los
+comprobantes/evidencias como `authenticated`.
+
 ## Instalación
 
 ```bash
@@ -115,6 +140,13 @@ Se definen en `.env` (nunca se sube al repositorio):
 | `JWT_SECRET` | Secreto para firmar los tokens |
 | `JWT_EXPIRES_IN` | Vigencia del token (ej. `1d`) |
 | `FRONTEND_URL` | Único origen permitido por CORS |
+| `CLOUDINARY_CLOUD_NAME` | Nombre del cloud de Cloudinary |
+| `CLOUDINARY_API_KEY` | API key de Cloudinary |
+| `CLOUDINARY_API_SECRET` | API secret de Cloudinary |
+| `CLOUDINARY_SIGNED_URL_TTL` | Vigencia de URLs firmadas en segundos (`3600` por defecto) |
+
+Las variables de Cloudinary son obligatorias salvo con `NODE_ENV=test`, donde
+se usa un doble en memoria para no subir archivos reales.
 
 ## Scripts
 
@@ -125,6 +157,7 @@ npm test               # pruebas con Jest + Supertest
 npm run seed:catalogo  # carga el catálogo inicial (categorías, productos, etc.)
 npm run seed:pedidos   # crea ~49 pedidos de demostración (recientes + históricos)
 npm run seed:resenas   # crea 10 reseñas de demostración con clientes reales
+npm run migrar:imagenes # migra /uploads históricos a Cloudinary (dry-run)
 ```
 
 El seed de pedidos no escribe etiquetas visibles en los pedidos. Guarda los IDs
@@ -257,10 +290,12 @@ Base: `/api`
 > **Imágenes del producto:** cada producto debe tener entre 1 y 4 imágenes.
 >
 > - **Archivos nuevos:** `Content-Type: multipart/form-data`, campo `imagenes`
->   (hasta 4 archivos PNG, JPG o WEBP, máx. 5 MB cada uno). Se guardan en
->   `backend/uploads` y se sirven como estáticos en `GET /uploads/<archivo>`.
+>   (hasta 4 archivos PNG, JPG o WEBP, máx. 5 MB cada uno). Se suben a
+>   Cloudinary en la carpeta `chocoberry/productos` y se devuelven como URLs
+>   públicas. Ya no se usa `GET /uploads/<archivo>`.
 > - **Rutas existentes:** `imagenesUrl` como arreglo JSON de rutas o URLs
->   (también se acepta el JSON como texto).
+>   (también se acepta el JSON como texto). Las rutas antiguas `/img/...` se
+>   conservan tal cual.
 > - **Orden:** la respuesta incluye `imagen` (portada, por compatibilidad) e
 >   `imagenes: [{ id, url, orden }]`; `orden = 1` es la portada. Al editar,
 >   `ordenImagenes` define la lista final: cada elemento es una URL existente o
@@ -381,7 +416,9 @@ Base: `/api`
 > **Evidencia de entrega:** solo el rol **Repartidor** puede registrarla o
 > actualizarla. Se envía como archivo en el campo `evidencia` y solo se permite
 > con el pedido **Despachado** o **Entregado**; registrarla no cambia el estado.
-> Si el pedido aún no tiene evidencia, la foto es obligatoria.
+> Si el pedido aún no tiene evidencia, la foto es obligatoria. La imagen se
+> guarda como `authenticated` en `chocoberry/evidencias` y se devuelve mediante
+> una URL firmada temporal (`CLOUDINARY_SIGNED_URL_TTL`).
 
 ### Comprobantes de pago (`/api/comprobantes`)
 
@@ -399,7 +436,9 @@ Base: `/api`
 > pedidos y el comprobante queda `Pendiente`; admin/staff puede hacerlo sobre
 > cualquier pedido y queda `Aprobado` automáticamente por el saldo pendiente. El
 > cliente puede eliminar los suyos mientras sigan `Pendiente`. Un comprobante
-> `Rechazado` no cuenta para el límite y queda como historial.
+> `Rechazado` no cuenta para el límite y queda como historial. Las imágenes se
+> guardan como `authenticated` en `chocoberry/comprobantes`; la API devuelve una
+> URL firmada temporal en `url` y nunca expone el `public_id`.
 
 > **Aprobación y saldo:** aprobar exige que el **monto verificado** coincida
 > exactamente con el saldo pendiente; no se permiten abonos parciales ni

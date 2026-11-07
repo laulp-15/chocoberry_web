@@ -18,8 +18,12 @@ const toBool = (value, defaultValue = false) => {
 };
 
 // Variables obligatorias: si falta alguna, es mejor fallar al arrancar que
-// descubrir el problema en la primera petición.
+// descubrir el problema en la primera petición. En pruebas se omite Cloudinary
+// porque el almacenamiento se reemplaza por un doble en memoria.
 const required = ['DB_HOST', 'DB_PORT', 'DB_USER', 'DB_NAME', 'JWT_SECRET', 'FRONTEND_URL'];
+if (process.env.NODE_ENV !== 'test') {
+  required.push('CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET');
+}
 const missing = required.filter((key) => !process.env[key]);
 
 if (missing.length > 0) {
@@ -51,6 +55,12 @@ export const env = {
     user: process.env.MAIL_USER || '',
     pass: process.env.MAIL_PASS || '',
     from: process.env.MAIL_FROM || process.env.MAIL_USER || '',
+  },
+  cloudinary: {
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME || '',
+    apiKey: process.env.CLOUDINARY_API_KEY || '',
+    apiSecret: process.env.CLOUDINARY_API_SECRET || '',
+    signedUrlTtlSeconds: Number(process.env.CLOUDINARY_SIGNED_URL_TTL) || 3600,
   },
 };
 
