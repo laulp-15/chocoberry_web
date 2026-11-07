@@ -144,7 +144,7 @@ export default function Footer() {
               </li>
               <li>
                 <i className="fa-solid fa-phone" />
-                <span>+57 316 499 862</span>
+                <span>+57 316 499 8627</span>
               </li>
             </ul>
           </FooterSection>

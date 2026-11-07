@@ -3,26 +3,15 @@
 // archivo multipart en el campo "comprobante".
 import * as comprobanteService from '../services/comprobante.service.js';
 import * as pedidoService from '../services/pedido.service.js';
-import { rutaArchivoSubido } from '../middlewares/upload.js';
-import { eliminarArchivoSubido } from '../utils/archivos.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { sendCreated, sendSuccess } from '../utils/response.js';
 
 export const agregar = asyncHandler(async (req, res) => {
-  const ruta = rutaArchivoSubido(req);
-  let idPedido;
-
-  try {
-    idPedido = await comprobanteService.agregar(
-      req.validado.params.id,
-      ruta,
-      req.usuario
-    );
-  } catch (error) {
-    // Si el service rechaza la solicitud, no dejamos el archivo huérfano.
-    await eliminarArchivoSubido(ruta);
-    throw error;
-  }
+  const idPedido = await comprobanteService.agregar(
+    req.validado.params.id,
+    req.file,
+    req.usuario
+  );
 
   const pedido = await pedidoService.obtener(idPedido, req.usuario);
   return sendCreated(res, pedido, 'Comprobante de pago agregado exitosamente.');

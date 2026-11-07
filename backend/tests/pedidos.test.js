@@ -4,13 +4,9 @@
 // transiciones de estado, alcance por rol y datos maestros públicos.
 //
 // Las pruebas crean usuarios y pedidos temporales y los eliminan al final.
-// También borran los archivos subidos durante la corrida.
-import fs from 'node:fs';
-import path from 'node:path';
 import request from 'supertest';
 import app from '../src/app.js';
 import { query } from '../src/config/db.js';
-import { uploadsDir } from '../src/middlewares/upload.js';
 
 const ADMIN = { correo: 'admin@chocoberry.com', contrasena: 'Admin123!' };
 const CLAVE_PRUEBA = 'Prueba123!';
@@ -36,7 +32,6 @@ describe('Módulo de pedidos', () => {
   let color;
 
   const pedidosCreados = [];
-  const archivosPrevios = new Set(fs.readdirSync(uploadsDir));
   const s = Date.now().toString().slice(-7);
 
   const auth = (peticion, token = tokenAdmin) =>
@@ -223,13 +218,6 @@ describe('Módulo de pedidos', () => {
     for (const id of [repartidorId, otroClienteId, clienteId]) {
       if (id) await auth(request(app).delete(`/api/usuarios/${id}`));
     }
-
-    // Archivos subidos durante la corrida (comprobantes y evidencias).
-    for (const archivo of fs.readdirSync(uploadsDir)) {
-      if (!archivosPrevios.has(archivo)) {
-        fs.rmSync(path.join(uploadsDir, archivo), { force: true });
-      }
-    }
   });
 
   describe('Datos maestros públicos', () => {
@@ -296,7 +284,7 @@ describe('Módulo de pedidos', () => {
       expect(pedido.municipio.id).toBe(municipio.id);
       expect(pedido.fechaEntrega).toBe('2026-12-24');
       expect(pedido.comprobantes).toHaveLength(1);
-      expect(pedido.comprobantes[0].url).toMatch(/^\/uploads\//);
+      expect(pedido.comprobantes[0].url).toMatch(/^https:\/\/res\.cloudinary\.com\/test\//);
       expect(pedido.comprobantes[0].estado.nombre).toBe('Pendiente');
       expect(pedido.comprobantes[0].monto).toBeNull();
       expect(pedido.totalPagado).toBe(0);
@@ -575,7 +563,7 @@ describe('Módulo de pedidos', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.data.estado.nombre).toBe('Despachado');
-      expect(res.body.data.evidenciaEntrega).toMatch(/^\/uploads\//);
+      expect(res.body.data.evidenciaEntrega).toMatch(/^https:\/\/res\.cloudinary\.com\/test\//);
       expect(res.body.data.observacionesEntrega).toBe('Entregado al portero');
     });
 

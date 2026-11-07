@@ -1,8 +1,7 @@
 // src/controllers/pedido.controller.js
 // Manejo de request/response del módulo de pedidos. El comprobante y la
-// evidencia llegan como archivos (multipart) y aquí se resuelve su ruta.
+// evidencia llegan como archivos (multipart) y se suben desde el service.
 import * as pedidoService from '../services/pedido.service.js';
-import { rutaArchivoSubido } from '../middlewares/upload.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { sendCreated, sendSuccess } from '../utils/response.js';
 
@@ -34,7 +33,7 @@ export const crear = asyncHandler(async (req, res) => {
   const pedido = await pedidoService.crear(
     req.validado.body,
     req.usuario,
-    rutaArchivoSubido(req)
+    req.file
   );
   return sendCreated(res, pedido, 'Pedido creado exitosamente.');
 });
@@ -74,7 +73,7 @@ export const registrarEntrega = asyncHandler(async (req, res) => {
   const pedido = await pedidoService.registrarEntrega(
     req.validado.params.id,
     req.validado.body,
-    rutaArchivoSubido(req),
+    req.file,
     req.usuario
   );
   return sendSuccess(res, pedido, 'Evidencia de entrega registrada exitosamente.');

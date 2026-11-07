@@ -13,6 +13,7 @@
     "seed:catalogo": "node scripts/seed-catalogo.mjs",
     "seed:pedidos": "node scripts/seed-pedidos.mjs",
     "seed:resenas": "node scripts/seed-resenas.mjs",
+    "migrar:imagenes": "node scripts/migrar-imagenes-cloudinary.mjs",
     "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest",
     "test:watch": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --watch",
     "test:coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --coverage"
@@ -26,6 +27,7 @@
   "license": "MIT",
   "dependencies": {
     "bcryptjs": "^3.0.2",
+    "cloudinary": "^2.11.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",

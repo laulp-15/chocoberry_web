@@ -18,7 +18,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pool, query } from '../src/config/db.js';
-import { uploadsDir } from '../src/middlewares/upload.js';
 import * as colorGlaseadoModel from '../src/models/colorGlaseado.model.js';
 import * as municipioModel from '../src/models/municipio.model.js';
 import * as presentacionModel from '../src/models/presentacion.model.js';
@@ -29,10 +28,6 @@ import * as pedidoService from '../src/services/pedido.service.js';
 const DIR_SCRIPT = path.dirname(fileURLToPath(import.meta.url));
 const MANIFIESTO_ARCHIVO = path.join(DIR_SCRIPT, '.seed-pedidos.json');
 const PATRON_LEGACY = /\[SEED-\d{2}\]/;
-
-// `pedidoService.crear` exige un comprobante. El seed no genera archivos: usa
-// una ruta ficticia y después elimina el registro del comprobante.
-const COMPROBANTE_DUMMY = '/uploads/seed-sin-comprobante.svg';
 
 // Catálogos resueltos por correo/nombre/cantidad, no por IDs.
 // Los pedidos están ordenados de más reciente a más antiguo.
@@ -527,15 +522,6 @@ function borrarManifiesto() {
   if (fs.existsSync(MANIFIESTO_ARCHIVO)) fs.unlinkSync(MANIFIESTO_ARCHIVO);
 }
 
-function borrarArchivoSubido(ruta) {
-  if (!ruta || !ruta.startsWith('/uploads/')) return;
-  const archivo = path.join(uploadsDir, ruta.slice('/uploads/'.length));
-  if (fs.existsSync(archivo)) {
-    fs.unlinkSync(archivo);
-    console.log(`[reset] Archivo eliminado: ${ruta}`);
-  }
-}
-
 function coincideManifiesto(pedido, item) {
   if (pedido.cliente?.id !== item.clienteId) return false;
   const fechaPedido = formatearFechaHora(pedido.fecha);
@@ -639,7 +625,6 @@ async function main() {
     for (const pedido of legacy) {
       await eliminarPedido(pedido, 'lote anterior con etiqueta');
     }
-    borrarArchivoSubido('/uploads/seed-comprobante.svg');
   }
 
   const manifiesto = leerManifiesto();
@@ -670,9 +655,6 @@ async function main() {
   } else if (!reiniciar) {
     console.log('[info] No hay manifiesto; se creará un lote nuevo.');
   }
-
-  borrarArchivoSubido('/uploads/seed-comprobante.svg');
-  borrarArchivoSubido('/uploads/comprobante-pago.svg');
 
   const nuevoManifiesto = {
     version: 1,
@@ -741,14 +723,10 @@ async function main() {
 
     let pedidoCreado;
     try {
-      pedidoCreado = await pedidoService.crear(datos, admin, COMPROBANTE_DUMMY);
+      pedidoCreado = await pedidoService.crear(datos, admin, null);
       await aplicarEstado(pedidoCreado.id, definicion.estado, definicion.motivoRechazo);
 
-      // El seed no genera archivos: se elimina el comprobante ficticio que exige
-      // la creación. La cancelación se ancla a la fecha histórica, no al seed.
-      await query('DELETE FROM comprobantePago WHERE id_pedido = ?', [
-        pedidoCreado.id,
-      ]);
+      // La cancelación se ancla a la fecha histórica, no al seed.
       await query(
         `UPDATE pedido
             SET fecha = ?,

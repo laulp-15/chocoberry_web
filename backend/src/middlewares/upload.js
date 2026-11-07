@@ -1,37 +1,16 @@
 // src/middlewares/upload.js
-// Subida de archivos con multer. Los archivos se guardan en /backend/uploads y
-// se sirven como estáticos desde app.js (GET /uploads/<archivo>).
-import fs from 'node:fs';
-import path from 'node:path';
+// Subida de archivos con multer en memoria. El buffer se valida por su firma
+// real y los services lo envían a Cloudinary; no se escribe nada en disco.
 import multer from 'multer';
-import { rootDir } from '../config/env.js';
 import { BadRequestError } from '../errors/index.js';
 
-// Carpeta destino (coincide con el estático declarado en app.js).
-export const uploadsDir = path.join(rootDir, 'uploads');
-fs.mkdirSync(uploadsDir, { recursive: true });
-
-// Tipos permitidos y su extensión. La extensión se deriva del tipo MIME, nunca
-// del nombre que envía el cliente (así no se puede "colar" una ruta o un .php).
-const TIPOS_PERMITIDOS = {
-  'image/png': '.png',
-  'image/jpeg': '.jpg',
-  'image/webp': '.webp',
-};
-
+const TIPOS_PERMITIDOS = new Set(['image/png', 'image/jpeg', 'image/webp']);
 const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadsDir),
-  filename: (req, file, cb) => {
-    const extension = TIPOS_PERMITIDOS[file.mimetype] ?? '';
-    const unico = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    cb(null, `${unico}${extension}`);
-  },
-});
+const storage = multer.memoryStorage();
 
 function fileFilter(req, file, cb) {
-  if (!TIPOS_PERMITIDOS[file.mimetype]) {
+  if (!TIPOS_PERMITIDOS.has(file.mimetype)) {
     return cb(new BadRequestError('Formato de imagen no permitido. Usa PNG, JPG o WEBP.'));
   }
   return cb(null, true);
@@ -72,18 +51,3 @@ export const subirComprobante = subirArchivo('comprobante');
 
 /** Evidencia fotográfica de la entrega (campo "evidencia"). */
 export const subirEvidencia = subirArchivo('evidencia');
-
-/** Ruta pública ("/uploads/archivo.png") de un archivo de multer. */
-export function rutaDeArchivo(file) {
-  return file ? `/uploads/${file.filename}` : undefined;
-}
-
-/** Ruta pública ("/uploads/archivo.png") del archivo subido, si vino alguno. */
-export function rutaArchivoSubido(req) {
-  return rutaDeArchivo(req.file);
-}
-
-/** Alias histórico para la imagen del producto. */
-export function rutaImagenSubida(req) {
-  return rutaArchivoSubido(req);
-}

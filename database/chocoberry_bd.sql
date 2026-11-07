@@ -103,7 +103,8 @@ CREATE TABLE producto (
 CREATE TABLE imagenProducto (
     id INT AUTO_INCREMENT PRIMARY KEY,
     id_producto INT NOT NULL,
-    url VARCHAR(255) NOT NULL,
+    url VARCHAR(500) NOT NULL,
+    public_id VARCHAR(255) NULL,
     orden INT NOT NULL,
     CONSTRAINT fk_imagenProducto_producto
         FOREIGN KEY (id_producto) REFERENCES producto(id)
@@ -159,7 +160,8 @@ CREATE TABLE pedido (
     -- Entregas
     instrucciones_entrega VARCHAR(255),
     observaciones_entrega VARCHAR(255),
-    evidencia_entrega VARCHAR(255),
+    evidencia_entrega VARCHAR(500),
+    evidencia_public_id VARCHAR(255) NULL,
     id_usuario INT NOT NULL,
     id_estado INT NOT NULL,
     id_municipio INT NOT NULL,
@@ -196,7 +198,8 @@ CREATE TABLE productoPedido (
 
 CREATE TABLE comprobantePago (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    url VARCHAR(255) NOT NULL,
+    url VARCHAR(500) NOT NULL,
+    public_id VARCHAR(255) NULL,
     monto DECIMAL(10,2),
     fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     motivo_rechazo VARCHAR(255),

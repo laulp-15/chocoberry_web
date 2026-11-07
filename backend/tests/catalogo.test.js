@@ -219,7 +219,7 @@ describe('Módulo de catálogo (categorías, productos y presentaciones)', () =>
 
       expect(res.status).toBe(201);
       expect(res.body.data.imagenes).toHaveLength(1);
-      expect(res.body.data.imagenes[0].url).toMatch(/^\/uploads\//);
+      expect(res.body.data.imagenes[0].url).toMatch(/^https:\/\/res\.cloudinary\.com\/test\//);
       productoArchivoId = res.body.data.id;
     });
 
@@ -242,7 +242,7 @@ describe('Módulo de catálogo (categorías, productos y presentaciones)', () =>
       expect(res.status).toBe(200);
       expect(res.body.data.imagenes).toHaveLength(2);
       expect(res.body.data.imagenes[0].url).toBe(IMAGENES_PRODUCTO[0]);
-      expect(res.body.data.imagenes[1].url).toMatch(/^\/uploads\//);
+      expect(res.body.data.imagenes[1].url).toMatch(/^https:\/\/res\.cloudinary\.com\/test\//);
       expect(res.body.data.imagen).toBe(IMAGENES_PRODUCTO[0]);
     });
 

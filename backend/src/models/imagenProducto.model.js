@@ -4,7 +4,7 @@
 // capitalización del script SQL.
 import { query } from '../config/db.js';
 
-const SELECT_BASE = `SELECT id, id_producto, url, orden
+const SELECT_BASE = `SELECT id, id_producto, url, public_id, orden
                        FROM imagenProducto`;
 
 export async function listarPorProducto(idProducto) {
@@ -31,8 +31,8 @@ export async function reemplazar(conexion, idProducto, imagenes = []) {
 
   for (const [indice, imagen] of imagenes.entries()) {
     await conexion.execute(
-      'INSERT INTO imagenProducto (id_producto, url, orden) VALUES (?, ?, ?)',
-      [idProducto, imagen.url, indice + 1]
+      'INSERT INTO imagenProducto (id_producto, url, public_id, orden) VALUES (?, ?, ?, ?)',
+      [idProducto, imagen.url, imagen.public_id ?? null, indice + 1]
     );
   }
 }

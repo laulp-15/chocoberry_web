@@ -19,7 +19,11 @@ const CAMPOS_ACTUALIZABLES = [
 ];
 
 // Columnas que gestiona el repartidor (evidencia de entrega).
-const CAMPOS_ENTREGA = ['observaciones_entrega', 'evidencia_entrega'];
+const CAMPOS_ENTREGA = [
+  'observaciones_entrega',
+  'evidencia_entrega',
+  'evidencia_public_id',
+];
 
 const SELECT_BASE = `SELECT p.*, e.nombre AS estado, m.nombre AS municipio,
                             u.nombres, u.apellidos, u.correo, u.telefono,
@@ -134,6 +138,7 @@ export async function crearConLineas({ pedido, lineas, comprobante }) {
     if (comprobante) {
       await comprobantePagoModel.crear(conexion, {
         url: comprobante.url,
+        publicId: comprobante.public_id ?? null,
         idPedido,
         idEstado: comprobante.id_estado,
         monto: comprobante.monto ?? null,
