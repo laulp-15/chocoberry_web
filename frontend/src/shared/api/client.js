@@ -95,10 +95,81 @@ async function request(path, { method = "GET", body, auth = true, headers } = {}
   return parsed?.data ?? null;
 }
 
+function obtenerNombreArchivo(header, fallback) {
+  if (!header) return fallback;
+
+  const utf8 = header.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8) {
+    try {
+      return decodeURIComponent(utf8[1].replace(/["']/g, "").trim());
+    } catch {
+      return fallback;
+    }
+  }
+
+  const simple = header.match(/filename="?([^";]+)"?/i);
+  return simple ? simple[1].trim() : fallback;
+}
+
+/**
+ * Descarga un archivo binario (PDF/Excel) manteniendo el token y los errores
+ * uniformes del backend. Devuelve el nombre usado para la descarga.
+ */
+async function download(path, { fallbackName = "reporte" } = {}) {
+  const headers = { Accept: "*/*" };
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  let response;
+  try {
+    response = await fetch(`${API_URL}${path}`, { method: "GET", headers });
+  } catch {
+    throw new ApiError(
+      "No se pudo conectar con el servidor. Verifica tu conexión e inténtalo de nuevo.",
+      { status: 0, code: "NETWORK_ERROR" }
+    );
+  }
+
+  if (!response.ok) {
+    const text = await response.text();
+    let parsed = null;
+    if (text) {
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        parsed = null;
+      }
+    }
+    throw new ApiError(construirMensaje(parsed, response.status), {
+      status: response.status,
+      code: parsed?.code ?? null,
+      errors: parsed?.errors ?? null,
+      data: parsed?.data ?? null,
+    });
+  }
+
+  const blob = await response.blob();
+  const filename = obtenerNombreArchivo(
+    response.headers.get("Content-Disposition"),
+    fallbackName
+  );
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+
+  return filename;
+}
+
 export const api = {
   get: (path, options) => request(path, { ...options, method: "GET" }),
   post: (path, body, options) => request(path, { ...options, method: "POST", body }),
   put: (path, body, options) => request(path, { ...options, method: "PUT", body }),
   patch: (path, body, options) => request(path, { ...options, method: "PATCH", body }),
   del: (path, options) => request(path, { ...options, method: "DELETE" }),
+  download,
 };

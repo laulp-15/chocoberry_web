@@ -15,3 +15,12 @@ export function sendCreated(res, data = null, message = 'Recurso creado exitosam
 export function sendNoData(res, message = 'Operación realizada exitosamente.') {
   return res.status(200).json({ success: true, message, data: null });
 }
+
+/** Envía un archivo generado en memoria como descarga. */
+export function sendArchivo(res, { buffer, filename, contentType }) {
+  res.setHeader('Content-Type', contentType);
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.setHeader('Content-Length', buffer.length);
+  res.setHeader('Cache-Control', 'no-store');
+  return res.status(200).send(buffer);
+}

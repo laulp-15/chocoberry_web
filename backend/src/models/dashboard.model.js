@@ -18,7 +18,9 @@ function filtroEstados(estados) {
  * Totales de ingresos por día o por mes. Se agrupa primero por pedido para
  * sumar el domicilio una sola vez, aunque el pedido tenga varias líneas.
  */
-async function ingresosAgrupados({ desde, hastaExclusiva, estados, formato }) {
+async function ingresosAgrupados({ desde, hastaExclusiva, estados, formato, idCategoria }) {
+  const filtroCategoria = idCategoria ? ' AND pr.id_categoria = ?' : '';
+  const joinProducto = idCategoria ? 'JOIN producto pr ON pr.id = pp.id_producto' : '';
   const sql = `
     SELECT DATE_FORMAT(x.fecha, '${formato}') AS periodo,
            SUM(x.total) AS total,
@@ -29,27 +31,32 @@ async function ingresosAgrupados({ desde, hastaExclusiva, estados, formato }) {
           FROM pedido p
           JOIN estadosPedido e ON e.id = p.id_estado
           JOIN productoPedido pp ON pp.id_pedido = p.id
+          ${joinProducto}
          WHERE ${filtroEstados(estados)}
            AND p.fecha >= ?
-           AND p.fecha < ?
+           AND p.fecha < ?${filtroCategoria}
          GROUP BY p.id, p.fecha, p.precio_domicilio
       ) x
      GROUP BY DATE_FORMAT(x.fecha, '${formato}')
      ORDER BY periodo ASC`;
 
-  return query(sql, [...estados, desde, hastaExclusiva]);
+  const params = [...estados, desde, hastaExclusiva];
+  if (idCategoria) params.push(idCategoria);
+  return query(sql, params);
 }
 
-export async function ingresosPorDia({ desde, hastaExclusiva, estados }) {
-  return ingresosAgrupados({ desde, hastaExclusiva, estados, formato: '%Y-%m-%d' });
+export async function ingresosPorDia({ desde, hastaExclusiva, estados, idCategoria }) {
+  return ingresosAgrupados({ desde, hastaExclusiva, estados, formato: '%Y-%m-%d', idCategoria });
 }
 
-export async function ingresosPorMes({ desde, hastaExclusiva, estados }) {
-  return ingresosAgrupados({ desde, hastaExclusiva, estados, formato: '%Y-%m' });
+export async function ingresosPorMes({ desde, hastaExclusiva, estados, idCategoria }) {
+  return ingresosAgrupados({ desde, hastaExclusiva, estados, formato: '%Y-%m', idCategoria });
 }
 
 /** Total y cantidad de pedidos vendidos en un rango. */
-export async function ingresosTotales({ desde, hastaExclusiva, estados }) {
+export async function ingresosTotales({ desde, hastaExclusiva, estados, idCategoria }) {
+  const filtroCategoria = idCategoria ? ' AND pr.id_categoria = ?' : '';
+  const joinProducto = idCategoria ? 'JOIN producto pr ON pr.id = pp.id_producto' : '';
   const sql = `
     SELECT COALESCE(SUM(x.total), 0) AS total,
            COUNT(*) AS pedidos
@@ -58,20 +65,37 @@ export async function ingresosTotales({ desde, hastaExclusiva, estados }) {
           FROM pedido p
           JOIN estadosPedido e ON e.id = p.id_estado
           JOIN productoPedido pp ON pp.id_pedido = p.id
+          ${joinProducto}
          WHERE ${filtroEstados(estados)}
            AND p.fecha >= ?
-           AND p.fecha < ?
+           AND p.fecha < ?${filtroCategoria}
          GROUP BY p.id, p.precio_domicilio
       ) x`;
 
-  const filas = await query(sql, [...estados, desde, hastaExclusiva]);
+  const params = [...estados, desde, hastaExclusiva];
+  if (idCategoria) params.push(idCategoria);
+  const filas = await query(sql, params);
   return filas[0] ?? { total: 0, pedidos: 0 };
 }
 
-/** Ranking histórico de productos por unidades vendidas. */
-export async function topProductos({ estados, limite = 5, soloActivos = false }) {
+/**
+ * Ranking de productos por unidades vendidas. Sin rango es histórico; con
+ * `desde`/`hastaExclusiva` queda limitado al periodo y, opcionalmente, a una
+ * categoría.
+ */
+export async function topProductos({
+  estados,
+  limite = 5,
+  soloActivos = false,
+  idCategoria,
+  desde,
+  hastaExclusiva,
+}) {
   const limiteSeguro = Math.min(Math.max(Number(limite) || 5, 1), 50);
   const filtroActivo = soloActivos ? ' AND pr.estado = 1' : '';
+  const filtroCategoria = idCategoria ? ' AND pr.id_categoria = ?' : '';
+  const filtroFecha =
+    desde && hastaExclusiva ? ' AND p.fecha >= ? AND p.fecha < ?' : '';
   const sql = `
     SELECT pr.id, pr.nombre,
            SUM(pp.cantidad_productos) AS unidades,
@@ -80,12 +104,15 @@ export async function topProductos({ estados, limite = 5, soloActivos = false })
       JOIN pedido p ON p.id = pp.id_pedido
       JOIN estadosPedido e ON e.id = p.id_estado
       JOIN producto pr ON pr.id = pp.id_producto
-     WHERE ${filtroEstados(estados)}${filtroActivo}
+     WHERE ${filtroEstados(estados)}${filtroActivo}${filtroCategoria}${filtroFecha}
      GROUP BY pr.id, pr.nombre
      ORDER BY unidades DESC, ingresos DESC, pr.nombre ASC
      LIMIT ${limiteSeguro}`;
 
-  return query(sql, estados);
+  const params = [...estados];
+  if (idCategoria) params.push(idCategoria);
+  if (filtroFecha) params.push(desde, hastaExclusiva);
+  return query(sql, params);
 }
 
 /** Pedidos actuales agrupados por estado, incluyendo estados sin pedidos. */
@@ -137,4 +164,14 @@ export async function obtenerRangoPedidos() {
 
   const filas = await query(sql);
   return filas[0] ?? { primer_pedido: null, ultimo_pedido: null };
+}
+
+/** Años con actividad, para limitar el selector y las flechas del Dashboard. */
+export async function aniosConPedidos() {
+  const sql = `
+    SELECT DISTINCT YEAR(fecha) AS anio
+      FROM pedido
+     ORDER BY anio ASC`;
+
+  return query(sql);
 }

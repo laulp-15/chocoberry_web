@@ -18,4 +18,18 @@ router.get(
   dashboardController.resumen
 );
 
+router.get(
+  '/exportar/pdf',
+  checkPermiso('Dashboard', 'Exportar reporte'),
+  validar(filtrosDashboardSchema, 'query'),
+  dashboardController.exportarPdf
+);
+
+router.get(
+  '/exportar/excel',
+  checkPermiso('Dashboard', 'Exportar reporte'),
+  validar(filtrosDashboardSchema, 'query'),
+  dashboardController.exportarExcel
+);
+
 export default router;

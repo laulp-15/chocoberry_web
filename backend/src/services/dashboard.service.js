@@ -1,8 +1,9 @@
 // src/services/dashboard.service.js
-// Reglas de negocio del Dashboard. Los KPIs son una foto actual del negocio
-// (pendientes, entregados, ingresos del mes y producto más vendido); los
-// parámetros `semana` y `mes` mueven las gráficas de ventas para que el
-// frontend pueda navegar a períodos anteriores.
+// Reglas de negocio del Dashboard. El período mensual (`mes`) gobierna los
+// ingresos del mes, el producto más vendido, el top y las gráficas de semanas
+// y meses. Los pedidos pendientes/entregados y los demás agregados siguen
+// siendo una foto global del negocio.
+import { NotFoundError } from '../errors/index.js';
 import { ESTADOS_VENTA } from './venta.service.js';
 import * as dashboardModel from '../models/dashboard.model.js';
 import { redondear2 } from '../utils/number.js';
@@ -13,7 +14,6 @@ import {
   formatearMes,
   inicioMes,
   inicioSemana,
-  parseFecha,
   parseMes,
   sumarDias,
   sumarMeses,
@@ -63,40 +63,95 @@ function serializarCalificaciones(fila) {
   };
 }
 
+function formatearDiaMes(fecha) {
+  return `${String(fecha.getUTCDate()).padStart(2, '0')}/${String(
+    fecha.getUTCMonth() + 1
+  ).padStart(2, '0')}`;
+}
+
+function rangoCorto(desde, hasta) {
+  if (formatearFecha(desde) === formatearFecha(hasta)) {
+    return formatearDiaMes(desde);
+  }
+  return `${formatearDiaMes(desde)} – ${formatearDiaMes(hasta)}`;
+}
+
+/**
+ * Agrupa los días del mes en semanas de lunes a domingo. La primera y la
+ * última semana se recortan al mes: nunca se agregan días externos.
+ */
+function construirSemanasMes(mesInicio, filasDias) {
+  const porDia = new Map(filasDias.map((fila) => [fila.periodo, fila]));
+  const grupos = new Map();
+  const finExclusivo = sumarMeses(mesInicio, 1);
+
+  for (let fecha = mesInicio; fecha < finExclusivo; fecha = sumarDias(fecha, 1)) {
+    const claveSemana = formatearFecha(inicioSemana(fecha));
+    let grupo = grupos.get(claveSemana);
+
+    if (!grupo) {
+      grupo = { desde: fecha, hasta: fecha, dias: [] };
+      grupos.set(claveSemana, grupo);
+    }
+
+    grupo.hasta = fecha;
+    const claveDia = formatearFecha(fecha);
+    const fila = porDia.get(claveDia);
+
+    grupo.dias.push({
+      fecha: claveDia,
+      dia: DIAS_SEMANA[(fecha.getUTCDay() + 6) % 7],
+      total: redondear2(numero(fila?.total)),
+      pedidos: numero(fila?.pedidos),
+    });
+  }
+
+  return Array.from(grupos.values()).map((grupo, indice) => ({
+    semana: indice + 1,
+    label: `Semana ${indice + 1}`,
+    rango: rangoCorto(grupo.desde, grupo.hasta),
+    desde: formatearFecha(grupo.desde),
+    hasta: formatearFecha(grupo.hasta),
+    total: redondear2(grupo.dias.reduce((total, dia) => total + dia.total, 0)),
+    pedidos: grupo.dias.reduce((total, dia) => total + dia.pedidos, 0),
+    dias: grupo.dias,
+  }));
+}
+
+function anioAnteriorDisponible(anios, anio) {
+  const anteriores = anios.filter((valor) => valor < anio);
+  return anteriores.length ? Math.max(...anteriores) : null;
+}
+
+function anioSiguienteDisponible(anios, anio, anioActual) {
+  const siguientes = anios.filter((valor) => valor > anio && valor <= anioActual);
+  return siguientes.length ? Math.min(...siguientes) : null;
+}
+
 export async function obtenerResumen(filtros = {}) {
   const hoy = fechaActualLocal();
-  const semanaActualInicio = inicioSemana(hoy);
+  const anioActual = hoy.getUTCFullYear();
   const mesActualInicio = inicioMes(hoy);
-
-  const semanaReferencia = parseFecha(filtros.semana) ?? hoy;
   const mesReferencia = parseMes(filtros.mes) ?? mesActualInicio;
+  const mesInicio = inicioMes(mesReferencia);
+  const mesFinExclusivo = sumarMeses(mesInicio, 1);
+  const anio = mesInicio.getUTCFullYear();
+  const anioInicio = new Date(Date.UTC(anio, 0, 1));
+  const anioFinExclusivo = new Date(Date.UTC(anio + 1, 0, 1));
 
-  const semanaDesde = inicioSemana(semanaReferencia);
-  const semanaHasta = sumarDias(semanaDesde, 6);
-  const siguienteSemana = sumarDias(semanaDesde, 7);
-  const semanaEsActual = formatearFecha(semanaDesde) === formatearFecha(semanaActualInicio);
-
-  const mesDesde = sumarMeses(mesReferencia, -11);
-  const mesHasta = mesReferencia;
-  const siguienteMes = sumarMeses(mesReferencia, 12);
-  const siguienteSemanaPermitida =
-    siguienteSemana <= semanaActualInicio ? formatearFecha(siguienteSemana) : null;
-  const siguienteMesPermitido =
-    siguienteMes <= mesActualInicio ? formatearMes(siguienteMes) : null;
-
-  const rangoMesActual = {
-    desde: fechaHora(mesActualInicio),
-    hastaExclusiva: fechaHora(sumarMeses(mesActualInicio, 1)),
+  const rangoMesSeleccionado = {
+    desde: fechaHora(mesInicio),
+    hastaExclusiva: fechaHora(mesFinExclusivo),
     estados: ESTADOS_VENTA,
   };
   const rangoMesAnterior = {
-    desde: fechaHora(sumarMeses(mesActualInicio, -1)),
-    hastaExclusiva: fechaHora(mesActualInicio),
+    desde: fechaHora(sumarMeses(mesInicio, -1)),
+    hastaExclusiva: fechaHora(mesInicio),
     estados: ESTADOS_VENTA,
   };
 
   const [
-    filasSemana,
+    filasDiasMes,
     filasMes,
     filasEstado,
     filasMunicipio,
@@ -105,51 +160,52 @@ export async function obtenerResumen(filtros = {}) {
     filaRango,
     ingresosMes,
     ingresosMesAnterior,
+    filasAnios,
   ] = await Promise.all([
     dashboardModel.ingresosPorDia({
-      desde: fechaHora(semanaDesde),
-      hastaExclusiva: fechaHora(sumarDias(semanaHasta, 1)),
+      desde: fechaHora(mesInicio),
+      hastaExclusiva: fechaHora(mesFinExclusivo),
       estados: ESTADOS_VENTA,
     }),
     dashboardModel.ingresosPorMes({
-      desde: fechaHora(mesDesde),
-      hastaExclusiva: fechaHora(sumarMeses(mesHasta, 1)),
+      desde: fechaHora(anioInicio),
+      hastaExclusiva: fechaHora(anioFinExclusivo),
       estados: ESTADOS_VENTA,
     }),
     dashboardModel.contarPedidosPorEstado(),
     dashboardModel.contarPedidosPorMunicipio(),
     dashboardModel.resumenResenas(),
-    dashboardModel.topProductos({ estados: ESTADOS_VENTA, limite: 5 }),
+    dashboardModel.topProductos({
+      estados: ESTADOS_VENTA,
+      limite: 5,
+      desde: fechaHora(mesInicio),
+      hastaExclusiva: fechaHora(mesFinExclusivo),
+    }),
     dashboardModel.obtenerRangoPedidos(),
-    dashboardModel.ingresosTotales(rangoMesActual),
+    dashboardModel.ingresosTotales(rangoMesSeleccionado),
     dashboardModel.ingresosTotales(rangoMesAnterior),
+    dashboardModel.aniosConPedidos(),
   ]);
 
-  const porDia = new Map(filasSemana.map((fila) => [fila.periodo, fila]));
   const porMes = new Map(filasMes.map((fila) => [fila.periodo, fila]));
+  const aniosDisponibles = [
+    ...new Set(
+      filasAnios
+        .map((fila) => numero(fila.anio))
+        .filter((valor) => valor > 0 && valor <= anioActual)
+    ),
+  ].sort((a, b) => a - b);
 
-  const ventasSemana = Array.from({ length: 7 }, (_, indice) => {
-    const fecha = sumarDias(semanaDesde, indice);
-    const clave = formatearFecha(fecha);
-    const fila = porDia.get(clave);
-    const esFuturo = semanaEsActual && fecha > hoy;
-
-    return {
-      dia: DIAS_SEMANA[indice],
-      fecha: clave,
-      total: esFuturo ? 0 : redondear2(numero(fila?.total)),
-      pedidos: esFuturo ? 0 : numero(fila?.pedidos),
-    };
-  });
+  const semanasMes = construirSemanasMes(mesInicio, filasDiasMes);
 
   const ventasMes = Array.from({ length: 12 }, (_, indice) => {
-    const fecha = sumarMeses(mesDesde, indice);
+    const fecha = sumarMeses(anioInicio, indice);
     const clave = formatearMes(fecha);
     const fila = porMes.get(clave);
 
     return {
       mes: clave,
-      label: MESES_CORTOS[fecha.getUTCMonth()],
+      label: `${MESES_CORTOS[fecha.getUTCMonth()]} ${fecha.getUTCFullYear()}`,
       total: redondear2(numero(fila?.total)),
       pedidos: numero(fila?.pedidos),
     };
@@ -178,6 +234,10 @@ export async function obtenerResumen(filtros = {}) {
   const totalMesAnterior = redondear2(numero(ingresosMesAnterior.total));
 
   return {
+    periodo: {
+      mes: formatearMes(mesInicio),
+      anio,
+    },
     kpis: {
       pedidosPendientes: numero(buscarEstado(filasEstado, 'Pendiente')),
       pedidosEntregados: numero(buscarEstado(filasEstado, 'Entregado')),
@@ -186,18 +246,16 @@ export async function obtenerResumen(filtros = {}) {
       variacionPorcentual: variacion(totalMes, totalMesAnterior),
       productoMasVendido: topProductos[0]?.nombre ?? null,
     },
-    ventasSemana: {
-      desde: formatearFecha(semanaDesde),
-      hasta: formatearFecha(semanaHasta),
-      anterior: formatearFecha(sumarDias(semanaDesde, -7)),
-      siguiente: siguienteSemanaPermitida,
-      data: ventasSemana,
+    semanasMes: {
+      mes: formatearMes(mesInicio),
+      data: semanasMes,
     },
     ventasMes: {
-      desde: formatearMes(mesDesde),
-      hasta: formatearMes(mesHasta),
-      anterior: formatearMes(sumarMeses(mesReferencia, -12)),
-      siguiente: siguienteMesPermitido,
+      anio,
+      desde: formatearMes(anioInicio),
+      hasta: formatearMes(sumarMeses(anioInicio, 11)),
+      anterior: anioAnteriorDisponible(aniosDisponibles, anio),
+      siguiente: anioSiguienteDisponible(aniosDisponibles, anio, anioActual),
       data: ventasMes,
     },
     topProductos,
@@ -207,6 +265,52 @@ export async function obtenerResumen(filtros = {}) {
     disponibilidad: {
       primerPedido: filaRango?.primer_pedido ?? null,
       ultimoPedido: filaRango?.ultimo_pedido ?? null,
+      aniosDisponibles,
+    },
+  };
+}
+
+/**
+ * Datos para los reportes exportables. Reutiliza el resumen del Dashboard,
+ * incluido el top de productos del mes seleccionado.
+ */
+export async function obtenerReporte(filtros = {}) {
+  const resumen = await obtenerResumen(filtros);
+  const { periodo, semanasMes, ventasMes } = resumen;
+
+  const mesSeleccionado =
+    ventasMes.data.find((fila) => fila.mes === periodo.mes) ?? {
+      total: 0,
+      pedidos: 0,
+    };
+  const totalMesSeleccionado = redondear2(numero(mesSeleccionado.total));
+  const pedidosMesSeleccionado = numero(mesSeleccionado.pedidos);
+  const totalAnio = redondear2(
+    ventasMes.data.reduce((total, fila) => total + fila.total, 0)
+  );
+  const pedidosAnio = ventasMes.data.reduce(
+    (total, fila) => total + fila.pedidos,
+    0
+  );
+
+  if (pedidosMesSeleccionado === 0 && pedidosAnio === 0) {
+    throw new NotFoundError('No hay ventas para los filtros seleccionados.');
+  }
+
+  return {
+    filtros: {
+      mes: periodo.mes,
+    },
+    periodo,
+    semanasMes,
+    ventasMes,
+    topProductos: resumen.topProductos,
+    productoMasVendido: resumen.topProductos[0]?.nombre ?? null,
+    totales: {
+      totalMesSeleccionado,
+      pedidosMesSeleccionado,
+      totalAnio,
+      pedidosAnio,
     },
   };
 }

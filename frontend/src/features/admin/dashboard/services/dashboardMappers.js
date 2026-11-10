@@ -29,8 +29,15 @@ export function mapDashboardResumen(resumen) {
   const distribucion = Array.isArray(calificaciones.distribucion)
     ? calificaciones.distribucion
     : [];
+  const semanasMes = resumen.semanasMes ?? {};
+  const ventasMes = resumen.ventasMes ?? {};
+  const disponibilidad = resumen.disponibilidad ?? {};
 
   return {
+    periodo: {
+      mes: resumen.periodo?.mes ?? null,
+      anio: numero(resumen.periodo?.anio),
+    },
     kpis: {
       pedidosPendientes: numero(kpis.pedidosPendientes),
       pedidosEntregados: numero(kpis.pedidosEntregados),
@@ -41,17 +48,42 @@ export function mapDashboardResumen(resumen) {
           : Number(kpis.variacionPorcentual),
       productoMasVendido: kpis.productoMasVendido ?? null,
     },
-    ventasSemana: (resumen.ventasSemana?.data ?? []).map((fila) => ({
-      label: fila.dia,
-      value: numero(fila.total),
-    })),
-    ventasMes: (resumen.ventasMes?.data ?? []).map((fila) => ({
-      label: fila.label,
-      value: numero(fila.total),
-    })),
+    semanasMes: {
+      mes: semanasMes.mes ?? null,
+      data: (semanasMes.data ?? []).map((fila) => ({
+        semana: numero(fila.semana),
+        label: fila.label,
+        rango: fila.rango,
+        desde: fila.desde,
+        hasta: fila.hasta,
+        total: numero(fila.total),
+        pedidos: numero(fila.pedidos),
+        dias: (fila.dias ?? []).map((dia) => ({
+          label: dia.dia,
+          value: numero(dia.total),
+          pedidos: numero(dia.pedidos),
+          fecha: dia.fecha,
+        })),
+      })),
+    },
+    ventasMes: {
+      anio: numero(ventasMes.anio),
+      desde: ventasMes.desde ?? null,
+      hasta: ventasMes.hasta ?? null,
+      anterior: ventasMes.anterior ?? null,
+      siguiente: ventasMes.siguiente ?? null,
+      data: (ventasMes.data ?? []).map((fila) => ({
+        label: fila.label,
+        value: numero(fila.total),
+        pedidos: numero(fila.pedidos),
+        mes: fila.mes,
+      })),
+    },
     topProductos: (resumen.topProductos ?? []).map((fila) => ({
+      id: fila.id,
       name: fila.nombre,
       sold: numero(fila.unidades),
+      revenue: numero(fila.ingresos),
     })),
     pedidosPorMunicipio: (resumen.pedidosPorMunicipio ?? [])
       .map((fila) => ({
@@ -75,6 +107,13 @@ export function mapDashboardResumen(resumen) {
         value: numero(fila.cantidad),
         color: COLORES_CALIFICACION[fila.estrellas],
       })),
+    },
+    disponibilidad: {
+      primerPedido: disponibilidad.primerPedido ?? null,
+      ultimoPedido: disponibilidad.ultimoPedido ?? null,
+      aniosDisponibles: (disponibilidad.aniosDisponibles ?? [])
+        .map((anio) => numero(anio))
+        .filter((anio) => anio > 0),
     },
   };
 }

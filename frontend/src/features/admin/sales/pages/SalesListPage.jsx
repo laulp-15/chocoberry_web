@@ -1,9 +1,11 @@
 // src/features/admin/sales/pages/SalesListPage.jsx
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DataTable from "../../../../shared/components/DataTable";
 import OrderStatusBadge from "../../orders/components/OrderStatusBadge";
 import { usePermissions } from "../../../../shared/hooks/usePermissions";
 import useSales from "../hooks/useSales";
+import * as saleService from "../services/saleService";
 import { formatDisplayDate } from "../../orders/utils/orderDisplay";
 import { formatPrice } from "../../../../shared/utils/formatPrice";
 import "../../../../shared/css/adminCrud.css";
@@ -11,16 +13,22 @@ import "../../../../shared/css/adminCrud.css";
 export default function SalesListPage() {
   const navigate = useNavigate();
   const { can } = usePermissions();
-  const canGenerate = can("Ventas", "Generar reporte");
   const canExport = can("Ventas", "Exportar reporte");
   const { sales, loading, error, reload } = useSales();
+  const [exportandoId, setExportandoId] = useState(null);
+  const [exportError, setExportError] = useState("");
 
-  const handleGenerateReceipt = (row) => {
-    console.log("TODO: generar comprobante digital (PDF) para el pedido", row.id);
-  };
+  const handleDownloadReceipt = async (row) => {
+    setExportError("");
+    setExportandoId(row.id);
 
-  const handleDownloadReceipt = (row) => {
-    console.log("TODO: descargar comprobante digital (PDF) del pedido", row.id);
+    try {
+      await saleService.descargarComprobante(row.id);
+    } catch (err) {
+      setExportError(err?.message || "No se pudo descargar el comprobante.");
+    } finally {
+      setExportandoId(null);
+    }
   };
 
   const columns = [
@@ -54,18 +62,12 @@ export default function SalesListPage() {
             title="Ver detalle"
             onClick={() => navigate(`/admin/ventas/${row.id}`)}
           />
-          {canGenerate && (
-            <i
-              className="fa-solid fa-print"
-              style={{ color: "var(--primario)", cursor: "pointer" }}
-              title="Generar comprobante digital"
-              onClick={() => handleGenerateReceipt(row)}
-            />
-          )}
           {canExport && (
             <i
-              className="fa-solid fa-download"
-              style={{ cursor: "pointer" }}
+              className={`fa-solid ${
+                exportandoId === row.id ? "fa-spinner fa-spin" : "fa-download"
+              }`}
+              style={{ cursor: exportandoId === row.id ? "wait" : "pointer" }}
               title="Descargar comprobante"
               onClick={() => handleDownloadReceipt(row)}
             />
@@ -98,6 +100,12 @@ export default function SalesListPage() {
           <button type="button" className="crud-retry" onClick={reload}>
             Reintentar
           </button>
+        </p>
+      )}
+
+      {exportError && (
+        <p className="crud-error-hint" role="alert">
+          <i className="fa-solid fa-triangle-exclamation" /> {exportError}
         </p>
       )}
     </div>

@@ -16,7 +16,15 @@ export const pool = mysql.createPool({
   queueLimit: 0,
   charset: 'utf8mb4',
   // SSL opcional para bases de datos en la nube: se activa con DB_SSL=true.
-  ...(env.db.ssl ? { ssl: { rejectUnauthorized: true } } : {}),
+  // DB_SSL_CA permite confiar en el certificado propio del proveedor.
+  ...(env.db.ssl
+    ? {
+        ssl: {
+          rejectUnauthorized: true,
+          ...(env.db.sslCa ? { ca: env.db.sslCa } : {}),
+        },
+      }
+    : {}),
 });
 
 /** Ejecuta una consulta parametrizada usando el pool. */

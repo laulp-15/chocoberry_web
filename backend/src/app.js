@@ -12,6 +12,10 @@ import errorHandler from './middlewares/errorHandler.js';
 
 const app = express();
 
+// Render (y otros PaaS) termina TLS en un proxy delante de Express. Esto hace
+// que express-rate-limit lea correctamente la IP del cliente.
+app.set('trust proxy', 1);
+
 // No revelar el framework en la cabecera.
 app.disable('x-powered-by');
 
@@ -24,6 +28,7 @@ app.use(
   cors({
     origin: env.frontendUrl,
     credentials: true,
+    exposedHeaders: ['Content-Disposition'],
   })
 );
 

@@ -21,6 +21,13 @@ router.get(
 );
 
 router.get(
+  '/:id/exportar/pdf',
+  checkPermiso('Ventas', 'Exportar reporte'),
+  validar(idParamSchema, 'params'),
+  ventaController.exportarPdf
+);
+
+router.get(
   '/:id',
   checkPermiso('Ventas', 'Ver'),
   validar(idParamSchema, 'params'),
