@@ -3,7 +3,9 @@ node_modules/
 
 # Variables de entorno (NUNCA subir el .env)
 .env
-.env.example
+
+# Certificados y claves
+*.pem
 
 # Archivos subidos por los usuarios (imágenes/comprobantes/evidencias)
 uploads/*
@@ -19,3 +21,7 @@ coverage/
 # Logs
 *.log
 npm-debug.log*
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db

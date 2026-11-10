@@ -2,7 +2,6 @@
 // Router raíz de la API (se monta en /api). Cada módulo se agrega aquí a
 // medida que se implementa.
 import { Router } from 'express';
-import { sendSuccess } from '../utils/response.js';
 import authRoutes from './auth.routes.js';
 import usuarioRoutes from './usuario.routes.js';
 import rolRoutes from './rol.routes.js';
@@ -24,9 +23,7 @@ import colorGlaseadoRoutes from './colorGlaseado.routes.js';
 const router = Router();
 
 // Comprobación de salud del servicio (no requiere autenticación ni BD).
-router.get('/health', (req, res) =>
-  sendSuccess(res, { status: 'ok', timestamp: new Date().toISOString() }, 'API operativa.')
-);
+router.get('/health', (req, res) => res.status(200).json({ ok: true }));
 
 // ---------------------------------------------------------------------------
 // Módulos implementados

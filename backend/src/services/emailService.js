@@ -1,9 +1,12 @@
 // src/services/emailService.js
-// Envío de correos transaccionales con Brevo (SMTP). El envío nunca debe
-// bloquear la operación principal: los services llaman estas funciones sin
-// esperarlas y aquí se capturan los errores para no romper la petición.
+// Envío de correos transaccionales con Brevo (SMTP o API HTTP). El envío nunca
+// debe bloquear la operación principal: los services llaman estas funciones
+// sin esperarlas y aquí se capturan los errores para no romper la petición.
 import nodemailer from 'nodemailer';
 import env from '../config/env.js';
+
+const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
+const BREVO_TIMEOUT_MS = 10_000;
 
 let transporter = null;
 
@@ -52,6 +55,20 @@ function obtenerTransporte() {
     },
   });
   return transporter;
+}
+
+/** Acepta "Nombre <correo@dominio.com>" o "correo@dominio.com". */
+function parsearRemitente(valor) {
+  const texto = String(valor ?? '').trim();
+  if (!texto) return { email: '', name: '' };
+
+  const coincidencia = texto.match(/^(.*)<([^>]+)>$/);
+  if (!coincidencia) return { email: texto, name: '' };
+
+  return {
+    email: coincidencia[2].trim(),
+    name: coincidencia[1].trim().replace(/^["']|["']$/g, ''),
+  };
 }
 
 function plantilla({ titulo, saludo, mensaje, boton, enlace, nota }) {
@@ -112,13 +129,7 @@ function textoPlano(partes) {
   return partes.filter(Boolean).join('\n\n');
 }
 
-async function enviar({ to, subject, html, text }) {
-  if (!to) return { omitido: true };
-
-  if (env.nodeEnv === 'test') {
-    return { omitido: true };
-  }
-
+async function enviarPorSmtp({ to, subject, html, text }) {
   const transporte = obtenerTransporte();
   if (!transporte) {
     // eslint-disable-next-line no-console
@@ -140,6 +151,81 @@ async function enviar({ to, subject, html, text }) {
     console.error(`[email] No se pudo enviar "${subject}": ${error.message}`);
     return { error: true };
   }
+}
+
+async function enviarPorBrevoApi({ to, subject, html, text }) {
+  const remitente = parsearRemitente(env.mail.from);
+
+  if (!env.mail.brevoApiKey || !remitente.email) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      '[email] BREVO_API_KEY o MAIL_FROM no están configurados; no se envió el correo.'
+    );
+    return { omitido: true };
+  }
+
+  const cuerpo = {
+    sender: {
+      email: remitente.email,
+      ...(remitente.name ? { name: remitente.name } : {}),
+    },
+    to: [{ email: to }],
+    subject,
+    htmlContent: html,
+    textContent: text,
+  };
+
+  try {
+    const respuesta = await fetch(BREVO_API_URL, {
+      method: 'POST',
+      headers: {
+        'api-key': env.mail.brevoApiKey,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(cuerpo),
+      signal: AbortSignal.timeout(BREVO_TIMEOUT_MS),
+    });
+
+    if (!respuesta.ok) {
+      // No se registra el cuerpo de la respuesta por si contiene datos del
+      // remitente o del destinatario.
+      // eslint-disable-next-line no-console
+      console.error(
+        `[email] Brevo respondió ${respuesta.status}; no se envió "${subject}".`
+      );
+      return { error: true, status: respuesta.status };
+    }
+
+    return { ok: true, status: respuesta.status };
+  } catch (error) {
+    // Nunca se registra el token, la contraseña, la API key ni el cuerpo.
+    // eslint-disable-next-line no-console
+    console.error(`[email] No se pudo enviar "${subject}" con Brevo: ${error.message}`);
+    return { error: true };
+  }
+}
+
+async function enviar({ to, subject, html, text }) {
+  if (!to) return { omitido: true };
+
+  if (env.nodeEnv === 'test') {
+    return { omitido: true };
+  }
+
+  if (env.mail.provider === 'brevo-api') {
+    return enviarPorBrevoApi({ to, subject, html, text });
+  }
+
+  if (env.mail.provider !== 'smtp') {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[email] MAIL_PROVIDER "${env.mail.provider}" no es válido; no se envió el correo.`
+    );
+    return { omitido: true };
+  }
+
+  return enviarPorSmtp({ to, subject, html, text });
 }
 
 function nombreCliente(pedido) {

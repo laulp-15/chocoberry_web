@@ -1,24 +1,32 @@
 // src/features/admin/sales/pages/SaleDetailPage.jsx
+import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import SaleReceipt from "../components/SaleReceipt";
 import { usePermissions } from "../../../../shared/hooks/usePermissions";
 import useSale from "../hooks/useSale";
+import * as saleService from "../services/saleService";
 import "./SaleDetailPage.css";
 
 export default function SaleDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { can } = usePermissions();
-  const canGenerate = can("Ventas", "Generar reporte");
   const canExport = can("Ventas", "Exportar reporte");
   const { sale, loading, error, notFound, reload } = useSale(id);
+  const [exportando, setExportando] = useState(false);
+  const [exportError, setExportError] = useState("");
 
-  const handleGenerateReceipt = () => {
-    console.log("TODO: generar comprobante digital (PDF) para el pedido", id);
-  };
+  const handleDownloadReceipt = async () => {
+    setExportError("");
+    setExportando(true);
 
-  const handleDownloadReceipt = () => {
-    console.log("TODO: descargar comprobante digital (PDF) del pedido", id);
+    try {
+      await saleService.descargarComprobante(id);
+    } catch (err) {
+      setExportError(err?.message || "No se pudo descargar el comprobante.");
+    } finally {
+      setExportando(false);
+    }
   };
 
   if (loading) {
@@ -69,23 +77,26 @@ export default function SaleDetailPage() {
       <div className="sale-detail-header">
         <h1 className="sale-detail-title">Detalle de la Venta</h1>
 
-        {(canGenerate || canExport) && (
+        {canExport && (
           <div className="sale-detail-actions">
-            {canExport && (
-              <button type="button" className="btn-download-receipt" onClick={handleDownloadReceipt}>
-                <i className="fa-solid fa-download" />
-                Descargar comprobante
-              </button>
-            )}
-            {canGenerate && (
-              <button type="button" className="btn-generate-receipt" onClick={handleGenerateReceipt}>
-                <i className="fa-solid fa-print" />
-                Generar comprobante digital
-              </button>
-            )}
+            <button
+              type="button"
+              className="btn-download-receipt"
+              onClick={handleDownloadReceipt}
+              disabled={exportando}
+            >
+              <i className={`fa-solid ${exportando ? "fa-spinner fa-spin" : "fa-download"}`} />
+              {exportando ? "Descargando..." : "Descargar comprobante"}
+            </button>
           </div>
         )}
       </div>
+
+      {exportError && (
+        <p className="sale-detail-error" role="alert">
+          <i className="fa-solid fa-triangle-exclamation" /> {exportError}
+        </p>
+      )}
 
       <SaleReceipt sale={sale} />
     </div>

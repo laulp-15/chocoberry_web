@@ -27,3 +27,10 @@ export async function obtener(id) {
   const venta = await api.get(`/ventas/${id}`);
   return mapVentaAdmin(venta);
 }
+
+/** GET /ventas/:id/exportar/pdf */
+export async function descargarComprobante(id) {
+  return api.download(`/ventas/${id}/exportar/pdf`, {
+    fallbackName: `venta-${id}.pdf`,
+  });
+}

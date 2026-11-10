@@ -8,6 +8,12 @@ import app from '../src/app.js';
 const ADMIN = { correo: 'admin@chocoberry.com', contrasena: 'Admin123!' };
 const CLAVE_PRUEBA = 'Prueba123!';
 const COMPROBANTE = Buffer.from('89504e470d0a1a0a', 'hex');
+
+const parserBinario = (res, callback) => {
+  const chunks = [];
+  res.on('data', (chunk) => chunks.push(chunk));
+  res.on('end', () => callback(null, Buffer.concat(chunks)));
+};
 const ESTADOS_VENTA = ['En preparación', 'Despachado', 'Entregado', 'Cancelado'];
 
 describe('Módulo de ventas', () => {
@@ -277,5 +283,47 @@ describe('Módulo de ventas', () => {
 
     expect(res.status).toBe(422);
     expect(res.body.message).toMatch(/no hace parte de Ventas/i);
+  });
+
+  it('exporta el comprobante PDF de una venta con permisos y cabeceras', async () => {
+    const sinToken = await request(app).get(`/api/ventas/${entregadoId}/exportar/pdf`);
+    expect(sinToken.status).toBe(401);
+
+    const cliente = await auth(
+      request(app).get(`/api/ventas/${entregadoId}/exportar/pdf`),
+      tokenCliente
+    );
+    expect(cliente.status).toBe(403);
+
+    const repartidor = await auth(
+      request(app).get(`/api/ventas/${entregadoId}/exportar/pdf`),
+      tokenRepartidor
+    );
+    expect(repartidor.status).toBe(403);
+
+    const res = await auth(request(app).get(`/api/ventas/${entregadoId}/exportar/pdf`))
+      .buffer(true)
+      .parse(parserBinario);
+
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toMatch(/^application\/pdf/);
+    expect(res.headers['content-disposition']).toMatch(
+      new RegExp(`^attachment; filename="venta-${entregadoId}-\\d{4}-\\d{2}-\\d{2}\\.pdf"$`)
+    );
+    expect(Buffer.isBuffer(res.body)).toBe(true);
+    expect(res.body.subarray(0, 5).toString()).toBe('%PDF-');
+    expect(res.body.length).toBeGreaterThan(1000);
+  });
+
+  it('no exporta comprobantes de pedidos que no son ventas (404)', async () => {
+    const pendiente = await auth(
+      request(app).get(`/api/ventas/${pendienteId}/exportar/pdf`)
+    );
+    expect(pendiente.status).toBe(404);
+
+    const rechazado = await auth(
+      request(app).get(`/api/ventas/${rechazadoId}/exportar/pdf`)
+    );
+    expect(rechazado.status).toBe(404);
   });
 });

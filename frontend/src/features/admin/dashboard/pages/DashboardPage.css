@@ -1,12 +1,8 @@
 /* src/features/admin/dashboard/pages/DashboardPage.css */
 
+/* ---------- Encabezado ---------- */
 .dashboard-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .dashboard-title {
@@ -19,32 +15,89 @@
 .dashboard-subtitle {
   font-size: 14px;
   color: var(--texto-muted);
+  margin: 0;
 }
 
-.dashboard-header-actions {
+/* ---------- Barra de herramientas: periodo + reportes ---------- */
+.dashboard-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  margin-bottom: 24px;
+  padding: 12px 16px;
+  background: var(--blanco);
+  border: 1px solid var(--borde);
+  border-radius: 16px;
+}
+
+.dashboard-period-selector {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.dashboard-period-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 4px;
+  color: var(--texto);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.dashboard-period-title i {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--secundario-2);
+  color: var(--primario);
+  font-size: 14px;
+}
+
+.dashboard-period-select {
+  min-width: 132px;
+  padding: 9px 12px;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: var(--secundario-3);
+  color: var(--texto);
+  font-family: "Poppins", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dashboard-period-select:focus-visible {
+  outline: 2px solid var(--primario-claro);
+  outline-offset: 1px;
+}
+
+.dashboard-period-select:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.dashboard-period-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--texto-muted);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.dashboard-report-actions {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
-}
-
-.btn-generate-report {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid var(--primario);
-  background: var(--blanco);
-  color: var(--primario);
-  font-family: "Poppins", sans-serif;
-  font-size: 13px;
-  font-weight: 700;
-  border-radius: 999px;
-  padding: 11px 20px;
-  cursor: pointer;
-  transition: background 0.15s ease;
-  white-space: nowrap;
-}
-.btn-generate-report:hover {
-  background: var(--secundario-1);
 }
 
 .btn-export {
@@ -63,10 +116,11 @@
   transition: background 0.15s ease;
   white-space: nowrap;
 }
-.btn-export:hover {
+.btn-export:hover:not(:disabled) {
   background: var(--primario-oscuro);
 }
 
+/* ---------- Layout del contenido ---------- */
 .dashboard-kpis {
   margin-bottom: 20px;
 }
@@ -135,4 +189,93 @@
 
 .dashboard-retry:hover {
   background: rgba(0, 0, 0, 0.05);
+}
+
+/* ---------- Menú de descarga ---------- */
+.dashboard-export {
+  position: relative;
+}
+
+.dashboard-export-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  min-width: 190px;
+  padding: 6px;
+  background: var(--blanco);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(45, 27, 27, 0.14);
+}
+
+.dashboard-export-menu button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--texto);
+  font-family: "Poppins", sans-serif;
+  font-size: 13px;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.dashboard-export-menu button:hover {
+  background: var(--secundario-1);
+}
+
+.dashboard-export-menu .fa-file-pdf {
+  color: #c0392b;
+}
+
+.dashboard-export-menu .fa-file-excel {
+  color: #217346;
+}
+
+.btn-export:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 992px) {
+  .dashboard-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dashboard-report-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-period-title {
+    width: 100%;
+  }
+
+  .dashboard-period-select {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .dashboard-report-actions > *,
+  .dashboard-export {
+    flex: 1;
+  }
+
+  .btn-export {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .dashboard-export-menu {
+    left: 0;
+    right: 0;
+  }
 }

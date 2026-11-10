@@ -33,6 +33,11 @@ if (missing.length > 0) {
   );
 }
 
+// Render y otros paneles suelen guardar el PEM en una sola línea con "\n".
+const dbSslCa = process.env.DB_SSL_CA
+  ? process.env.DB_SSL_CA.replace(/\\n/g, '\n')
+  : '';
+
 export const env = {
   nodeEnv: process.env.NODE_ENV || 'development',
   port: Number(process.env.PORT) || 4000,
@@ -48,8 +53,11 @@ export const env = {
     password: process.env.DB_PASSWORD || '',
     name: process.env.DB_NAME,
     ssl: toBool(process.env.DB_SSL, false),
+    sslCa: dbSslCa,
   },
   mail: {
+    provider: (process.env.MAIL_PROVIDER || 'smtp').trim().toLowerCase(),
+    brevoApiKey: process.env.BREVO_API_KEY || '',
     host: process.env.MAIL_HOST || '',
     port: Number(process.env.MAIL_PORT) || 587,
     user: process.env.MAIL_USER || '',

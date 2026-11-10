@@ -1,5 +1,5 @@
 // src/features/admin/dashboard/components/TopProductsList.jsx
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "./TopProductsList.css";
 
 /**
@@ -11,7 +11,7 @@ import "./TopProductsList.css";
  * @param {{ name: string, sold: number }[]} props.products
  * @param {(product: { name: string, sold: number }) => void} [props.onSelect] - se llama al abrir un producto
  */
-export default function TopProductsList({ products, onSelect }) {
+export default function TopProductsList({ products, onSelect, periodo }) {
   const [hovered, setHovered] = useState(null);
   const [selected, setSelected] = useState(null);
   const [ready, setReady] = useState(false);
@@ -40,9 +40,15 @@ export default function TopProductsList({ products, onSelect }) {
       <div className="tp-header">
         <div>
           <h3 className="tp-title">Productos más vendidos</h3>
-          <p className="tp-subtitle">{total} unidades en total</p>
+          <p className="tp-subtitle">
+            {periodo ? `${periodo} · ${total} unidades` : `${total} unidades en total`}
+          </p>
         </div>
       </div>
+
+      {ranked.length === 0 && (
+        <p className="tp-empty">Sin ventas en el mes seleccionado.</p>
+      )}
 
       <ul className="tp-list">
         {ranked.map((p, i) => {

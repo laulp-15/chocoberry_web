@@ -13,7 +13,7 @@ async function start() {
 
     const server = app.listen(env.port, () => {
       // eslint-disable-next-line no-console
-      console.log(`[server] API escuchando en http://localhost:${env.port}/api (${env.nodeEnv})`);
+      console.log(`[server] API escuchando en el puerto ${env.port}/api (${env.nodeEnv})`);
     });
 
     // Apagado ordenado: cerrar el servidor y el pool de conexiones.

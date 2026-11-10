@@ -132,14 +132,21 @@ Se definen en `.env` (nunca se sube al repositorio):
 
 | Variable | Descripción |
 | --- | --- |
-| `PORT` | Puerto del servidor |
+| `NODE_ENV` | Entorno (`development`, `production` o `test`) |
+| `PORT` | Puerto del servidor (en Render lo inyecta la plataforma) |
 | `DB_HOST` / `DB_PORT` | Host y puerto de MySQL |
 | `DB_USER` / `DB_PASSWORD` | Credenciales de MySQL |
 | `DB_NAME` | Nombre de la base de datos (`chocoberry`) |
 | `DB_SSL` | `true` si la BD está en la nube y exige SSL |
+| `DB_SSL_CA` | Opcional: certificado CA del proveedor en formato PEM |
 | `JWT_SECRET` | Secreto para firmar los tokens |
 | `JWT_EXPIRES_IN` | Vigencia del token (ej. `1d`) |
 | `FRONTEND_URL` | Único origen permitido por CORS |
+| `MAIL_PROVIDER` | `smtp` (local) o `brevo-api` (HTTP, recomendado en Render) |
+| `BREVO_API_KEY` | API key de Brevo para `MAIL_PROVIDER=brevo-api` |
+| `MAIL_HOST` / `MAIL_PORT` | Servidor SMTP (solo para `MAIL_PROVIDER=smtp`) |
+| `MAIL_USER` / `MAIL_PASS` | Credenciales SMTP (solo para `MAIL_PROVIDER=smtp`) |
+| `MAIL_FROM` | Remitente verificado; acepta `Nombre <correo@dominio.com>` |
 | `CLOUDINARY_CLOUD_NAME` | Nombre del cloud de Cloudinary |
 | `CLOUDINARY_API_KEY` | API key de Cloudinary |
 | `CLOUDINARY_API_SECRET` | API secret de Cloudinary |
@@ -147,6 +154,10 @@ Se definen en `.env` (nunca se sube al repositorio):
 
 Las variables de Cloudinary son obligatorias salvo con `NODE_ENV=test`, donde
 se usa un doble en memoria para no subir archivos reales.
+
+Con `MAIL_PROVIDER=brevo-api` no se usan `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`
+ni `MAIL_PASS`; el envío se hace por HTTPS con `BREVO_API_KEY`. Los fallos de
+correo se registran en el log y no interrumpen la operación principal.
 
 ## Scripts
 
@@ -214,6 +225,55 @@ routes → controllers → services → models → MySQL
 - **models:** única capa que ejecuta SQL (parametrizado).
 - **middlewares:** autenticación (JWT), autorización por permisos, validación (Zod) y errores.
 
+## Despliegue en Render
+
+Configura un **Web Service** apuntando a la carpeta `backend` con:
+
+| Ajuste | Valor |
+| --- | --- |
+| Build Command | `npm ci` |
+| Start Command | `npm start` |
+| Health Check Path | `/api/health` |
+
+El health check es público y responde exactamente:
+
+```json
+{ "ok": true }
+```
+
+Variables obligatorias en Render:
+
+| Variable | Valor |
+| --- | --- |
+| `NODE_ENV` | `production` |
+| `DB_HOST` | Host externo de MySQL |
+| `DB_PORT` | Puerto de MySQL |
+| `DB_USER` | Usuario de MySQL |
+| `DB_PASSWORD` | Contraseña de MySQL |
+| `DB_NAME` | `chocoberry` |
+| `DB_SSL` | `true` |
+| `JWT_SECRET` | Secreto largo y aleatorio |
+| `FRONTEND_URL` | Origen exacto del frontend, sin barra final |
+| `MAIL_PROVIDER` | `brevo-api` |
+| `BREVO_API_KEY` | API key de Brevo |
+| `MAIL_FROM` | Remitente verificado en Brevo |
+| `CLOUDINARY_CLOUD_NAME` | Nombre del cloud |
+| `CLOUDINARY_API_KEY` | API key |
+| `CLOUDINARY_API_SECRET` | API secret |
+
+Opcionales: `DB_SSL_CA` (PEM del proveedor si no usa una CA pública),
+`JWT_EXPIRES_IN` (`1d` por defecto) y `CLOUDINARY_SIGNED_URL_TTL` (`3600`).
+
+Notas:
+
+- No definas `PORT` en Render: la plataforma lo inyecta.
+- El plan gratuito de Render bloquea SMTP saliente; usa `MAIL_PROVIDER=brevo-api`.
+- MySQL debe aceptar conexiones externas y, si aplica, SSL. Pega el PEM en
+  `DB_SSL_CA` si el proveedor usa una CA propia.
+- Cloudinary es obligatorio en producción porque el disco de Render es efímero.
+- El proceso espera la conexión a MySQL antes de escuchar; si la BD no está
+  disponible, el health check fallará hasta que se recupere.
+
 ## Formato de respuesta
 
 Éxito:
@@ -237,6 +297,12 @@ Base: `/api`
 | Método | Ruta | Descripción | Acceso |
 | --- | --- | --- | --- |
 | GET | `/api/health` | Comprobación de salud del servicio | Público |
+
+Respuesta:
+
+```json
+{ "ok": true }
+```
 
 ### Acceso (`/api/auth`)
 

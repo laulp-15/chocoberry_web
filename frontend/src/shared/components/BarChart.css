@@ -28,6 +28,57 @@
   margin: 2px 0 0;
 }
 
+.bc-header-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.bc-period {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.bc-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: var(--blanco);
+  color: var(--texto);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.bc-nav-btn:hover:not(:disabled) {
+  border-color: var(--primario);
+  background: var(--secundario-1);
+  color: var(--primario);
+}
+
+.bc-nav-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.bc-period-label {
+  min-width: 150px;
+  color: var(--texto);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+}
+
 .bc-stats {
   display: flex;
   gap: 20px;
@@ -208,9 +259,53 @@
   font-size: 13px;
   font-weight: 700;
 }
+
+/* --- Pills para seleccionar semanas --- */
+.bc-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.bc-tab {
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  padding: 6px 14px;
+  background: var(--secundario-3);
+  color: var(--texto-muted);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.bc-tab:hover {
+  border-color: var(--primario);
+  color: var(--primario);
+}
+
+.bc-tab.is-active {
+  border-color: var(--primario);
+  background: var(--primario);
+  color: var(--blanco);
+}
+
 @media (max-width: 576px) {
   .bc-card {
     padding: 18px;
+  }
+  .bc-header-side {
+    align-items: flex-start;
+    width: 100%;
+  }
+  .bc-period {
+    justify-content: flex-start;
+  }
+  .bc-period-label {
+    min-width: 0;
   }
   .bc-cols {
     gap: 3px;
