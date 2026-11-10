@@ -1,8 +1,10 @@
 // src/features/cart/components/CartSummary.jsx
-import React from "react";
 import { Button } from "@mui/material";
-import { getPriceByQuantity } from "../../catalog/data/Pricing";
 import { formatPrice } from "../../../shared/utils/formatPrice";
+import {
+  excedeLimiteCarrito,
+  mensajeLimiteCarrito,
+} from "../../../shared/utils/orderRules";
 import "./CartSummary.css";
 
 /**
@@ -15,10 +17,11 @@ export default function CartSummary({ items, onCheckout }) {
     cartItemId: it.cartItemId,
     name: it.name,
     units: it.units,
-    total: getPriceByQuantity(it.quantity) * it.units,
+    total: Number(it.unitPrice ?? 0) * it.units,
   }));
 
   const total = lines.reduce((sum, line) => sum + line.total, 0);
+  const excedeLimite = excedeLimiteCarrito(items);
 
   return (
     <div className="cart-summary">
@@ -42,11 +45,19 @@ export default function CartSummary({ items, onCheckout }) {
         <span>{formatPrice(total)}</span>
       </div>
 
+      {excedeLimite && (
+        <div className="cart-summary-warning" role="alert">
+          <i className="fa-solid fa-circle-exclamation" aria-hidden="true" />
+          <span>{mensajeLimiteCarrito()}</span>
+        </div>
+      )}
+
       <Button
         className="btn-checkout"
         variant="contained"
         disableRipple
         fullWidth
+        disabled={excedeLimite}
         onClick={onCheckout}
       >
         Continuar compra

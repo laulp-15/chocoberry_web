@@ -1,5 +1,5 @@
 // src/features/catalog/pages/ProductDetail.jsx
-import React, { useState } from "react";
+import { useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@mui/material";
 import { useCart } from "../../cart/hooks/UseCart";
@@ -8,25 +8,55 @@ import QuantitySelector from "../components/QuantitySelector";
 import ColorSelector from "../components/ColorSelector";
 import FeatureHighlights from "../components/FeatureHighlights";
 import RelatedProducts from "../components/RelatedProducts";
-import { getProductById, PRODUCTS } from "../data/Products";
-import { PRICE_BY_QUANTITY, getPriceByQuantity } from "../data/Pricing";
-import { COLOR_OPTIONS } from "../data/Colors";
+import useProducto from "../hooks/useProducto";
+import QuantityStepper from "../../../shared/components/QuantityStepper";
 import { formatPrice } from "../../../shared/utils/formatPrice";
+import {
+  CONTACT_MESSAGE,
+  MAX_CART_UNITS,
+  totalUnidades,
+} from "../../../shared/utils/orderRules";
 import "./ProductDetail.css";
-
-const QUANTITY_OPTIONS = Object.keys(PRICE_BY_QUANTITY).map(Number); // [6, 8, 12, 16, 30]
 
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { addItem } = useCart();
-  const product = getProductById(id);
+  const { addItem, items } = useCart();
+  const { producto, relacionados, presentaciones, glaseados, loading, error, reload } =
+    useProducto(id);
 
+  // Cantidad de fresas elegida; se ajusta a las presentaciones disponibles.
   const [quantity, setQuantity] = useState(12);
-  const [color, setColor] = useState("rosa");
+  // Número de cajas/unidades que se añadirán al carrito.
+  const [units, setUnits] = useState(1);
+  const [color, setColor] = useState("");
+  const [limitAlertOpen, setLimitAlertOpen] = useState(false);
 
-  if (!product) {
+  if (error) {
+    return (
+      <div className="detail-page">
+        <div className="container detail-wrap">
+          <p>{error}</p>
+          <Button variant="outlined" onClick={reload}>
+            Reintentar
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="detail-page">
+        <div className="container detail-wrap">
+          <p>Cargando producto...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!producto) {
     return (
       <div className="detail-page">
         <div className="container detail-wrap">
@@ -36,28 +66,68 @@ export default function ProductDetail() {
     );
   }
 
-  // El precio depende de la cantidad elegida, es igual para todos los productos.
-  const currentPrice = getPriceByQuantity(quantity);
-  const selectedColor = COLOR_OPTIONS.find((c) => c.value === color);
+  const quantityOptions = presentaciones.map(
+    (presentacion) => presentacion.cantidadFresas
+  );
+  const selectedQuantity = quantityOptions.includes(quantity)
+    ? quantity
+    : quantityOptions.includes(12)
+      ? 12
+      : (quantityOptions[0] ?? quantity);
 
-  // TODO: reemplazar por una selección real (misma categoría, más vendidos, etc.)
-  const relatedProducts = PRODUCTS.filter((p) => p.id !== product.id).slice(0, 4);
+  // El precio depende de la cantidad de fresas, no del producto.
+  const selectedPresentation = presentaciones.find(
+    (presentacion) => presentacion.cantidadFresas === selectedQuantity
+  );
+  const currentPrice = selectedPresentation?.precio ?? 0;
+  const minPrice = presentaciones.length
+    ? Math.min(...presentaciones.map((presentacion) => presentacion.precio))
+    : 0;
+
+  // Mantiene el rosa como opción inicial (como en el diseño original) y usa
+  // el primer glaseado activo si ese color ya no existe.
+  const defaultColor =
+    glaseados.find((c) => (c.nombre ?? "").toLowerCase() === "rosa") ??
+    glaseados[0];
+  const selectedColor =
+    glaseados.find((c) => c.value === color) ?? defaultColor;
+  const selectedColorValue = selectedColor?.value ?? "";
+
+  // Cupo disponible según las unidades que ya hay en el carrito.
+  const totalEnCarrito = totalUnidades(items);
+  const remainingUnits = Math.max(0, MAX_CART_UNITS - totalEnCarrito);
+  const maxUnits = Math.max(1, remainingUnits);
+  const selectedUnits = Math.min(Math.max(1, units), maxUnits);
+  const canAddToCart = Boolean(
+    selectedPresentation && selectedColor && remainingUnits > 0
+  );
 
   const handleAddToCart = () => {
-    const { merged } = addItem(
+    if (!canAddToCart) return;
+
+    const resultado = addItem(
       {
-        productId: product.id,
-        name: product.name,
-        image: product.image,
-        quantity,
-        color: selectedColor?.label ?? color,
-        colorHex: selectedColor?.hex,
+        productId: producto.id,
+        name: producto.name,
+        image: producto.image,
+        quantity: selectedQuantity,
+        presentationId: selectedPresentation.id,
+        unitPrice: currentPrice,
+        colorId: Number(selectedColor.id),
+        color: selectedColor.label,
+        colorHex: selectedColor.hex,
+        units: selectedUnits,
       },
       { fromPath: location.pathname }
     );
+    // El carrito ya suma 20 unidades: no se agrega y se muestra el contacto.
+    if (resultado?.limitReached) {
+      setLimitAlertOpen(true);
+      return;
+    }
     // Si el usuario ya estaba logueado y se añadió al carrito, navegar al carrito
-    if (merged !== undefined) {
-      navigate("/carrito", merged ? { state: { merged: true } } : undefined);
+    if (resultado?.merged !== undefined) {
+      navigate("/carrito", resultado.merged ? { state: { merged: true } } : undefined);
     }
     // Si no estaba logueado, addItem ya redirigió a login; el flush ocurrirá tras login
   };
@@ -76,40 +146,61 @@ export default function ProductDetail() {
         <div className="row detail-top">
           <div className="col-12 col-lg-6">
             <ProductGallery
-              images={product.image ? [product.image] : []}
-              alt={product.name}
+              key={producto.id}
+              images={producto.images}
+              alt={producto.name}
             />
           </div>
           <div className="col-12 col-lg-6">
             <div className="product-info">
-              {product.badge && <div className="product-badge">{product.badge}</div>}
-              <h1 className="product-title">{product.name}</h1>
+              <h1 className="product-title">{producto.name}</h1>
               <div className="product-price">{formatPrice(currentPrice)}</div>
               <hr className="product-divider" />
-              <p className="product-description">{product.desc}</p>
+              <p className="product-description">{producto.desc}</p>
 
               <QuantitySelector
-                options={QUANTITY_OPTIONS}
-                value={quantity}
+                options={quantityOptions}
+                value={selectedQuantity}
                 onChange={setQuantity}
               />
 
               <ColorSelector
-                options={COLOR_OPTIONS}
-                value={color}
+                options={glaseados}
+                value={selectedColorValue}
                 onChange={setColor}
               />
 
-              <Button
-                className="btn-add-to-cart"
-                variant="contained"
-                disableRipple
-                fullWidth
-                onClick={handleAddToCart}
-                startIcon={<i className="fa-solid fa-cart-plus" />}
-              >
-                Añadir al Carrito
-              </Button>
+              {glaseados.length === 0 && (
+                <p className="form-error">
+                  No hay colores de glaseado disponibles en este momento.
+                </p>
+              )}
+
+              <div className="product-add-block">
+                <div className="selector-label">Cantidad de cajas</div>
+                <div className="product-add-row">
+                  <QuantityStepper
+                    value={selectedUnits}
+                    onChange={setUnits}
+                    max={maxUnits}
+                    disabled={remainingUnits <= 0}
+                    ariaLabel="Cantidad de cajas"
+                  />
+                  <Button
+                    className="btn-add-to-cart"
+                    variant="contained"
+                    disableRipple
+                    onClick={handleAddToCart}
+                    disabled={!canAddToCart}
+                    startIcon={<i className="fa-solid fa-cart-plus" />}
+                  >
+                    Añadir al Carrito
+                  </Button>
+                </div>
+                {remainingUnits <= 0 && (
+                  <p className="product-limit-inline">{CONTACT_MESSAGE}</p>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -117,11 +208,26 @@ export default function ProductDetail() {
         <FeatureHighlights />
 
         <RelatedProducts
-          products={relatedProducts}
+          products={relacionados}
+          minPrice={minPrice}
           onViewAll={handleViewAll}
           onViewDetail={handleRelatedViewDetail}
         />
       </div>
+
+      {limitAlertOpen && (
+        <div className="product-limit-alert" role="alert">
+          <i className="fa-solid fa-circle-exclamation" aria-hidden="true" />
+          <span>{CONTACT_MESSAGE}</span>
+          <button
+            type="button"
+            aria-label="Cerrar aviso"
+            onClick={() => setLimitAlertOpen(false)}
+          >
+            <i className="fa-solid fa-xmark" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

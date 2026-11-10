@@ -1,0 +1,27 @@
+# Dependencias
+node_modules/
+
+# Variables de entorno (NUNCA subir el .env)
+.env
+
+# Certificados y claves
+*.pem
+
+# Archivos subidos por los usuarios (imágenes/comprobantes/evidencias)
+uploads/*
+!uploads/.gitkeep
+
+# Manifiestos locales de los seeds (IDs para poder recrear los lotes)
+scripts/.seed-pedidos.json
+scripts/.seed-resenas.json
+
+# Cobertura de pruebas
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db

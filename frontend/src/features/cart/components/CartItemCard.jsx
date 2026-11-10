@@ -1,9 +1,9 @@
 // src/features/cart/components/CartItemCard.jsx
-import React from "react";
 import { useNavigate } from "react-router-dom";
 import { IconButton, OutlinedInput, Button } from "@mui/material";
-import { getPriceByQuantity } from "../../catalog/data/Pricing";
 import { formatPrice } from "../../../shared/utils/formatPrice";
+import { contarCaracteresSinEspacios } from "../../../shared/utils/orderRules";
+import QuantityStepper from "../../../shared/components/QuantityStepper";
 import "./CartItemCard.css";
 
 /**
@@ -13,12 +13,19 @@ import "./CartItemCard.css";
  * completo (ver OrderCardMessage en CartPage).
  *
  * @param {object} props
- * @param {object} props.item - { cartItemId, productId, name, image, quantity, color, colorHex, units, decorativeMessage, extraCustomization }
- * @param {(cartItemId: string, delta: number) => void} props.onUnitsChange
+ * @param {object} props.item - { cartItemId, productId, name, image, quantity, presentationId, unitPrice, colorId, color, colorHex, units, decorativeMessage }
+ * @param {(cartItemId: string, units: number) => void} props.onUnitsChange
  * @param {(cartItemId: string, field: string, value: string) => void} props.onFieldChange
  * @param {(cartItemId: string) => void} props.onRemove
+ * @param {boolean} [props.canIncrease] - false cuando el carrito ya suma 20
  */
-export default function CartItemCard({ item, onUnitsChange, onFieldChange, onRemove }) {
+export default function CartItemCard({
+  item,
+  onUnitsChange,
+  onFieldChange,
+  onRemove,
+  canIncrease = true,
+}) {
   const navigate = useNavigate();
   const {
     cartItemId,
@@ -30,11 +37,11 @@ export default function CartItemCard({ item, onUnitsChange, onFieldChange, onRem
     colorHex,
     units,
     decorativeMessage,
-    extraCustomization,
   } = item;
 
-  const unitPrice = getPriceByQuantity(quantity);
+  const unitPrice = Number(item.unitPrice ?? 0);
   const lineTotal = unitPrice * units;
+  const maxDecorative = Math.min(Number(quantity) || 0, 255);
 
   return (
     <div className="cart-item-card">
@@ -67,41 +74,32 @@ export default function CartItemCard({ item, onUnitsChange, onFieldChange, onRem
 
         <div className="cart-item-fields">
           <div>
+            <div className="cart-field-label">Mensaje decorativo</div>
             <OutlinedInput
               className="cart-item-input"
-              placeholder="Mensaje decorativo (chocolate)"
+              placeholder="Ej: TE AMO"
               value={decorativeMessage}
-              onChange={(e) => onFieldChange(cartItemId, "decorativeMessage", e.target.value)}
+              onChange={(e) => {
+                const next = e.target.value;
+                if (contarCaracteresSinEspacios(next) <= maxDecorative) {
+                  onFieldChange(cartItemId, "decorativeMessage", next);
+                }
+              }}
             />
             <div className="cart-field-hint">
-              Debe ser una frase corta, acorde con las {quantity} fresas de esta caja.
+              Máximo {maxDecorative} caracteres (una letra por fresa de esta caja).
             </div>
-          </div>
-
-          <div>
-            <div className="cart-field-label">Personalización extra</div>
-            <OutlinedInput
-              className="cart-item-input"
-              placeholder="Ej: quitar decoraciones de mariposa"
-              multiline
-              minRows={2}
-              value={extraCustomization}
-              onChange={(e) => onFieldChange(cartItemId, "extraCustomization", e.target.value)}
-            />
           </div>
         </div>
 
         <div className="cart-item-bottom">
           <div className="cart-item-bottom-left">
-            <div className="cart-item-stepper">
-              <IconButton disableRipple onClick={() => onUnitsChange(cartItemId, -1)}>
-                <i className="fa-solid fa-minus" />
-              </IconButton>
-              <span className="cart-item-units">{units}</span>
-              <IconButton disableRipple onClick={() => onUnitsChange(cartItemId, 1)}>
-                <i className="fa-solid fa-plus" />
-              </IconButton>
-            </div>
+            <QuantityStepper
+              value={units}
+              onChange={(next) => onUnitsChange(cartItemId, next)}
+              canIncrease={canIncrease}
+              ariaLabel={`Cantidad de ${name}`}
+            />
 
             <Button
               className="btn-add-another"

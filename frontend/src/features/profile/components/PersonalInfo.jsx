@@ -1,11 +1,59 @@
 // src/features/profile/components/PersonalInfo.jsx
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import useAuthTheme from '../../login/hooks/useAuthTheme';
 import { useAuth } from '../../login/hooks/useAuth';
-import { getPasswordChecks, validateConfirmPassword, validateEmail, validatePhone } from '../../login/utils/validators';
+import {
+  getPasswordChecks,
+  validateApellidos,
+  validateAddress,
+  validateConfirmPassword,
+  validateDocType,
+  validateEmail,
+  validateIdNumber,
+  validateNombres,
+  validatePhone,
+} from '../../login/utils/validators';
 import FormTextField from '../../../shared/components/FormTextField';
 import FormSelect from '../../../shared/components/FormSelect';
 import { DOC_TYPE_OPTIONS } from '../../../shared/utils/documentTypes';
+
+const FALLBACK_PROFILE_DATA = {
+  idNumber: '1234567890',
+  phone: '300 123 4567',
+  address: 'Calle 123 #45-67',
+};
+
+const API_FIELD_TO_FORM = {
+  nombres: 'firstName',
+  apellidos: 'lastName',
+  tipoDocumento: 'docType',
+  numeroDocumento: 'idNumber',
+  correo: 'email',
+  telefono: 'phone',
+  direccion: 'address',
+};
+
+const PROFILE_SECTION_FIELDS = {
+  personal: ['docType', 'idNumber', 'firstName', 'lastName', 'address'],
+  contact: ['email', 'phone'],
+};
+
+const PROFILE_FIELD_VALIDATORS = {
+  docType: validateDocType,
+  idNumber: validateIdNumber,
+  firstName: validateNombres,
+  lastName: validateApellidos,
+  address: validateAddress,
+  email: validateEmail,
+  phone: validatePhone,
+};
+
+function validateProfileField(field, value) {
+  if (field === 'phone' && !String(value ?? '').trim()) {
+    return 'El teléfono es obligatorio.';
+  }
+  return PROFILE_FIELD_VALIDATORS[field]?.(value) || '';
+}
 
 const PersonalInfo = () => {
   const { theme } = useAuthTheme();
@@ -32,17 +80,9 @@ const PersonalInfo = () => {
     firstName: '',
     lastName: '',
     address: '',
-    neighborhood: '',
     email: '',
     phone: '',
   });
-
-  const fakeData = {
-    idNumber: '1234567890',
-    phone: '300 123 4567',
-    address: 'Calle 123 #45-67',
-    neighborhood: 'Barrio Centro',
-  };
 
   useEffect(() => {
     if (user && editingSection === null) {
@@ -54,16 +94,15 @@ const PersonalInfo = () => {
       setUserInfo({
         id: user.id,
         docType: user.docType || 'CC',
-        idNumber: user.idNumber || fakeData.idNumber,
+        idNumber: user.idNumber || FALLBACK_PROFILE_DATA.idNumber,
         firstName,
         lastName,
-        address: user.address || fakeData.address,
-        neighborhood: user.neighborhood || fakeData.neighborhood,
+        address: user.address || FALLBACK_PROFILE_DATA.address,
         email: user.email || '',
-        phone: user.phone || fakeData.phone,
+        phone: user.phone || FALLBACK_PROFILE_DATA.phone,
       });
     }
-  }, [user.id, editingSection]);
+  }, [user, editingSection]);
 
   const colors = {
     primary: '#d90429',
@@ -86,9 +125,8 @@ const PersonalInfo = () => {
 
   const handleChange = (name, value) => {
     setUserInfo((prev) => ({ ...prev, [name]: value }));
-    if (profileErrors[name]) {
-      setProfileErrors((prev) => ({ ...prev, [name]: '' }));
-    }
+    setProfileErrors((prev) => (prev[name] ? { ...prev, [name]: '' } : prev));
+    setProfileMessage(null);
   };
 
   const handlePasswordChange = (name, value) => {
@@ -132,40 +170,95 @@ const PersonalInfo = () => {
     return Object.keys(errors).length === 0;
   };
 
-  const validateProfileForm = () => {
+  const validateProfileForm = (section = editingSection) => {
     const errors = {};
-    if (!userInfo.docType) errors.docType = 'Seleccione el tipo de documento';
-    if (!userInfo.idNumber) errors.idNumber = 'El número de documento es obligatorio';
-    if (!userInfo.firstName) errors.firstName = 'El nombre es obligatorio';
-    if (!userInfo.lastName) errors.lastName = 'El apellido es obligatorio';
-    if (!userInfo.address) errors.address = 'La dirección es obligatoria';
-    if (!userInfo.neighborhood) errors.neighborhood = 'El barrio es obligatorio';
-    if (!userInfo.email) {
-      errors.email = 'El correo electrónico es obligatorio';
-    } else {
-      // validateEmail devuelve "" cuando el correo es válido y un mensaje cuando no lo es.
-      const emailError = validateEmail(userInfo.email);
-      if (emailError) errors.email = emailError;
-    }
-    if (!userInfo.phone) errors.phone = 'El teléfono es obligatorio';
-    else {
-      // validatePhone devuelve "" cuando el teléfono es válido (solo números,
-      // se toleran espacios y guiones) y exactamente 10 dígitos.
-      const phoneError = validatePhone(userInfo.phone);
-      if (phoneError) errors.phone = phoneError;
-    }
+    (PROFILE_SECTION_FIELDS[section] || []).forEach((field) => {
+      const message = validateProfileField(field, userInfo[field]);
+      if (message) errors[field] = message;
+    });
     setProfileErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
+  const mapProfileServerErrors = (serverErrors) => {
+    const errors = {};
+    const general = [];
+
+    if (!Array.isArray(serverErrors)) return { errors, general };
+
+    serverErrors.forEach((issue) => {
+      const field = API_FIELD_TO_FORM[issue?.campo];
+      const message = issue?.mensaje;
+      if (!message) return;
+
+      if (field) {
+        if (!errors[field]) errors[field] = message;
+      } else {
+        general.push(message);
+      }
+    });
+
+    return { errors, general };
+  };
+
   const handleSubmit = async () => {
-    if (!validateProfileForm()) return;
+    if (!editingSection || !validateProfileForm(editingSection)) return;
     setProfileMessage(null);
+
     try {
-      const fullName = `${userInfo.firstName} ${userInfo.lastName}`.trim();
-      await updateUser({ ...userInfo, fullName });
+      const payload =
+        editingSection === 'personal'
+          ? {
+              docType: userInfo.docType,
+              idNumber: userInfo.idNumber,
+              firstName: userInfo.firstName,
+              lastName: userInfo.lastName,
+              address: userInfo.address,
+              fullName: `${userInfo.firstName} ${userInfo.lastName}`.trim(),
+            }
+          : {
+              email: userInfo.email,
+              phone: userInfo.phone,
+            };
+
+      await updateUser(payload);
       setEditingSection(null);
     } catch (error) {
+      if (error.code === 'EMAIL_TAKEN' || error.code === 'CONFLICT') {
+        setProfileErrors((current) => ({
+          ...current,
+          email: error.message || 'Este correo electrónico ya está registrado.',
+        }));
+        return;
+      }
+
+      if (error.code === 'DOCUMENT_TAKEN') {
+        setProfileErrors((current) => ({
+          ...current,
+          idNumber:
+            error.message || 'Este número de documento ya está registrado.',
+        }));
+        return;
+      }
+
+      const { errors: serverFieldErrors, general } = mapProfileServerErrors(
+        error.errors
+      );
+
+      if (Object.keys(serverFieldErrors).length) {
+        setProfileErrors((current) => ({
+          ...current,
+          ...serverFieldErrors,
+        }));
+      }
+
+      if (general.length) {
+        setProfileMessage({ type: 'error', text: general.join(' ') });
+        return;
+      }
+
+      if (Object.keys(serverFieldErrors).length) return;
+
       setProfileMessage({
         type: 'error',
         text: error.message || 'No se pudieron guardar los cambios.',
@@ -174,7 +267,7 @@ const PersonalInfo = () => {
   };
 
   const handlePasswordSubmit = async () => {
-    if (!validatePasswordForm()) return;
+    if (passwordChanging || !validatePasswordForm()) return;
     setPasswordChanging(true);
     setPasswordMessage(null);
     try {
@@ -210,13 +303,12 @@ const PersonalInfo = () => {
       setUserInfo({
         id: user.id,
         docType: user.docType || 'CC',
-        idNumber: user.idNumber || fakeData.idNumber,
+        idNumber: user.idNumber || FALLBACK_PROFILE_DATA.idNumber,
         firstName,
         lastName,
-        address: user.address || fakeData.address,
-        neighborhood: user.neighborhood || fakeData.neighborhood,
+        address: user.address || FALLBACK_PROFILE_DATA.address,
         email: user.email || '',
-        phone: user.phone || fakeData.phone,
+        phone: user.phone || FALLBACK_PROFILE_DATA.phone,
       });
     }
   };
@@ -252,7 +344,8 @@ const PersonalInfo = () => {
     onEdit,
     onCancel,
     onSave,
-    editLabel = 'Editar'
+    editLabel = 'Editar',
+    feedback = null
   ) => (
     <div style={{
       border: `1px solid ${colors.borderSubtle}`,
@@ -299,6 +392,23 @@ const PersonalInfo = () => {
       </div>
       <div style={{ padding: '20px' }}>
         {children}
+        {isEditing && feedback && (
+          <div
+            role="alert"
+            style={{
+              marginTop: '20px',
+              padding: '12px 16px',
+              borderRadius: '8px',
+              background: isDark ? '#3a1a1a' : '#ffe8e8',
+              border: `1px solid ${colors.error}`,
+              color: colors.error,
+              fontSize: '14px',
+              fontWeight: '500',
+            }}
+          >
+            {feedback.text}
+          </div>
+        )}
         {isEditing && (
           <div style={{ display: 'flex', gap: '12px', marginTop: '20px', paddingTop: '20px', borderTop: `1px solid ${colors.borderSubtle}` }}>
             <button
@@ -366,21 +476,6 @@ const PersonalInfo = () => {
           Mis datos
         </h2>
 
-        {profileMessage && (
-          <div style={{
-            padding: '12px 16px',
-            marginBottom: '20px',
-            borderRadius: '8px',
-            background: isDark ? '#3a1a1a' : '#ffe8e8',
-            border: `1px solid ${colors.error}`,
-            color: colors.error,
-            fontSize: '14px',
-            fontWeight: '500',
-          }}>
-            {profileMessage.text}
-          </div>
-        )}
-
         {/* Sección 1: Información personal */}
         {renderSection(
           'Información personal',
@@ -398,7 +493,7 @@ const PersonalInfo = () => {
                     </div>
                     <div>
                       <strong style={{ color: colors.textMuted, fontSize: '13px', textTransform: 'uppercase' }}>Número de documento</strong>
-                      <p style={{ margin: '4px 0 0', fontWeight: '500' }}>{userInfo.idNumber || fakeData.idNumber}</p>
+                      <p style={{ margin: '4px 0 0', fontWeight: '500' }}>{userInfo.idNumber || FALLBACK_PROFILE_DATA.idNumber}</p>
                     </div>
                     <div>
                       <strong style={{ color: colors.textMuted, fontSize: '13px', textTransform: 'uppercase' }}>Nombre</strong>
@@ -410,11 +505,7 @@ const PersonalInfo = () => {
                     </div>
                     <div>
                       <strong style={{ color: colors.textMuted, fontSize: '13px', textTransform: 'uppercase' }}>Dirección</strong>
-                      <p style={{ margin: '4px 0 0', fontWeight: '500' }}>{userInfo.address || fakeData.address}</p>
-                    </div>
-                    <div>
-                      <strong style={{ color: colors.textMuted, fontSize: '13px', textTransform: 'uppercase' }}>Barrio</strong>
-                      <p style={{ margin: '4px 0 0', fontWeight: '500' }}>{userInfo.neighborhood || fakeData.neighborhood}</p>
+                      <p style={{ margin: '4px 0 0', fontWeight: '500' }}>{userInfo.address || FALLBACK_PROFILE_DATA.address}</p>
                     </div>
                   </div>
                 </div>
@@ -467,15 +558,6 @@ const PersonalInfo = () => {
                       error={profileErrors.address}
                       required
                     />
-                    <FormTextField
-                      label="Barrio"
-                      type="text"
-                      name="neighborhood"
-                      value={userInfo.neighborhood}
-                      onChange={(value) => handleChange('neighborhood', value)}
-                      error={profileErrors.neighborhood}
-                      required
-                    />
                   </div>
                 </div>
               )}
@@ -484,7 +566,9 @@ const PersonalInfo = () => {
           editingSection === 'personal',
           () => startEdit('personal'),
           cancelEdit,
-          handleSubmit
+          handleSubmit,
+          'Editar',
+          profileMessage
         )}
 
         {/* Sección 2: Contraseña */}
@@ -605,7 +689,7 @@ const PersonalInfo = () => {
                     </div>
                     <div>
                       <strong style={{ color: colors.textMuted, fontSize: '13px', textTransform: 'uppercase' }}>Teléfono</strong>
-                      <p style={{ margin: '4px 0 0', fontWeight: '500' }}>{userInfo.phone || fakeData.phone}</p>
+                      <p style={{ margin: '4px 0 0', fontWeight: '500' }}>{userInfo.phone || FALLBACK_PROFILE_DATA.phone}</p>
                     </div>
                   </div>
                 </div>
@@ -638,7 +722,9 @@ const PersonalInfo = () => {
           editingSection === 'contact',
           () => startEdit('contact'),
           cancelEdit,
-          handleSubmit
+          handleSubmit,
+          'Editar',
+          profileMessage
         )}
 
         {/* Consejo */}

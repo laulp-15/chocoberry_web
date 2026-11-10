@@ -68,3 +68,16 @@
 .btn-download-receipt:hover {
   background: var(--secundario-1);
 }
+.btn-download-receipt:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.sale-detail-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px;
+  color: var(--error-100);
+  font-size: 0.9rem;
+}

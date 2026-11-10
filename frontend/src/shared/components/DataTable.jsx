@@ -1,5 +1,5 @@
 // src/shared/components/DataTable.jsx
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { OutlinedInput } from "@mui/material";
 import "./DataTable.css";
 
@@ -22,13 +22,13 @@ export default function DataTable({
   description,
   createLabel,
   onCreate,
-  onFiltersClick,
   extraFilter,
   columns,
   data,
   searchPlaceholder = "Buscar...",
   pageSize = 8,
   emptyMessage = "No hay registros para mostrar.",
+  tableLayout = "auto",
 }) {
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -93,7 +93,7 @@ export default function DataTable({
         }}
       >
         <div className="data-table-scroll">
-          <table className="data-table" style={{ width: '100%', tableLayout: 'auto', color: 'var(--texto)' }}>
+          <table className="data-table" style={{ width: '100%', tableLayout, color: 'var(--texto)' }}>
             <thead>
               <tr>
                 {columns.map((col) => (

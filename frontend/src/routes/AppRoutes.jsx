@@ -14,8 +14,10 @@ import AboutPage from "../features/about/pages/AboutPage";
 import LoginPage from "../features/login/pages/LoginPage";
 import RegisterPage from "../features/login/pages/RegisterPage";
 import ForgotPasswordPage from "../features/login/pages/ForgotPasswordPage";
+import ResetPasswordPage from "../features/login/pages/ResetPasswordPage";
 import ChangePasswordPage from "../features/login/pages/ChangePasswordPage";
 import RequireAuth from "../shared/components/RequireAuth";
+import { RequirePanelAccess } from "../shared/components/RequirePermission";
 
 import AdminRoutes from "./AdminRoutes";
 import ProfileRoutes from "./ProfileRoutes";
@@ -31,7 +33,14 @@ export default function AppRoutes() {
           <Route path="/productos" element={<ProductCatalog />} />
           <Route path="/productos/:id" element={<ProductDetail />} />
           <Route path="/carrito" element={<CartPage />} />
-          <Route path="/carrito/pago" element={<CheckoutPage />} />
+          <Route
+            path="/carrito/pago"
+            element={
+              <RequireAuth>
+                <CheckoutPage />
+              </RequireAuth>
+            }
+          />
           <Route path="/reseñas" element={<ReviewsPage />} />
           <Route path="/conocenos" element={<AboutPage />} />
 
@@ -50,6 +59,8 @@ export default function AppRoutes() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/registro" element={<RegisterPage />} />
         <Route path="/recuperar-contrasena" element={<ForgotPasswordPage />} />
+        <Route path="/restablecer-contrasena" element={<ResetPasswordPage />} />
+        <Route path="/establecer-contrasena" element={<ResetPasswordPage />} />
         <Route
           path="/cambiar-contrasena"
           element={
@@ -59,12 +70,14 @@ export default function AppRoutes() {
           }
         />
         
-        {/* Panel de administración protegido con RequireAuth */}
+        {/* Panel de administración: requiere al menos un módulo visible */}
         <Route
           path="/admin/*"
           element={
             <RequireAuth>
-              <AdminRoutes />
+              <RequirePanelAccess>
+                <AdminRoutes />
+              </RequirePanelAccess>
             </RequireAuth>
           }
         />

@@ -1,178 +1,425 @@
 // src/features/admin/dashboard/pages/DashboardPage.jsx
-import React, { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import KpiCard from "../../../../shared/components/KpiCard";
 import BarChart from "../../../../shared/components/BarChart";
 import DonutChart from "../../../../shared/components/DonutChart";
 import PieChart from "../../../../shared/components/PieChart";
 import TopProductsList from "../components/TopProductsList";
+import { usePermissions } from "../../../../shared/hooks/usePermissions";
 import { formatPrice } from "../../../../shared/utils/formatPrice";
-import { MUNICIPIOS } from "../../../cart/data/Shipping";
-import { ORDER_STATUSES } from "../../orders/data/orderStatus";
-import { INITIAL_ORDERS } from "../../orders/data/MockOrders";
+import useDashboard from "../hooks/useDashboard";
+import * as dashboardService from "../services/dashboardService";
 import "./DashboardPage.css";
 
-// TODO: reemplazar todo por datos reales del backend (features/admin/dashboard/services)
-const KPIS = [
-  { icon: "fa-clock", iconColor: "#F49505", value: "12", label: "Pedidos pendientes" },
-  {
-    icon: "fa-circle-check",
-    iconColor: "#24943C",
-    value: "48",
-    label: "Pedidos entregados",
-  },
-  {
-    icon: "fa-sack-dollar",
-    iconColor: "var(--primario)",
-    value: formatPrice(7850000),
-    label: "Ingresos del mes",
-    delta: { text: "10% más respecto al mes anterior", positive: true },
-  },
-  { icon: "fa-star", iconColor: "var(--primario)", value: "Caja Amor de Fresa", label: "Producto más vendido" },
+const SIN_SEMANAS = [];
+
+const MESES = [
+  "Enero",
+  "Febrero",
+  "Marzo",
+  "Abril",
+  "Mayo",
+  "Junio",
+  "Julio",
+  "Agosto",
+  "Septiembre",
+  "Octubre",
+  "Noviembre",
+  "Diciembre",
 ];
 
-const SALES_BY_WEEKDAY = [
-  { label: "Lun", value: 42 },
-  { label: "Mar", value: 58 },
-  { label: "Mié", value: 30 },
-  { label: "Jue", value: 74 },
-  { label: "Vie", value: 50 },
-  { label: "Sáb", value: 68 },
-  { label: "Dom", value: 60 },
-];
+const formatoVariacion = new Intl.NumberFormat("es-CO", {
+  maximumFractionDigits: 2,
+});
 
-const SALES_BY_MONTH = [
-  { label: "Ene", value: 20 }, { label: "Feb", value: 24 }, { label: "Mar", value: 18 },
-  { label: "Abr", value: 22 }, { label: "May", value: 16 }, { label: "Jun", value: 40 },
-  { label: "Jul", value: 38 }, { label: "Ago", value: 36 }, { label: "Sep", value: 42 },
-  { label: "Oct", value: 39 }, { label: "Nov", value: 44 }, { label: "Dic", value: 41 },
-];
+function construirDelta(variacion) {
+  if (!Number.isFinite(variacion) || variacion === 0) return undefined;
 
-const TOP_PRODUCTS = [
-  { name: "Caja Amor de Fresa", sold: 86 },
-  { name: "Corazón de Chocolate", sold: 64 },
-  { name: "Dulce Antojo", sold: 51 },
-  { name: "Fresas Rosadas", sold: 37 },
-  { name: "Caja Especial Cumpleaños", sold: 29 },
-];
+  return {
+    text: `${formatoVariacion.format(Math.abs(variacion))}% ${
+      variacion > 0 ? "más" : "menos"
+    } respecto al mes anterior`,
+    positive: variacion > 0,
+  };
+}
 
-// Mock ratings data (1-5 estrellas) - constante fuera del componente
-const RATINGS_DATA = [
-  { label: "5 estrellas", value: 42, color: "var(--success-100)" },
-  { label: "4 estrellas", value: 28, color: "var(--success-80)" },
-  { label: "3 estrellas", value: 15, color: "var(--warning-80)" },
-  { label: "2 estrellas", value: 5, color: "var(--error-80)" },
-  { label: "1 estrella", value: 3, color: "var(--error-100)" },
-];
-const RATINGS_TOTAL = RATINGS_DATA.reduce((s, r) => s + r.value, 0);
-const RATINGS_AVG = (
-  [5, 4, 3, 2, 1].reduce((s, star, i) => s + star * RATINGS_DATA[i].value, 0) / RATINGS_TOTAL
-).toFixed(1);
+function subtituloCalificaciones(total) {
+  return `${total} ${total === 1 ? "reseña" : "reseñas"}`;
+}
+
+function mesActualISO() {
+  const hoy = new Date();
+  return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function fechaHoyISO() {
+  const hoy = new Date();
+  return [
+    hoy.getFullYear(),
+    String(hoy.getMonth() + 1).padStart(2, "0"),
+    String(hoy.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
+function partesPeriodo(periodo) {
+  const [anio, mes] = String(periodo).split("-").map(Number);
+  return { anio, mes };
+}
+
+function mesLargo(valor) {
+  if (!valor) return "—";
+  const [anio, mes] = String(valor).split("-").map(Number);
+  return new Intl.DateTimeFormat("es-CO", {
+    month: "long",
+    year: "numeric",
+  }).format(new Date(anio, mes - 1, 1));
+}
 
 export default function DashboardPage() {
-  // Datos para las nuevas gráficas (useMemo DENTRO del componente)
-  const ORDERS_BY_MUNICIPIO = useMemo(() => {
-    const counts = {};
-    INITIAL_ORDERS.forEach((o) => {
-      if (o.municipio) {
-        counts[o.municipio] = (counts[o.municipio] || 0) + 1;
-      }
-    });
-    return MUNICIPIOS.map((m) => ({
-      label: m.label,
-      value: counts[m.value] || 0,
-    })).filter((m) => m.value > 0)
-      .sort((a, b) => b.value - a.value);
-  }, []);
+  const { can } = usePermissions();
+  const canExport = can("Dashboard", "Exportar reporte");
+  const [periodo, setPeriodo] = useState(mesActualISO);
+  const [semanaElegida, setSemanaElegida] = useState(null);
+  const [exportando, setExportando] = useState(null);
+  const [exportError, setExportError] = useState("");
+  const [menuAbierto, setMenuAbierto] = useState(false);
+  const menuRef = useRef(null);
+  const { resumen, loading, error, reload } = useDashboard({ mes: periodo });
 
-  const ORDERS_BY_STATUS = useMemo(() => {
-    const counts = {};
-    INITIAL_ORDERS.forEach((o) => {
-      counts[o.estado] = (counts[o.estado] || 0) + 1;
-    });
-    return ORDER_STATUSES.map((s) => ({
-      label: s.label,
-      value: counts[s.value] || 0,
-      color: s.color,
-    })).filter((s) => s.value > 0);
-  }, []);
+  const periodoActivo = resumen?.periodo?.mes ?? periodo;
+  const { anio: anioSeleccionado, mes: mesSeleccionado } = partesPeriodo(periodoActivo);
+  const hoy = new Date();
+  const anioActual = hoy.getFullYear();
+  const mesActual = hoy.getMonth() + 1;
+  const aniosDisponibles = resumen?.disponibilidad?.aniosDisponibles ?? [];
+  const aniosBase = aniosDisponibles.length ? aniosDisponibles : [anioActual];
+  const opcionesAnio = [...new Set([...aniosBase, anioSeleccionado])]
+    .filter((anio) => anio <= anioActual)
+    .sort((a, b) => a - b);
 
-  const handleGenerate = () => {
-    console.log("TODO: generar reporte");
+  const semanas = resumen?.semanasMes?.data ?? SIN_SEMANAS;
+  const indicePorDefecto = useMemo(() => {
+    if (!semanas.length) return 0;
+    if (resumen?.periodo?.mes !== mesActualISO()) return 0;
+
+    const hoyTexto = fechaHoyISO();
+    const indice = semanas.findIndex((semana) =>
+      semana.dias.some((dia) => dia.fecha === hoyTexto)
+    );
+    return indice >= 0 ? indice : 0;
+  }, [semanas, resumen?.periodo?.mes]);
+  const indiceElegido =
+    semanaElegida?.periodo === periodoActivo ? semanaElegida.indice : null;
+  const semanaIndice = Math.min(
+    indiceElegido ?? indicePorDefecto,
+    Math.max(semanas.length - 1, 0)
+  );
+  const semanaSeleccionada = semanas[semanaIndice] ?? null;
+  const diasSemana = semanaSeleccionada?.dias ?? [];
+  const periodoMesLargo = mesLargo(periodoActivo);
+
+  useEffect(() => {
+    if (!menuAbierto) return undefined;
+
+    const cerrar = (event) => {
+      if (!menuRef.current?.contains(event.target)) setMenuAbierto(false);
+    };
+    const cerrarConEscape = (event) => {
+      if (event.key === "Escape") setMenuAbierto(false);
+    };
+
+    document.addEventListener("mousedown", cerrar);
+    document.addEventListener("keydown", cerrarConEscape);
+    return () => {
+      document.removeEventListener("mousedown", cerrar);
+      document.removeEventListener("keydown", cerrarConEscape);
+    };
+  }, [menuAbierto]);
+
+  const cambiarMes = (event) => {
+    const nuevoMes = Number(event.target.value);
+    setPeriodo(`${anioSeleccionado}-${String(nuevoMes).padStart(2, "0")}`);
   };
 
-  const handleExport = () => {
-    console.log("TODO: exportar reporte (PDF/Excel)");
+  const cambiarAnio = (event) => {
+    const nuevoAnio = Number(event.target.value);
+    const mesDestino =
+      nuevoAnio === anioActual ? Math.min(mesSeleccionado, mesActual) : mesSeleccionado;
+    setPeriodo(`${nuevoAnio}-${String(mesDestino).padStart(2, "0")}`);
   };
+
+  const moverAnio = (destino) => {
+    if (!destino) return;
+    const mesDestino =
+      destino === anioActual ? Math.min(mesSeleccionado, mesActual) : mesSeleccionado;
+    setPeriodo(`${destino}-${String(mesDestino).padStart(2, "0")}`);
+  };
+
+  const handleExport = async (formato) => {
+    setMenuAbierto(false);
+    setExportError("");
+    setExportando(formato);
+
+    try {
+      await dashboardService.descargarReporte(formato, { mes: periodoActivo });
+    } catch (err) {
+      setExportError(err?.message || "No se pudo exportar el reporte.");
+    } finally {
+      setExportando(null);
+    }
+  };
+
+  const kpis = resumen
+    ? [
+        {
+          icon: "fa-clock",
+          iconColor: "#F49505",
+          value: resumen.kpis.pedidosPendientes,
+          label: "Pedidos pendientes",
+        },
+        {
+          icon: "fa-circle-check",
+          iconColor: "#24943C",
+          value: resumen.kpis.pedidosEntregados,
+          label: "Pedidos entregados",
+        },
+        {
+          icon: "fa-sack-dollar",
+          iconColor: "var(--primario)",
+          value: resumen.kpis.ingresosMes,
+          formatValue: formatPrice,
+          label: "Ingresos del mes",
+          hint: `Ingresos de ${periodoMesLargo}`,
+          delta: construirDelta(resumen.kpis.variacionPorcentual),
+        },
+        {
+          icon: "fa-star",
+          iconColor: "var(--primario)",
+          value: resumen.kpis.productoMasVendido || "Sin ventas",
+          label: "Producto más vendido del mes",
+          hint: `Producto más vendido de ${periodoMesLargo}`,
+        },
+      ]
+    : [];
+
+  const tabsSemana = semanas.map((semana, indice) => ({
+    label: semana.label,
+    active: indice === semanaIndice,
+    onClick: () => setSemanaElegida({ periodo: periodoActivo, indice }),
+  }));
 
   return (
-    <div className="dashboard-page">
+    <div className="dashboard-page" aria-busy={loading}>
       <div className="dashboard-header">
-        <div>
-          <h1 className="dashboard-title">¡Bienvenida a ChocoBerry!</h1>
-          <p className="dashboard-subtitle">Aquí tienes un resumen del comportamiento de tu negocio.</p>
-        </div>
-        <div className="dashboard-header-actions">
-          <button type="button" className="btn-generate-report" onClick={handleGenerate}>
-            <i className="fa-solid fa-file-word" />
-            Generar reporte
-          </button>
-          <button type="button" className="btn-export" onClick={handleExport}>
-            <i className="fa-solid fa-download" />
-            Exportar reporte
-          </button>
-        </div>
+        <h1 className="dashboard-title">¡Bienvenida a ChocoBerry!</h1>
+        <p className="dashboard-subtitle">
+          Aquí tienes un resumen del comportamiento de tu negocio.
+        </p>
       </div>
 
-      <div className="row dashboard-kpis">
-        {KPIS.map((kpi) => (
-          <div key={kpi.label} className="col-12 col-sm-6 col-lg-3 dashboard-col">
-            <KpiCard {...kpi} />
+      <div className="dashboard-toolbar">
+        <div className="dashboard-period-selector">
+          <span className="dashboard-period-title">
+            <i className="fa-solid fa-calendar" aria-hidden="true" />
+            Periodo
+          </span>
+          <select
+            className="dashboard-period-select"
+            aria-label="Mes"
+            value={mesSeleccionado}
+            onChange={cambiarMes}
+            disabled={loading}
+          >
+            {MESES.map((nombre, indice) => {
+              const valor = indice + 1;
+              return (
+                <option
+                  key={nombre}
+                  value={valor}
+                  disabled={anioSeleccionado === anioActual && valor > mesActual}
+                >
+                  {nombre}
+                </option>
+              );
+            })}
+          </select>
+          <select
+            className="dashboard-period-select"
+            aria-label="Año"
+            value={anioSeleccionado}
+            onChange={cambiarAnio}
+            disabled={loading}
+          >
+            {opcionesAnio.map((anio) => (
+              <option key={anio} value={anio}>
+                {anio}
+              </option>
+            ))}
+          </select>
+          {loading && (
+            <span className="dashboard-period-loading" role="status" aria-live="polite">
+              <i className="fa-solid fa-spinner fa-spin" aria-hidden="true" />
+              Actualizando...
+            </span>
+          )}
+        </div>
+
+        {canExport && (
+          <div className="dashboard-report-actions">
+            <div className="dashboard-export" ref={menuRef}>
+              <button
+                type="button"
+                className="btn-export"
+                onClick={() => setMenuAbierto((abierto) => !abierto)}
+                disabled={Boolean(exportando)}
+                aria-haspopup="menu"
+                aria-expanded={menuAbierto}
+              >
+                <i className={`fa-solid ${exportando ? "fa-spinner fa-spin" : "fa-download"}`} />
+                {exportando ? "Descargando..." : "Descargar reporte"}
+                <i className="fa-solid fa-chevron-down" />
+              </button>
+              {menuAbierto && (
+                <div className="dashboard-export-menu" role="menu">
+                  <button type="button" role="menuitem" onClick={() => handleExport("pdf")}>
+                    <i className="fa-solid fa-file-pdf" />
+                    Descargar PDF
+                  </button>
+                  <button type="button" role="menuitem" onClick={() => handleExport("excel")}>
+                    <i className="fa-solid fa-file-excel" />
+                    Descargar Excel
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-        ))}
+        )}
       </div>
 
-      <div className="row dashboard-row">
-        <div className="col-12 col-lg-7 dashboard-col">
-          <BarChart title="Ventas por semana" data={SALES_BY_WEEKDAY} />
-        </div>
-        <div className="col-12 col-lg-5 dashboard-col">
-          <TopProductsList products={TOP_PRODUCTS} />
-        </div>
-      </div>
+      {exportError && (
+        <p className="dashboard-inline-error" role="alert">
+          <i className="fa-solid fa-triangle-exclamation" aria-hidden="true" />
+          {exportError}
+        </p>
+      )}
 
-      <div className="row dashboard-row">
-        <div className="col-12 dashboard-col">
-          <BarChart title="Ventas por mes" data={SALES_BY_MONTH} />
+      {loading && !resumen && (
+        <div className="dashboard-state" role="status" aria-live="polite">
+          <i className="fa-solid fa-spinner fa-spin" aria-hidden="true" />
+          <p>Cargando dashboard...</p>
         </div>
-      </div>
+      )}
 
-      <div className="row dashboard-row">
-        <div className="col-12 col-lg-4 dashboard-col">
-          <DonutChart
-            title="Pedidos por municipio"
-            subtitle="Dónde se concentran las entregas"
-            data={ORDERS_BY_MUNICIPIO}
-            unit="pedidos"
-          />
+      {!loading && !resumen && error && (
+        <div className="dashboard-state dashboard-state--error" role="alert">
+          <i className="fa-solid fa-triangle-exclamation" aria-hidden="true" />
+          <p>{error}</p>
+          <button type="button" className="dashboard-retry" onClick={reload}>
+            Reintentar
+          </button>
         </div>
-        <div className="col-12 col-lg-4 dashboard-col">
-          <PieChart
-            title="Pedidos por estado"
-            subtitle="Avance de los pedidos actuales"
-            data={ORDERS_BY_STATUS}
-            unit="pedidos"
-          />
-        </div>
-        <div className="col-12 col-lg-4 dashboard-col">
-          <DonutChart
-            title="Calificaciones de los clientes"
-            subtitle={`${RATINGS_TOTAL} reseñas`}
-            data={RATINGS_DATA}
-            centerValue={RATINGS_AVG}
-            centerCaption="promedio"
-          />
-        </div>
-      </div>
+      )}
+
+      {resumen && (
+        <>
+          {error && (
+            <p className="dashboard-inline-error" role="alert">
+              <i className="fa-solid fa-triangle-exclamation" aria-hidden="true" />
+              {error}
+              <button type="button" className="dashboard-retry" onClick={reload}>
+                Reintentar
+              </button>
+            </p>
+          )}
+
+          <div className="row dashboard-kpis">
+            {kpis.map((kpi) => (
+              <div key={kpi.label} className="col-12 col-sm-6 col-lg-3 dashboard-col">
+                <KpiCard {...kpi} />
+              </div>
+            ))}
+          </div>
+
+          <div className="row dashboard-row">
+            <div className="col-12 col-lg-7 dashboard-col">
+              <BarChart
+                title="Ventas por semana"
+                subtitle={
+                  semanaSeleccionada
+                    ? `${semanaSeleccionada.label} · ${semanaSeleccionada.rango}`
+                    : "Sin semanas para este mes"
+                }
+                data={diasSemana}
+                formatValue={formatPrice}
+                periodLabel={periodoMesLargo}
+                tabs={tabsSemana}
+              />
+            </div>
+            <div className="col-12 col-lg-5 dashboard-col">
+              <TopProductsList
+                products={resumen.topProductos}
+                periodo={periodoMesLargo}
+              />
+            </div>
+          </div>
+
+          <div className="row dashboard-row">
+            <div className="col-12 dashboard-col">
+              <BarChart
+                title="Ventas por mes"
+                subtitle="Enero a diciembre"
+                data={resumen.ventasMes.data}
+                formatValue={formatPrice}
+                periodLabel={String(resumen.ventasMes.anio)}
+                onPrevious={
+                  resumen.ventasMes.anterior
+                    ? () => moverAnio(resumen.ventasMes.anterior)
+                    : undefined
+                }
+                onNext={
+                  resumen.ventasMes.siguiente
+                    ? () => moverAnio(resumen.ventasMes.siguiente)
+                    : undefined
+                }
+                previousLabel="Año anterior"
+                nextLabel="Año siguiente"
+              />
+            </div>
+          </div>
+
+          <div className="row dashboard-row">
+            <div className="col-12 col-lg-4 dashboard-col">
+              <DonutChart
+                title="Pedidos por municipio"
+                subtitle="Dónde se concentran las entregas"
+                data={resumen.pedidosPorMunicipio}
+                unit="pedidos"
+              />
+            </div>
+            <div className="col-12 col-lg-4 dashboard-col">
+              <PieChart
+                title="Pedidos por estado"
+                subtitle="Avance de los pedidos actuales"
+                data={resumen.pedidosPorEstado}
+                unit="pedidos"
+              />
+            </div>
+            <div className="col-12 col-lg-4 dashboard-col">
+              <DonutChart
+                title="Calificaciones de los clientes"
+                subtitle={subtituloCalificaciones(resumen.calificaciones.total)}
+                data={resumen.calificaciones.data}
+                centerValue={
+                  resumen.calificaciones.total
+                    ? resumen.calificaciones.promedio.toFixed(1)
+                    : "—"
+                }
+                centerCaption="promedio"
+              />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -140,3 +140,67 @@
 .btn-save:hover {
   background: var(--primario-oscuro);
 }
+
+.btn-save:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* --- Avisos del formulario --- */
+.order-form-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--texto-muted);
+  background: var(--secundario-3);
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+}
+
+.order-form-retry {
+  margin-left: 8px;
+  border: none;
+  background: none;
+  color: var(--primario);
+  font-family: "Poppins", sans-serif;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.order-form-note {
+  font-size: 12.5px;
+  color: var(--texto-muted);
+  line-height: 1.5;
+  background: var(--secundario-3);
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+}
+
+/* --- Comprobante actual en modo edición --- */
+.order-form-current-proof {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.order-form-proof-link {
+  display: inline-block;
+  width: fit-content;
+  line-height: 0;
+}
+
+.order-form-proof-thumb {
+  width: 110px;
+  height: 110px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--borde);
+  display: block;
+}

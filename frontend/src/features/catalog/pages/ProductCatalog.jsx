@@ -1,25 +1,27 @@
 // src/features/catalog/pages/ProductCatalog.jsx
-import React, { useState, useMemo } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import SearchBar from "../components/SearchBar";
 import CategoryChips from "../components/CategoryChips";
 import ProductCard from "../components/ProductCard";
-import { CATEGORIES, PRODUCTS } from "../data/Products";
+import useCatalogo from "../hooks/useCatalogo";
 import "./ProductCatalog.css";
 
 export default function ProductCatalog() {
   const navigate = useNavigate();
+  const { productos, categorias, minPrice, loading, error, reload } = useCatalogo();
+
   const [activeCategory, setActiveCategory] = useState("todas");
   const [query, setQuery] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
 
-  const filteredProducts = useMemo(() => {
-    return PRODUCTS.filter((p) => {
-      const matchesCat = activeCategory === "todas" || p.cat === activeCategory;
-      const matchesQuery = p.name.toLowerCase().includes(query.trim().toLowerCase());
-      return matchesCat && matchesQuery;
-    });
-  }, [activeCategory, query]);
+  const texto = query.trim().toLowerCase();
+  const filteredProducts = productos.filter((producto) => {
+    const matchesCat =
+      activeCategory === "todas" || producto.cat === activeCategory;
+    const matchesQuery = producto.name.toLowerCase().includes(texto);
+    return matchesCat && matchesQuery;
+  });
 
   const handleViewDetail = (product) => {
     navigate(`/productos/${product.id}`);
@@ -58,12 +60,25 @@ export default function ProductCatalog() {
         />
 
         <CategoryChips
-          categories={CATEGORIES}
+          categories={categorias}
           activeCategory={activeCategory}
           onChange={setActiveCategory}
         />
 
-        {filteredProducts.length > 0 ? (
+        {error ? (
+          <div className="empty-state">
+            <i className="fa-solid fa-triangle-exclamation" />
+            {error}
+            <button type="button" className="catalog-retry" onClick={reload}>
+              Reintentar
+            </button>
+          </div>
+        ) : loading ? (
+          <div className="empty-state">
+            <i className="fa-solid fa-spinner fa-spin" />
+            Cargando productos...
+          </div>
+        ) : filteredProducts.length > 0 ? (
           <div className="row">
             {filteredProducts.map((product, index) => (
               <div
@@ -73,6 +88,7 @@ export default function ProductCatalog() {
               >
                 <ProductCard
                   product={product}
+                  minPrice={minPrice}
                   onViewDetail={handleViewDetail}
                 />
               </div>

@@ -28,7 +28,7 @@
   margin-bottom: 0;
 }
 
-/* Fila de dos columnas para campos que van juntos (ej. dirección y barrio) */
+/* Fila de dos columnas para campos que van juntos (ej. dirección y municipio) */
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -94,6 +94,12 @@
 .form-error {
   font-size: 12px;
   color: var(--primario);
+  margin-top: 6px;
+}
+
+.form-hint {
+  font-size: 11px;
+  color: var(--texto-suave);
   margin-top: 6px;
 }
 

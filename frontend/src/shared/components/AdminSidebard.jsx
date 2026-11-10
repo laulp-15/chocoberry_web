@@ -1,6 +1,5 @@
 // src/shared/components/AdminSidebar.jsx
-import React from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../features/login/hooks/useAuth";
 import "./AdminSidebar.css";
 
@@ -24,18 +23,13 @@ const NAV_ITEMS = [
  */
 export default function AdminSidebar({ open, onClose }) {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
-  const handleLogout = (e) => {
+  const handleLogout = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    // Alerta de prueba para verificar si el botón responde al clic
-    alert("¡Botón de cerrar sesión presionado con éxito!");
-
-    logout();
-    localStorage.removeItem("cb_session");
-    sessionStorage.removeItem("cb_session");
-    window.location.href = "/login";
+    await logout();
+    navigate("/login", { replace: true });
   };
 
   return (

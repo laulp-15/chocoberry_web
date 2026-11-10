@@ -1,7 +1,13 @@
 // src/features/cart/hooks/useCart.jsx
-import React, { createContext, useContext, useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { createContext, useContext, useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useAuth } from "../../login/hooks/useAuth";
 import { useNavigate, useLocation } from "react-router-dom";
+import CartNotification from "../components/CartNotification";
+import {
+  MAX_CART_UNITS,
+  normalizarCantidad,
+  totalUnidades,
+} from "../../../shared/utils/orderRules";
 
 const CartContext = createContext(null);
 
@@ -11,7 +17,7 @@ export function CartProvider({ children }) {
   const [items, setItems] = useState([]);
   const [cardMessage, setCardMessage] = useState("");
   
-  // Estado para la alerta visual amarilla
+  // Aviso de sesión (advertencia) o de producto añadido tras el login (éxito).
   const [authAlert, setAuthAlert] = useState(false);
 
   const { user } = useAuth();
@@ -22,6 +28,16 @@ export function CartProvider({ children }) {
   // Función interna para añadir item al carrito (sin verificación de auth)
   const doAddItem = useCallback(
     (item) => {
+      // El pedido de la tienda no puede superar 20 unidades en total.
+      const remaining = MAX_CART_UNITS - totalUnidades(items);
+      if (remaining <= 0) {
+        return { merged: false, limitReached: true };
+      }
+
+      // Se añaden las unidades elegidas, recortadas al cupo disponible.
+      const requested = normalizarCantidad(item.units ?? 1);
+      const unitsToAdd = Math.min(requested, remaining);
+
       const existing = items.find(
         (it) => it.productId === item.productId && it.quantity === item.quantity && it.color === item.color
       );
@@ -29,10 +45,12 @@ export function CartProvider({ children }) {
       if (existing) {
         setItems(
           items.map((it) =>
-            it.cartItemId === existing.cartItemId ? { ...it, units: it.units + 1 } : it
+            it.cartItemId === existing.cartItemId
+              ? { ...it, units: it.units + unitsToAdd }
+              : it
           )
         );
-        return { merged: true };
+        return { merged: true, addedUnits: unitsToAdd };
       }
 
       const cartItemId = `${item.productId}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -40,13 +58,12 @@ export function CartProvider({ children }) {
         ...items,
         {
           cartItemId,
-          units: 1,
           decorativeMessage: "",
-          extraCustomization: "",
           ...item,
+          units: unitsToAdd,
         },
       ]);
-      return { merged: false };
+      return { merged: false, addedUnits: unitsToAdd };
     },
     [items]
   );
@@ -125,12 +142,14 @@ export function CartProvider({ children }) {
     setCardMessage("");
   }, []);
 
-  const updateUnits = useCallback((cartItemId, delta) => {
+  // `nextUnits` es la cantidad absoluta escrita o calculada por el stepper.
+  // Se normaliza a un entero >= 1; el tope de 20 se valida sobre el total del
+  // carrito para poder mostrar el aviso al usuario.
+  const updateUnits = useCallback((cartItemId, nextUnits) => {
+    const unidades = normalizarCantidad(nextUnits);
     setItems((prev) =>
       prev.map((it) =>
-        it.cartItemId === cartItemId
-          ? { ...it, units: Math.max(1, it.units + delta) }
-          : it
+        it.cartItemId === cartItemId ? { ...it, units: unidades } : it
       )
     );
   }, []);
@@ -159,43 +178,22 @@ export function CartProvider({ children }) {
     <CartContext.Provider value={value}>
       {children}
       
-      {/* Aviso visual bonito y de color amarillo */}
-      {authAlert && (
-        <div
-          style={{
-            position: "fixed",
-            top: "20px",
-            right: "20px",
-            zIndex: 9999,
-            backgroundColor: "#FEF3C7",
-            color: "#92400E",
-            border: "1px solid #F59E0B",
-            padding: "16px 20px",
-            borderRadius: "8px",
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
-            fontFamily: "inherit",
-            maxWidth: "350px",
-            animation: "fadeIn 0.3s ease-in-out",
-          }}
-        >
-          <i className="fa-solid fa-triangle-exclamation" style={{ fontSize: "20px", color: "#D97706" }}></i>
-          <div>
-            <strong style={{ display: "block", fontSize: "14px", marginBottom: "2px" }}>¡Atención!</strong>
-            <span style={{ fontSize: "13px" }}>
-              {user 
-                ? "Producto añadido al carrito" 
-                : "Debes iniciar sesión o registrarte para continuar con tu pedido. Redirigiendo..."}
-            </span>
-          </div>
-        </div>
-      )}
+      <CartNotification
+        open={authAlert}
+        onClose={() => setAuthAlert(false)}
+        variant={user ? "success" : "warning"}
+        message={
+          user
+            ? "Producto añadido al carrito"
+            : "Debes iniciar sesión o registrarte para continuar con tu pedido. Redirigiendo..."
+        }
+      />
     </CartContext.Provider>
   );
 }
 
+// El hook se exporta junto al provider porque comparten el mismo contexto.
+// eslint-disable-next-line react-refresh/only-export-components
 export function useCart() {
   const ctx = useContext(CartContext);
   if (!ctx) throw new Error("useCart debe usarse dentro de <CartProvider>");

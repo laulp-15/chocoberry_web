@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import ReactDOM from 'react-dom';
 import { useReviews } from '../hooks/useReviews';
 import { useAuth } from '../../login/hooks/useAuth';
@@ -7,7 +7,7 @@ import ReviewFormModal from '../components/ReviewFormModal';
 import './ReviewsPage.css';
 
 // Portal para la alerta de autenticación - se renderiza en document.body
-function AuthAlert({ isOpen, onClose }) {
+function AuthAlert({ isOpen, message }) {
   if (!isOpen) return null;
 
   return ReactDOM.createPortal(
@@ -15,7 +15,7 @@ function AuthAlert({ isOpen, onClose }) {
       <i className="fa-solid fa-triangle-exclamation" aria-hidden="true" />
       <div>
         <strong>¡Atención!</strong>
-        <span>Debes iniciar sesión o registrarte para poder dejar una reseña. Redirigiendo...</span>
+        <span>{message}</span>
       </div>
     </div>,
     document.body
@@ -23,22 +23,35 @@ function AuthAlert({ isOpen, onClose }) {
 }
 
 export default function ReviewsPage() {
-  const { reviews, loading, addReview } = useReviews();
-  const { user, isAuthenticated } = useAuth();
+  const { reviews, loading, error, addReview, reload } = useReviews();
+  const { user, isAuthenticated, role } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [authAlert, setAuthAlert] = useState(false);
+  const [authAlert, setAuthAlert] = useState("");
   
   // Estado para controlar el filtro de estrellas (null u 0 significa "Todas")
   const [selectedRating, setSelectedRating] = useState(null);
 
+  const averageRating = reviews.length
+    ? reviews.reduce((total, review) => total + Number(review.rating || 0), 0) / reviews.length
+    : 0;
+  const fullStars = Math.floor(averageRating);
+  const hasHalfStar = averageRating - fullStars >= 0.5;
+
   const handleAddReview = () => {
     if (!isAuthenticated) {
-      setAuthAlert(true);
+      setAuthAlert("Debes iniciar sesión o registrarte para poder dejar una reseña. Redirigiendo...");
       setTimeout(() => {
         window.location.href = "/login";
       }, 3000);
       return;
     }
+
+    if (role === "repartidor") {
+      setAuthAlert("Las reseñas solo pueden publicarlas clientes y administradores.");
+      setTimeout(() => setAuthAlert(""), 4000);
+      return;
+    }
+
     setIsModalOpen(true);
   };
 
@@ -69,19 +82,40 @@ export default function ReviewsPage() {
           {/* TARJETA RESUMEN DE CALIFICACIÓN */}
           <div className="rating-summary-hero">
             <div className="score-block">
-              <div className="big-number">4.9</div>
+              <div className="big-number">
+                {reviews.length ? averageRating.toFixed(1) : "—"}
+              </div>
               <div className="stars-and-label">
-                <div className="stars-row">
-                  {[...Array(5)].map((_, i) => (
-                    <i 
-                      key={i} 
-                      className="fa-solid fa-star" 
-                      style={{ color: '#F49B05', fontSize: '1.1rem' }} 
-                      aria-hidden="true" 
-                    />
-                  ))}
+                <div
+                  className="stars-row"
+                  aria-label={
+                    reviews.length
+                      ? `Promedio de ${averageRating.toFixed(1)} de 5 estrellas`
+                      : "Sin calificaciones todavía"
+                  }
+                >
+                  {[1, 2, 3, 4, 5].map((star) => {
+                    let icon = "fa-regular fa-star";
+                    if (star <= fullStars) icon = "fa-solid fa-star";
+                    else if (star === fullStars + 1 && hasHalfStar) {
+                      icon = "fa-solid fa-star-half-stroke";
+                    }
+
+                    return (
+                      <i
+                        key={star}
+                        className={icon}
+                        style={{ color: '#F49B05', fontSize: '1.1rem' }}
+                        aria-hidden="true"
+                      />
+                    );
+                  })}
                 </div>
-                <span className="count-label">Basado en opiniones reales</span>
+                <span className="count-label">
+                  {reviews.length
+                    ? `${reviews.length} ${reviews.length === 1 ? 'reseña' : 'reseñas'}`
+                    : 'Sé el primero en opinar'}
+                </span>
               </div>
             </div>
 
@@ -142,6 +176,20 @@ export default function ReviewsPage() {
               <div className="spinner"></div>
               <p>Cargando comentarios llenos de dulzura...</p>
             </div>
+          ) : error ? (
+            <div className="empty-state">
+              <i
+                className="fa-solid fa-triangle-exclamation"
+                style={{ fontSize: '3rem', color: '#7A3245' }}
+                aria-hidden="true"
+              />
+              <h3>No pudimos cargar las reseñas</h3>
+              <p>{error}</p>
+              <button type="button" className="btn-add-review-hero" onClick={reload}>
+                <i className="fa-solid fa-rotate-right" aria-hidden="true" />
+                <span>Reintentar</span>
+              </button>
+            </div>
           ) : filteredReviews.length === 0 ? (
             <div className="empty-state">
               <i 
@@ -149,8 +197,16 @@ export default function ReviewsPage() {
                 style={{ fontSize: '3rem', color: '#7A3245' }} 
                 aria-hidden="true" 
               />
-              <h3>No hay reseñas con este filtro</h3>
-              <p>Intenta seleccionando otro número de estrellas o sé el primero en opinar.</p>
+              <h3>
+                {reviews.length === 0
+                  ? 'Todavía no hay reseñas'
+                  : 'No hay reseñas con este filtro'}
+              </h3>
+              <p>
+                {reviews.length === 0
+                  ? 'Sé el primero en compartir tu experiencia con ChocoBerry.'
+                  : 'Intenta seleccionando otro número de estrellas.'}
+              </p>
             </div>
           ) : (
             <div className="reviews-grid">
@@ -162,13 +218,15 @@ export default function ReviewsPage() {
         </main>
 
         {/* ALERTA DE AUTENTICACIÓN - Portal en document.body */}
-        <AuthAlert isOpen={authAlert} onClose={() => setAuthAlert(false)} />
+        <AuthAlert isOpen={Boolean(authAlert)} message={authAlert} />
 
         {/* MODAL PARA NUEVA RESEÑA */}
         <ReviewFormModal 
+          key={isModalOpen ? "review-modal-open" : "review-modal-closed"}
           isOpen={isModalOpen} 
           onClose={() => setIsModalOpen(false)} 
-          onSubmit={addReview} 
+          onSubmit={addReview}
+          userName={user?.fullName}
         />
 
       </div>

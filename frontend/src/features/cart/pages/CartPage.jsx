@@ -1,44 +1,62 @@
 // src/features/cart/pages/CartPage.jsx
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useCart } from "../hooks/UseCart";
 import CartItemCard from "../components/CartItemCard";
 import CartSummary from "../components/CartSummary";
 import CartNotification from "../components/CartNotification";
 import ConfirmModal from "../../../shared/components/ConfirmModal";
+import {
+  MAX_CART_UNITS,
+  excedeLimiteCarrito,
+  totalUnidades,
+} from "../../../shared/utils/orderRules";
 import "./CartPage.css";
 
 export default function CartPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { items, removeItem, updateUnits, updateField, clearCart, cardMessage, setCardMessage } = useCart();
+  const { items, removeItem, updateUnits, updateField, clearCart } = useCart();
   const [clearModalOpen, setClearModalOpen] = useState(false);
-  const [mergedNotificationOpen, setMergedNotificationOpen] = useState(false);
+  const [mergedNotificationOpen, setMergedNotificationOpen] = useState(
+    () => Boolean(location.state?.merged)
+  );
 
-  // Si venimos de "Añadir al Carrito" y el producto se fusionó con una línea
-  // ya existente (mismo producto + cantidad + color), avisamos aquí.
   useEffect(() => {
-    if (location.state?.merged) {
-      setMergedNotificationOpen(true);
-      navigate(location.pathname, { replace: true, state: {} });
-    }
+    if (!location.state?.merged) return;
+    navigate(location.pathname, { replace: true, state: {} });
   }, [location.state, location.pathname, navigate]);
 
   const handleCheckout = () => {
+    if (excedeLimiteCarrito(items)) return;
     navigate("/carrito/pago");
   };
+
+  const puedeAumentar = totalUnidades(items) < MAX_CART_UNITS;
 
   const handleConfirmClear = () => {
     clearCart();
     setClearModalOpen(false);
   };
 
+  const cantidadProductos = items.length;
+
   return (
     <div className="cart-page">
       <div className="container cart-wrap">
-        {items.length > 0 && <h1 className="cart-title">Tu Carrito</h1>}
+        {cantidadProductos > 0 && (
+          <header className="cart-header">
+            <div className="cart-heading-row">
+              <span className="cart-icon" aria-hidden="true">
+                <i className="fa-solid fa-cart-shopping" />
+              </span>
+              <h1 className="cart-title">Tu Carrito</h1>
+            </div>
+            <span className="cart-title-line" aria-hidden="true" />
+          </header>
+        )}
 
-        {items.length === 0 ? (
+        {cantidadProductos === 0 ? (
           <div className="cart-empty">
             <i className="fa-solid fa-cart-plus" />
 
@@ -67,6 +85,7 @@ export default function CartPage() {
                   onUnitsChange={updateUnits}
                   onFieldChange={updateField}
                   onRemove={removeItem}
+                  canIncrease={puedeAumentar}
                 />
               ))}
             </div>
@@ -109,7 +128,6 @@ export default function CartPage() {
       <CartNotification
         open={mergedNotificationOpen}
         onClose={() => setMergedNotificationOpen(false)}
-        title="Producto ya en el carrito"
         message="El producto ya estaba en el carrito. Se ha añadido una cantidad más."
       />
     </div>

@@ -7,7 +7,7 @@
  *   const error = validateEmail(email);
  *
  * También viven aquí los datos de identidad del sistema (documento,
- * nombres/apellidos, dirección y barrio): los usan el registro, el perfil
+ * nombres/apellidos y dirección): los usan el registro, el perfil
  * y el panel de usuarios, y deben regirse por UNA sola política.
  */
 
@@ -16,8 +16,10 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const NAME_REGEX = /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+(?:\s[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+)+$/;
 
 export function validateEmail(value) {
-  if (!value?.trim()) return "El correo electrónico es obligatorio.";
-  if (!EMAIL_REGEX.test(value.trim())) return "Ingresa un correo válido.";
+  const v = value?.trim() ?? "";
+  if (!v) return "El correo electrónico es obligatorio.";
+  if (v.length > 150) return "El correo no puede superar los 150 caracteres.";
+  if (!EMAIL_REGEX.test(v)) return "Ingresa un correo válido.";
   return "";
 }
 
@@ -73,6 +75,7 @@ const PHONE_ALLOWED_REGEX = /^[\d\s-]+$/;
 export function validatePhone(value) {
   const v = value?.trim() ?? "";
   if (!v) return "";
+  if (v.length > 20) return "El teléfono no puede superar los 20 caracteres.";
   if (!PHONE_ALLOWED_REGEX.test(v)) return "El teléfono solo debe contener números.";
   if (v.replace(/\D/g, "").length !== 10) return "El teléfono debe tener 10 dígitos.";
   return "";
@@ -116,6 +119,7 @@ export function validateNombres(value) {
   const v = value?.trim() ?? "";
   if (!v) return "El nombre es obligatorio.";
   if (v.length < 2) return "El nombre es demasiado corto.";
+  if (v.length > 100) return "El nombre no puede superar los 100 caracteres.";
   if (!SINGLE_NAME_REGEX.test(v)) return "El nombre solo debe contener letras.";
   return "";
 }
@@ -124,6 +128,7 @@ export function validateApellidos(value) {
   const v = value?.trim() ?? "";
   if (!v) return "El apellido es obligatorio.";
   if (v.length < 2) return "El apellido es demasiado corto.";
+  if (v.length > 100) return "El apellido no puede superar los 100 caracteres.";
   if (!SINGLE_NAME_REGEX.test(v)) return "El apellido solo debe contener letras.";
   return "";
 }
@@ -132,12 +137,6 @@ export function validateAddress(value) {
   const v = value?.trim() ?? "";
   if (!v) return "La dirección es obligatoria.";
   if (v.length < 5) return "Ingresa una dirección válida.";
-  return "";
-}
-
-export function validateNeighborhood(value) {
-  const v = value?.trim() ?? "";
-  if (!v) return "El barrio es obligatorio.";
-  if (v.length < 3) return "El barrio es demasiado corto.";
+  if (v.length > 200) return "La dirección no puede superar los 200 caracteres.";
   return "";
 }

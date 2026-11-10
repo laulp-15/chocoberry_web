@@ -1,8 +1,13 @@
-import React from 'react';
 import { useCustomers } from '../hooks/useCustomers';
+import { usePermissions } from '../../../../shared/hooks/usePermissions';
 import CustomerFormModal from '../components/CustomerFormModal';
 
 export default function CustomersListPage() {
+  const { can } = usePermissions();
+  const canCreate = can('Usuarios', 'Crear');
+  const canEdit = can('Usuarios', 'Editar');
+  const canDelete = can('Usuarios', 'Eliminar');
+  const canToggle = can('Usuarios', 'Cambiar estado');
   const {
     searchTerm,
     handleSearchChange,
@@ -40,26 +45,28 @@ export default function CustomersListPage() {
 
       {/* FILTROS Y BÚSQUEDA */}
       <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-        <button
-          onClick={handleOpenCreate}
-          style={{
-            backgroundColor: '#E63950',
-            color: '#ffffff',
-            border: 'none',
-            padding: '0.65rem 1.2rem',
-            borderRadius: '25px',
-            fontWeight: '600',
-            fontSize: '0.9rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            cursor: 'pointer',
-            boxShadow: '0 2px 5px rgba(230, 57, 80, 0.2)',
-          }}
-        >
-          <i className="fa-solid fa-plus" aria-hidden="true" />
-          Crear cliente
-        </button>
+        {canCreate && (
+          <button
+            onClick={handleOpenCreate}
+            style={{
+              backgroundColor: '#E63950',
+              color: '#ffffff',
+              border: 'none',
+              padding: '0.65rem 1.2rem',
+              borderRadius: '25px',
+              fontWeight: '600',
+              fontSize: '0.9rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              cursor: 'pointer',
+              boxShadow: '0 2px 5px rgba(230, 57, 80, 0.2)',
+            }}
+          >
+            <i className="fa-solid fa-plus" aria-hidden="true" />
+            Crear cliente
+          </button>
+        )}
 
         <div style={{ position: 'relative', flex: 1, minWidth: '250px' }}>
           <input
@@ -167,21 +174,27 @@ export default function CustomersListPage() {
                   {/* ESTADO (SWITCH TOGGLE) */}
                   <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
                     <button
-                      onClick={() => handleToggleStatus(cliente.id)}
+                      onClick={canToggle ? () => handleToggleStatus(cliente.id) : undefined}
+                      disabled={!canToggle}
                       style={{
                         width: '46px',
                         height: '24px',
                         borderRadius: '12px',
                         backgroundColor: cliente.estado === 'Activo' ? '#2E7D32' : '#E8D7DC',
                         border: 'none',
-                        cursor: 'pointer',
+                        cursor: canToggle ? 'pointer' : 'not-allowed',
+                        opacity: canToggle ? 1 : 0.55,
                         position: 'relative',
                         transition: 'background-color 0.2s ease',
                         display: 'inline-flex',
                         alignItems: 'center',
                         padding: '2px'
                       }}
-                      title={`Estado: ${cliente.estado}. Clic para cambiar.`}
+                      title={
+                        canToggle
+                          ? `Estado: ${cliente.estado}. Clic para cambiar.`
+                          : 'No tienes permiso para cambiar el estado.'
+                      }
                     >
                       <div
                         style={{
@@ -214,26 +227,30 @@ export default function CustomersListPage() {
                       </button>
 
                       {/* Editar */}
-                      <button 
-                        onClick={() => handleOpenEdit(cliente)}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B5A54', padding: 0 }} 
-                        title="Editar"
-                      >
-                        <svg width="16" height="16" viewBox="0 0 512 512" fill="currentColor">
-                          <path d="M471.6 21.7c-21.9-21.9-57.3-21.9-79.2 0L362.3 51.7l97.9 97.9 30.1-30.1c21.9-21.9 21.9-57.3 0-79.2L471.6 21.7zm-299.2 220c-6.1 6.1-10.8 13.6-13.5 21.9l-29.6 88.8c-2.9 8.6-.6 18.1 5.8 24.6s15.9 8.7 24.6 5.8l88.8-29.6c8.3-2.8 15.8-7.4 21.9-13.5L437.7 172.3 339.7 74.3 172.4 241.7zM96 64C43 64 0 107 0 160V416c0 53 43 96 96 96H352c53 0 96-43 96-96V320c0-17.7-14.3-32-32-32s-32 14.3-32 32v96c0 17.7-14.3 32-32 32H96c-17.7 0-32-14.3-32-32V160c0-17.7 14.3-32 32-32h96c17.7 0 32-14.3 32-32s-14.3-32-32-32H96z"/>
-                        </svg>
-                      </button>
+                      {canEdit && (
+                        <button 
+                          onClick={() => handleOpenEdit(cliente)}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B5A54', padding: 0 }} 
+                          title="Editar"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 512 512" fill="currentColor">
+                            <path d="M471.6 21.7c-21.9-21.9-57.3-21.9-79.2 0L362.3 51.7l97.9 97.9 30.1-30.1c21.9-21.9 21.9-57.3 0-79.2L471.6 21.7zm-299.2 220c-6.1 6.1-10.8 13.6-13.5 21.9l-29.6 88.8c-2.9 8.6-.6 18.1 5.8 24.6s15.9 8.7 24.6 5.8l88.8-29.6c8.3-2.8 15.8-7.4 21.9-13.5L437.7 172.3 339.7 74.3 172.4 241.7zM96 64C43 64 0 107 0 160V416c0 53 43 96 96 96H352c53 0 96-43 96-96V320c0-17.7-14.3-32-32-32s-32 14.3-32 32v96c0 17.7-14.3 32-32 32H96c-17.7 0-32-14.3-32-32V160c0-17.7 14.3-32 32-32h96c17.7 0 32-14.3 32-32s-14.3-32-32-32H96z"/>
+                          </svg>
+                        </button>
+                      )}
 
                       {/* Eliminar */}
-                      <button 
-                        onClick={() => handleOpenDelete(cliente)}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B5A54', padding: 0 }} 
-                        title="Eliminar"
-                      >
-                        <svg width="16" height="16" viewBox="0 0 448 512" fill="currentColor">
-                          <path d="M135.2 17.7L128 32H32C14.3 32 0 46.3 0 64S14.3 96 32 96H416c17.7 0 32-14.3 32-32s-14.3-32-32-32H320l-7.2-14.3C307.4 6.8 296.3 0 284.2 0H163.8c-12.1 0-23.2 6.8-28.6 17.7zM416 128H32L53.2 467c1.6 25.3 22.6 45 47.9 45H346.9c25.3 0 46.3-19.7 47.9-45L416 128z"/>
-                        </svg>
-                      </button>
+                      {canDelete && (
+                        <button 
+                          onClick={() => handleOpenDelete(cliente)}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B5A54', padding: 0 }} 
+                          title="Eliminar"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 448 512" fill="currentColor">
+                            <path d="M135.2 17.7L128 32H32C14.3 32 0 46.3 0 64S14.3 96 32 96H416c17.7 0 32-14.3 32-32s-14.3-32-32-32H320l-7.2-14.3C307.4 6.8 296.3 0 284.2 0H163.8c-12.1 0-23.2 6.8-28.6 17.7zM416 128H32L53.2 467c1.6 25.3 22.6 45 47.9 45H346.9c25.3 0 46.3-19.7 47.9-45L416 128z"/>
+                          </svg>
+                        </button>
+                      )}
 
                     </div>
                   </td>

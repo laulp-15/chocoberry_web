@@ -9,6 +9,28 @@ export const ORDER_STATUSES = [
   { value: "cancelado", label: "Cancelado", color: "#DD322D" },
 ];
 
+/**
+ * Transiciones reales del backend (/api/pedidos/:id/estado).
+ * "Rechazado" se aplica por el endpoint de rechazo (exige motivo), no por
+ * el cambio de estado normal.
+ */
+export const ORDER_STATUS_TRANSITIONS = {
+  pendiente: ["en_preparacion", "rechazado"],
+  en_preparacion: ["despachado"],
+  despachado: ["entregado", "cancelado"],
+  entregado: [],
+  rechazado: [],
+  cancelado: [],
+};
+
 export function getStatusMeta(value) {
   return ORDER_STATUSES.find((s) => s.value === value) ?? ORDER_STATUSES[0];
+}
+
+export function getNextStatuses(status) {
+  return ORDER_STATUS_TRANSITIONS[status] ?? [];
+}
+
+export function isFinalStatus(status) {
+  return getNextStatuses(status).length === 0;
 }

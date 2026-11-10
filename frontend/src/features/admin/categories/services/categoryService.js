@@ -1,48 +1,63 @@
-// src/categories/services/categoryService.js
+// src/features/admin/categories/services/categoryService.js
+//
+// Llamadas reales al backend para el módulo de categorías del panel
+// administrador (/api/categorias). Solo esta capa conoce esas rutas.
 
-// Categorías oficiales de ChocoBerry
-let categoriesData = [
-  { id: 1, name: "Día de la Madre", description: "Detalles especiales para celebrar a mamá en su día.", status: "Activo" },
-  { id: 2, name: "Día del Padre", description: "Empaques y diseños pensados para papá.", status: "Activo" },
-  { id: 3, name: "Día de la Mujer", description: "Arreglos y fresas especiales para conmemorar este día.", status: "Activo" },
-  { id: 4, name: "Cumpleaños", description: "Cajas personalizadas con números y mensajes de cumpleaños.", status: "Activo" },
-  { id: 5, name: "Antojos", description: "Porciones individuales y antojos dulces del día a día.", status: "Activo" },
-  { id: 6, name: "Aniversarios", description: "Cajas románticas para parejas y fechas especiales.", status: "Activo" },
-  { id: 7, name: "Regalos", description: "Detalles generales ideales para cualquier ocasión.", status: "Activo" },
-];
+import { api } from '../../../../shared/api/client';
+import {
+  mapCategoriaAdmin,
+  mapCategoriasAdmin,
+  mapGuardarError,
+  toActualizarCategoriaPayload,
+  toCrearCategoriaPayload,
+} from './categoryMappers';
 
-export const categoryService = {
-  getCategories: async () => {
-    return [...categoriesData];
-  },
-  
-  saveCategory: async (category) => {
-    if (category.id) {
-      categoriesData = categoriesData.map((item) =>
-        item.id === category.id ? { ...item, ...category } : item
-      );
-    } else {
-      const newCategory = {
-        ...category,
-        id: Date.now(),
-        status: category.status || "Activo",
-      };
-      categoriesData.push(newCategory);
-    }
-    return true;
-  },
+/** GET /categorias -> lista traducida al shape del panel. */
+export async function listar() {
+  const categorias = await api.get('/categorias');
+  return mapCategoriasAdmin(categorias);
+}
 
-  toggleCategoryStatus: async (id) => {
-    categoriesData = categoriesData.map((item) =>
-      item.id === id
-        ? { ...item, status: item.status === "Activo" ? "Inactivo" : "Activo" }
-        : item
+/** GET /categorias/:id */
+export async function obtener(id) {
+  const categoria = await api.get(`/categorias/${id}`);
+  return mapCategoriaAdmin(categoria);
+}
+
+/** POST /categorias */
+export async function crear(datos) {
+  try {
+    const categoria = await api.post('/categorias', toCrearCategoriaPayload(datos));
+    return mapCategoriaAdmin(categoria);
+  } catch (error) {
+    throw mapGuardarError(error);
+  }
+}
+
+/** PUT /categorias/:id */
+export async function actualizar(id, datos) {
+  try {
+    const categoria = await api.put(
+      `/categorias/${id}`,
+      toActualizarCategoriaPayload(datos)
     );
-    return true;
-  },
+    return mapCategoriaAdmin(categoria);
+  } catch (error) {
+    throw mapGuardarError(error);
+  }
+}
 
-  deleteCategory: async (id) => {
-    categoriesData = categoriesData.filter((item) => item.id !== id);
-    return true;
-  },
-};
+/** PATCH /categorias/:id/estado */
+export async function cambiarEstado(id, estado) {
+  const categoria = await api.patch(`/categorias/${id}/estado`, { estado });
+  return mapCategoriaAdmin(categoria);
+}
+
+/**
+ * DELETE /categorias/:id.
+ * El backend rechaza (409) si la categoría tiene productos asociados; el
+ * mensaje se propaga tal cual para mostrarlo en la UI.
+ */
+export async function eliminar(id) {
+  await api.del(`/categorias/${id}`);
+}

@@ -166,3 +166,12 @@
     transition: none;
   }
 }
+.tp-empty {
+  margin: 0;
+  padding: 24px 12px;
+  border: 1px dashed var(--borde);
+  border-radius: 12px;
+  color: var(--texto-muted);
+  font-size: 13px;
+  text-align: center;
+}

@@ -2,7 +2,7 @@
 // src/features/login/pages/RegisterPage.jsx
 // ============================================================
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import AuthLayout from "../components/AuthLayout";
@@ -24,10 +24,13 @@ import {
   validateNombres,
   validateApellidos,
   validateAddress,
-  validateNeighborhood,
 } from "../utils/validators";
 
 import { DOC_TYPE_OPTIONS } from "../../../shared/utils/documentTypes";
+import { POLICY_DOCS } from "../../../shared/utils/policyDocs";
+
+const TERMS_DOCUMENT = POLICY_DOCS.find((doc) => doc.id === "politica");
+const PRIVACY_DOCUMENT = POLICY_DOCS.find((doc) => doc.id === "aviso");
 
 
 // ============================================================
@@ -90,7 +93,6 @@ export default function RegisterPage() {
     nombres: "",
     apellidos: "",
     address: "",
-    neighborhood: "",
     email: "",
     phone: "",
     password: "",
@@ -152,9 +154,6 @@ export default function RegisterPage() {
 
       case "address":
         return validateAddress(values.address);
-
-      case "neighborhood":
-        return validateNeighborhood(values.neighborhood);
 
       case "phone":
         return validateRegisterPhone(values.phone);
@@ -242,7 +241,6 @@ export default function RegisterPage() {
       nombres: validateNombres(values.nombres),
       apellidos: validateApellidos(values.apellidos),
       address: validateAddress(values.address),
-      neighborhood: validateNeighborhood(values.neighborhood),
       email: validateEmail(values.email),
       phone: validateRegisterPhone(values.phone),
       password: validatePassword(values.password),
@@ -283,7 +281,6 @@ export default function RegisterPage() {
       email: normalizeEmail(form.email),
       phone: form.phone.trim(),
       address: form.address.trim(),
-      neighborhood: form.neighborhood.trim(),
     };
 
     setLoading(true);
@@ -304,6 +301,13 @@ export default function RegisterPage() {
           email:
             error.message ||
             "Este correo electrónico ya está registrado.",
+        }));
+      } else if (error?.code === "DOCUMENT_TAKEN") {
+        setErrors((current) => ({
+          ...current,
+          idNumber:
+            error.message ||
+            "Este número de identificación ya está registrado.",
         }));
       } else {
         setServerError(
@@ -329,8 +333,10 @@ export default function RegisterPage() {
 
       <AuthLayout
         variant="split"
+        wide
         image="/img/Login/login.jpeg"
         imageAlt="Caja de fresas cubiertas de chocolate Chocoberry"
+        visualTitle="Crea momentos dulces."
         title="¡Regístrate!"
         subtitle="Completa tus datos para comenzar"
         footer={
@@ -425,7 +431,7 @@ export default function RegisterPage() {
             />
           </div>
 
-          {/* DIRECCIÓN Y BARRIO */}
+          {/* DIRECCIÓN */}
           <div className="auth-register-field">
             <AuthInput
               label="Dirección de entrega"
@@ -437,22 +443,6 @@ export default function RegisterPage() {
               onBlur={() => handleBlur("address")}
               error={errors.address}
               autoComplete="street-address"
-              disabled={isDisabled}
-              required
-            />
-          </div>
-
-          <div className="auth-register-field">
-            <AuthInput
-              label="Barrio"
-              name="neighborhood"
-              icon="map-location-dot"
-              placeholder="Ej. El Poblado"
-              value={form.neighborhood}
-              onChange={(value) => updateField("neighborhood", value)}
-              onBlur={() => handleBlur("neighborhood")}
-              error={errors.neighborhood}
-              autoComplete="address-level3"
               disabled={isDisabled}
               required
             />
@@ -557,8 +547,23 @@ export default function RegisterPage() {
                 disabled={isDisabled}
               />
               <span>
-                Acepto los <Link to="/terms">Términos y Condiciones</Link> y la{" "}
-                <Link to="/privacy">Política de Privacidad</Link>.
+                Acepto los{" "}
+                <a
+                  href={TERMS_DOCUMENT.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Términos y Condiciones
+                </a>{" "}
+                y la{" "}
+                <a
+                  href={PRIVACY_DOCUMENT.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Política de Privacidad
+                </a>
+                .
               </span>
             </label>
             {errors.acceptTerms && (

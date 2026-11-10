@@ -1,8 +1,38 @@
 # AGENTS.md
 
-## Sin backend
+## Backend real (conexión por módulos)
 
-Toda la información está simulada: usuarios y sesión en `localStorage`, catálogo/pedidos en arreglos en memoria. No busques endpoints ni servidor.
+Existe un backend Express en `../backend` (`http://localhost:4000/api`). La
+conexión se está haciendo **módulo por módulo**, de forma incremental:
+
+- **Conectado:** módulo de **acceso** (login, registro, sesión, perfil,
+  cambiar contraseña, logout, bloqueo por intentos, recuperar contraseña),
+  **usuarios del panel** (`features/admin/users`, contra `/api/usuarios`),
+  **catálogo** (categorías, productos, presentaciones, municipios y glaseados
+  del panel contra `/api/categorias`, `/api/productos`,
+  `/api/presentaciones`, `/api/municipios` y `/api/glaseados`; tienda contra
+  el catálogo público `/api/catalogo`), **pedidos de la tienda** (el checkout
+  crea contra `/api/pedidos` y “Mis pedidos” lista `/api/pedidos/mios` a
+  través de `features/orders/services`) y **pedidos del panel**
+  (`features/admin/orders` contra `/api/pedidos`: listado, detalle, alta,
+  edición de cabecera y líneas solo en pedidos pendientes, transiciones y
+  rechazo). La evidencia de entrega es
+  exclusiva del repartidor; el panel solo la muestra en el detalle, sin subirla
+  ni actualizarla. **Ventas** (`features/admin/sales` contra `/api/ventas`:
+  listado y detalle de pedidos confirmados; el detalle muestra todos los
+  comprobantes registrados). **Reseñas** (`features/reviews` contra
+  `/api/catalogo/resenas` para lectura y `/api/resenas` para publicar;
+  `features/admin/admin-reviews` contra `/api/resenas` para listado y cambio
+  de estado). **Dashboard** (`features/admin/dashboard` contra
+  `/api/dashboard/resumen`: KPIs, ventas semanales/mensuales, productos,
+  municipios, estados y calificaciones). **Roles** (`features/admin/roles`
+  contra `/api/roles` y `/api/permisos`; el catálogo de permisos es de solo
+  lectura en este alcance).
+- **Aún simulado:** entregas. Sigue usando datos mock en
+  memoria/localStorage.
+
+No asumas que un `services/` existe porque el módulo esté conectado: revisa
+si el hook llama al API o al mock.
 
 ## No hay tests
 
@@ -17,9 +47,46 @@ npm run lint     # ESLint
 npm run preview  # preview del build
 ```
 
-## Autenticación en localStorage
+## Cliente HTTP y sesión
 
-Usuarios semilla con roles `cliente`, `administrador`, `repartidor`. `RequireAuth` maneja autenticación y autorización por rol. Ver `src/features/login/hooks/useAuth.jsx` para la API mock completa.
+- `src/shared/api/client.js`: cliente `fetch` único. Toma la URL base de
+  `VITE_API_URL` (ver `.env.example`) y adjunta el token automáticamente.
+  Desenvuelve `{ success, message, data }` y lanza `ApiError` con `status`,
+  `code` y `errors`.
+- `src/shared/api/session.js`: único lugar que sabe dónde vive la sesión
+  (usuario + token). "Recordarme" decide `localStorage` vs `sessionStorage`.
+- Traducción de nombres y errores del backend ↔ front (por módulo) en
+  `features/<dominio>/services/mappers.js`.
+- Al agregar un módulo conectado: **no** llames a `fetch` desde el hook;
+  crea su `services/` y usa `api` de `shared/api/client.js`.
+
+## Autenticación (JWT por API)
+
+`useAuth()` mantiene la misma API pública (`user`, `isAuthenticated`, `role`,
+`roleName`, `roleId`, `permissions`, `isInitializing`, `login`, `register`,
+`requestPasswordReset`, `changePassword`, `logout`, `updateUser`) pero ahora
+habla con el backend a través de `features/login/services/authService.js`. La
+sesión y el token se guardan con `shared/api/session.js`.
+
+El login y `/auth/me` devuelven los permisos efectivos del rol. Cualquier rol
+distinto del Cliente entra al panel si puede ver al menos un módulo del menú;
+no exige `Dashboard · Ver`. El rol Cliente se identifica por su id (`3`) y, como
+respaldo para sesiones antiguas, por el slug `cliente`; es el único que
+permanece en la tienda. `RequireAuth` solo valida la sesión;
+`RequirePanelAccess` y
+`RequirePermission` (`shared/components/RequirePermission.jsx`) validan
+permisos por ruta. El menú se filtra con
+`shared/permissions/panelPermissions.js` y se consulta con
+`shared/hooks/usePermissions.js`. Las acciones de cada módulo deben ocultarse
+con los permisos `Crear`, `Editar`, `Eliminar` o `Cambiar estado`; el backend
+sigue siendo la autoridad final. Reseñas usa `Ver` para listar y ver el detalle
+en modo lectura; `Cambiar estado` solo habilita el botón de moderación. El rol
+Cliente no tiene `Ver Reseñas` porque ese permiso es del panel.
+
+El estado de maestros, productos y usuarios solo se cambia con el toggle
+(`PATCH .../estado`): los formularios de edición lo ocultan y los `PUT` no lo
+envían. La visibilidad de registros inactivos de municipios y glaseados usa
+`Productos · Cambiar estado`; sin ese permiso solo se devuelven activos.
 
 ## Arquitectura por features
 
@@ -51,4 +118,16 @@ Config flat, ignora `dist/`. Solo lintea `js`/`jsx`.
 
 ## Capa de datos
 
-Algunos archivos `services/` existen (ej. `categoryService.js`) pero los hooks correspondientes usan estado inline. No asumir que el service es la fuente de verdad — revisar el hook.
+Existen dos situaciones y hay que distinguirlas:
+
+- **Módulo conectado** (hoy: acceso, usuarios del panel, catálogo, maestros
+  de municipios/glaseados, pedidos de la tienda, pedidos del panel, ventas y
+  reseñas): el hook o la página delega en su `services/*.js`, que usa
+  `shared/api/client.js`.
+- **Módulo aún simulado:** archivos `services/` que existen de relleno
+  (ej. `categoryService.js`) mientras el hook usa estado inline o mocks en
+  `data/`. No asumir que el service es la fuente de verdad — revisar el hook.
+- `features/cart/data/Shipping.js` todavía se usa en el dashboard simulado y
+  en helpers de presentación de Pedidos. `features/catalog/data/Products.js`,
+  `Pricing.js` y `Colors.js` ya no son fuente de datos para los módulos
+  conectados (tienda, carrito, checkout, “Mis pedidos”, Pedidos y Ventas).

@@ -68,3 +68,11 @@
 .order-notification-close:hover {
   color: var(--texto-muted);
 }
+
+.order-notification--error .order-notification-icon {
+  background: #dd322d;
+}
+
+.order-notification--error .order-notification-title {
+  color: #dd322d;
+}

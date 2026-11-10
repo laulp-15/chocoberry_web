@@ -1,16 +1,17 @@
 // src/features/admin/users/pages/UsersListPage.jsx
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DataTable from "../../../../shared/components/DataTable";
 import StatusToggle from "../../../../shared/components/StatusToggle";
 import FormSelect from "../../../../shared/components/FormSelect";
 import ConfirmModal from "../../../../shared/components/ConfirmModal";
 import OrderNotification from "../../orders/components/OrderNotification";
-import { useAuth } from "../../../login/hooks/useAuth";
-import useUsersAdmin, { hasAssociatedOrders } from "../hooks/useUsersAdmin";
+import { usePermissions } from "../../../../shared/hooks/usePermissions";
+import useUsersAdmin from "../hooks/useUsersAdmin";
+import useRoleOptions from "../hooks/useRoleOptions";
 import UserFormModal from "../components/UserFormModal";
 import RoleBadge from "../components/RoleBadge";
-import { ROLE_OPTIONS, roleLabel } from "../utils/roles";
+import { roleLabel } from "../utils/roles";
 import "./UsersListPage.css";
 
 const STATUS_OPTIONS = [
@@ -19,14 +20,17 @@ const STATUS_OPTIONS = [
 ];
 
 export default function UsersListPage() {
-  const { users, createUser, updateUser, setActive, removeUser } = useUsersAdmin();
-  const { role: currentRole } = useAuth();
+  const { users, loading, error, reload, createUser, updateUser, setActive, removeUser } =
+    useUsersAdmin();
+  const { can } = usePermissions();
+  const roleOptions = useRoleOptions();
   const navigate = useNavigate();
 
-  // Regla de negocio: "Solo los administradores podrán crear o
-  // modificar empleados". Mientras no haya sesión de administrador,
-  // el módulo queda en modo consulta (sin crear/editar/eliminar).
-  const canManage = currentRole === "administrador";
+  const canCreate = can("Usuarios", "Crear");
+  const canEdit = can("Usuarios", "Editar");
+  const canDelete = can("Usuarios", "Eliminar");
+  const canToggle = can("Usuarios", "Cambiar estado");
+  const canManage = canCreate || canEdit || canDelete || canToggle;
 
   const [roleFilter, setRoleFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -46,13 +50,6 @@ export default function UsersListPage() {
       return true;
     });
   }, [users, roleFilter, statusFilter]);
-
-  const kpis = useMemo(() => {
-    const total = users.length;
-    const activos = users.filter((u) => u.active !== false).length;
-    const admins = users.filter((u) => u.role === "administrador").length;
-    return { total, activos, inactivos: total - activos, admins };
-  }, [users]);
 
   function openCreate() {
     setEditingUser(null);
@@ -75,7 +72,7 @@ export default function UsersListPage() {
       } else {
         await createUser(payload);
         setNotification({
-          message: `${payload.fullName} ya puede iniciar sesión con el correo registrado.`,
+          message: `Enviamos un correo a ${payload.email} para que ${payload.fullName} establezca su contraseña.`,
         });
       }
       setFormOpen(false);
@@ -87,21 +84,24 @@ export default function UsersListPage() {
   }
 
   async function handleToggleActive(user, value) {
-    await setActive(user.id, value);
-    setNotification({
-      message: value
-        ? `${user.fullName} ya puede acceder al sistema.`
-        : `${user.fullName} no podrá iniciar sesión hasta que se vuelva a habilitar.`,
-    });
+    try {
+      await setActive(user.id, value);
+      setNotification({
+        message: value
+          ? `${user.fullName} ya puede acceder al sistema.`
+          : `${user.fullName} no podrá iniciar sesión hasta que se vuelva a habilitar.`,
+      });
+    } catch (err) {
+      setNotification({
+        message: err.message || "No se pudo cambiar el estado del usuario.",
+        variant: "error",
+      });
+    }
   }
 
+  // La regla "no eliminar con pedidos asociados" la valida el backend: si
+  // rechaza el borrado, confirmDelete() muestra su mensaje.
   function askDelete(user) {
-    if (hasAssociatedOrders(user)) {
-      setNotification({
-        message: `${user.fullName} tiene pedidos asociados. Elimínalo solo si ya no debe conservarse la trazabilidad.`,
-      });
-      return;
-    }
     setConfirmTarget(user);
   }
 
@@ -115,6 +115,7 @@ export default function UsersListPage() {
     } catch (err) {
       setNotification({
         message: err.message,
+        variant: "error",
       });
     } finally {
       setConfirmTarget(null);
@@ -130,7 +131,7 @@ export default function UsersListPage() {
     {
       key: "role",
       label: "Rol",
-      render: (row) => <RoleBadge role={row.role} />,
+      render: (row) => <RoleBadge role={row.role} options={roleOptions} />,
     },
     {
       key: "active",
@@ -140,7 +141,7 @@ export default function UsersListPage() {
           <StatusToggle
             checked={row.active !== false}
             onChange={(v) => handleToggleActive(row, v)}
-            disabled={!canManage}
+            disabled={!canToggle}
           />
         </div>
       ),
@@ -155,19 +156,19 @@ export default function UsersListPage() {
             title="Ver detalle"
             onClick={() => navigate(`/admin/usuarios/${row.id}`)}
           />
-          {canManage && (
-            <>
-              <i
-                className="fa-solid fa-pen users-action-edit"
-                title="Editar"
-                onClick={() => openEdit(row)}
-              />
-              <i
-                className="fa-solid fa-trash users-action-delete"
-                title="Eliminar"
-                onClick={() => askDelete(row)}
-              />
-            </>
+          {canEdit && (
+            <i
+              className="fa-solid fa-pen users-action-edit"
+              title="Editar"
+              onClick={() => openEdit(row)}
+            />
+          )}
+          {canDelete && (
+            <i
+              className="fa-solid fa-trash users-action-delete"
+              title="Eliminar"
+              onClick={() => askDelete(row)}
+            />
           )}
         </div>
       ),
@@ -180,19 +181,23 @@ export default function UsersListPage() {
         <DataTable
           title="Usuarios"
           description="Administra el personal autorizado y sus roles de acceso al sistema."
-          createLabel={canManage ? "Crear usuario" : undefined}
-          onCreate={openCreate}
+          createLabel={canCreate ? "Crear usuario" : undefined}
+          onCreate={canCreate ? openCreate : undefined}
           columns={columns}
           data={filtered}
           searchPlaceholder="Buscar usuario por nombre o correo..."
-          emptyMessage="No se encontraron usuarios con esos criterios."
+          emptyMessage={
+            loading
+              ? "Cargando usuarios..."
+              : "No se encontraron usuarios con esos criterios."
+          }
           extraFilter={
             <div className="users-extra-filters">
               <FormSelect
                 value={roleFilter}
                 onChange={setRoleFilter}
                 placeholder="Todos los roles"
-                options={ROLE_OPTIONS}
+                options={roleOptions}
               />
               <FormSelect
                 value={statusFilter}
@@ -204,11 +209,19 @@ export default function UsersListPage() {
           }
         />
 
+        {error && (
+          <p className="users-readonly-hint users-error-hint">
+            <i className="fa-solid fa-triangle-exclamation" /> {error}
+            <button type="button" className="users-retry" onClick={reload}>
+              Reintentar
+            </button>
+          </p>
+        )}
+
         {!canManage && (
           <p className="users-readonly-hint">
-            <i className="fa-solid fa-circle-info" /> Inicia sesión como administrador para
-            crear, editar o eliminar usuarios. Con la sesión actual solo puedes consultar el
-            listado.
+            <i className="fa-solid fa-circle-info" /> Tu rol solo puede consultar el
+            listado de usuarios.
           </p>
         )}
       </div>
@@ -219,6 +232,7 @@ export default function UsersListPage() {
         onSubmit={handleFormSubmit}
         initialData={editingUser}
         submitting={submitting}
+        roleOptions={roleOptions}
       />
 
       <ConfirmModal
@@ -230,7 +244,8 @@ export default function UsersListPage() {
         description={
           confirmTarget
             ? `${confirmTarget.fullName} (${roleLabel(
-                confirmTarget.role
+                confirmTarget.role,
+                roleOptions
               )}) perderá su acceso al sistema de inmediato. Esta acción no se puede deshacer.`
             : ""
         }
@@ -242,6 +257,7 @@ export default function UsersListPage() {
         open={Boolean(notification)}
         onClose={() => setNotification(null)}
         message={notification?.message}
+        variant={notification?.variant}
       />
     </>
   );

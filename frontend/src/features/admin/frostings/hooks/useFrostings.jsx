@@ -1,42 +1,26 @@
 // src/features/admin/frostings/hooks/useFrostings.jsx
 //
-// CRUD de glaseados (nombre y color).
-//
-// Datos simulados: el estado parte de los colores de glaseado disponibles de
-// `features/catalog/data/Colors` y se persiste en localStorage. Cuando exista
-// backend, solo hay que reemplazar los handlers por llamadas al servicio.
-import { useState, useEffect } from 'react';
-import { COLOR_OPTIONS } from '../../../catalog/data/Colors';
+// Gestión de glaseados (nombre, color y estado) contra el API real
+// (/api/glaseados). El estado vive aquí; las llamadas HTTP, en
+// services/frostingService.js.
 
-const STORAGE_KEY = 'chocoberry_frostings_v1';
+import { useEffect, useState } from 'react';
 
-function delay(ms = 350) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+import * as frostingService from '../services/frostingService';
+
+/** El backend lista alfabéticamente; se mantiene ese orden al crear o editar. */
+function ordenarPorNombre(lista) {
+  return [...lista].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
 }
 
-function buildSeed() {
-  return COLOR_OPTIONS.map((color, index) => ({
-    id: index + 1,
-    nombre: color.label,
-    hex: color.hex.toUpperCase(),
-    estado: 'Activo',
-  }));
-}
+export const useFrostings = ({ autoLoad = true } = {}) => {
+  const [frostings, setFrostings] = useState([]);
 
-function loadFrostings() {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    }
-  } catch (error) {
-    console.error('Error al leer los glaseados guardados', error);
-  }
-  return buildSeed();
-}
+  const [loading, setLoading] = useState(autoLoad);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [reloadToken, setReloadToken] = useState(0);
 
-export const useFrostings = () => {
   const [statusFilter, setStatusFilter] = useState('todos');
 
   // Modales y estados de selección
@@ -47,12 +31,36 @@ export const useFrostings = () => {
   const [selectedFrosting, setSelectedFrosting] = useState(null);
   const [frostingToEdit, setFrostingToEdit] = useState(null);
 
-  const [frostings, setFrostings] = useState(loadFrostings);
-
-  // Persistencia simulada
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(frostings));
-  }, [frostings]);
+    if (!autoLoad && reloadToken === 0) return undefined;
+
+    let activo = true;
+
+    frostingService
+      .listar()
+      .then((lista) => {
+        if (!activo) return;
+        setFrostings(ordenarPorNombre(lista));
+        setError('');
+      })
+      .catch((err) => {
+        if (!activo) return;
+        setError(err?.message || 'No se pudieron cargar los glaseados.');
+      })
+      .finally(() => {
+        if (activo) setLoading(false);
+      });
+
+    return () => {
+      activo = false;
+    };
+  }, [autoLoad, reloadToken]);
+
+  function reload() {
+    setLoading(true);
+    setError('');
+    setReloadToken((valor) => valor + 1);
+  }
 
   // Filtrado por estado (la búsqueda de texto la maneja DataTable)
   const filteredFrostings = frostings.filter(
@@ -61,40 +69,72 @@ export const useFrostings = () => {
       frosting.estado.toLowerCase() === statusFilter.toLowerCase()
   );
 
-  // Activar / desactivar
-  const handleToggleStatus = (id) => {
-    setFrostings((prev) =>
-      prev.map((frosting) =>
-        frosting.id === id
-          ? { ...frosting, estado: frosting.estado === 'Activo' ? 'Inactivo' : 'Activo' }
-          : frosting
-      )
-    );
-  };
+  /** Activa/desactiva un glaseado contra el API y refleja la respuesta. */
+  async function handleToggleStatus(id) {
+    const actual = frostings.find((frosting) => frosting.id === id);
+    if (!actual) return;
 
-  // Guardar (crear o editar)
-  const handleSaveFrosting = async (data) => {
-    await delay();
-    if (frostingToEdit) {
+    try {
+      const actualizado = await frostingService.cambiarEstado(
+        id,
+        actual.estado !== 'Activo'
+      );
       setFrostings((prev) =>
         prev.map((frosting) =>
-          frosting.id === frostingToEdit.id ? { ...frosting, ...data } : frosting
+          frosting.id === id ? actualizado : frosting
         )
       );
-    } else {
-      setFrostings((prev) => [{ id: Date.now(), ...data }, ...prev]);
+      setError('');
+    } catch (err) {
+      setError(err?.message || 'No se pudo cambiar el estado del glaseado.');
     }
-    setFrostingToEdit(null);
-  };
+  }
 
-  // Eliminar
-  const handleConfirmDelete = async () => {
-    await delay();
+  /**
+   * Crea o edita. Devuelve el glaseado guardado y relanza los errores para
+   * que el modal los muestre sin cerrarse.
+   */
+  async function handleSaveFrosting(datos) {
+    setSubmitting(true);
+    try {
+      if (frostingToEdit) {
+        const actualizado = await frostingService.actualizar(
+          frostingToEdit.id,
+          datos
+        );
+        setFrostings((prev) =>
+          ordenarPorNombre(
+            prev.map((frosting) =>
+              frosting.id === actualizado.id ? actualizado : frosting
+            )
+          )
+        );
+        setFrostingToEdit(null);
+        return actualizado;
+      }
+
+      const creado = await frostingService.crear(datos);
+      setFrostings((prev) => ordenarPorNombre([creado, ...prev]));
+      return creado;
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  /** Elimina; si el backend responde 409, el error se propaga a la página. */
+  async function handleConfirmDelete() {
     if (!selectedFrosting) return;
-    setFrostings((prev) => prev.filter((frosting) => frosting.id !== selectedFrosting.id));
-    setIsDeleteOpen(false);
-    setSelectedFrosting(null);
-  };
+
+    try {
+      await frostingService.eliminar(selectedFrosting.id);
+      setFrostings((prev) =>
+        prev.filter((frosting) => frosting.id !== selectedFrosting.id)
+      );
+    } finally {
+      setIsDeleteOpen(false);
+      setSelectedFrosting(null);
+    }
+  }
 
   // Apertura de modales
   const handleOpenCreate = () => {
@@ -120,15 +160,23 @@ export const useFrostings = () => {
   return {
     statusFilter,
     setStatusFilter,
+
     isModalOpen,
     setIsModalOpen,
     isDetailOpen,
     setIsDetailOpen,
     isDeleteOpen,
     setIsDeleteOpen,
+
     selectedFrosting,
     frostingToEdit,
     filteredFrostings,
+
+    loading,
+    submitting,
+    error,
+    reload,
+
     handleToggleStatus,
     handleSaveFrosting,
     handleConfirmDelete,

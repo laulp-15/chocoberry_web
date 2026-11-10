@@ -1,127 +1,71 @@
 // src/features/admin/roles/data/Permissions.js
-// Catálogo de permisos disponibles en el sistema: cada permiso combina un
-// módulo con una acción autorizada. Es la fuente para:
-//  - el checklist de permisos al crear/editar un rol
-//  - el panel "Administrar permisos" (crear, editar, consultar, cambiar estado)
+// Metadata visual del catálogo de permisos. El catálogo real viene de
+// /api/permisos; aquí solo viven iconos y el orden de los módulos.
 
-export const MODULES = [
-  { key: "dashboard", label: "Dashboard", icon: "fa-chart-line" },
-  { key: "roles", label: "Roles", icon: "fa-shield-halved" },
-  { key: "usuarios", label: "Usuarios", icon: "fa-users" },
-  { key: "categorias", label: "Categorías", icon: "fa-tag" },
-  { key: "productos", label: "Productos", icon: "fa-store" },
-  { key: "carrito", label: "Carrito", icon: "fa-cart-shopping" },
-  { key: "resenas", label: "Reseñas", icon: "fa-star" },
-  { key: "pedidos", label: "Pedidos", icon: "fa-box" },
-  { key: "ventas", label: "Ventas", icon: "fa-credit-card" },
+const MODULE_ORDER = [
+  "Dashboard",
+  "Roles",
+  "Usuarios",
+  "Categorías",
+  "Productos",
+  "Carrito",
+  "Reseñas",
+  "Pedidos",
+  "Ventas",
 ];
 
-// Acciones por módulo (clave del módulo -> array de acciones)
-const MODULE_ACTIONS = {
-  dashboard: [
-    { key: "ver", label: "Ver" },
-    { key: "generar_reporte", label: "Generar reporte" },
-    { key: "exportar_reporte", label: "Exportar reporte" },
-  ],
-  ventas: [
-    { key: "ver", label: "Ver" },
-    { key: "generar_reporte", label: "Generar reporte" },
-    { key: "exportar_reporte", label: "Exportar reporte" },
-  ],
-  // Módulos con CRUD + Cambiar estado
-  roles: [
-    { key: "ver", label: "Ver" },
-    { key: "crear", label: "Crear" },
-    { key: "editar", label: "Editar" },
-    { key: "eliminar", label: "Eliminar" },
-    { key: "cambiar_estado", label: "Cambiar estado" },
-  ],
-  usuarios: [
-    { key: "ver", label: "Ver" },
-    { key: "crear", label: "Crear" },
-    { key: "editar", label: "Editar" },
-    { key: "eliminar", label: "Eliminar" },
-    { key: "cambiar_estado", label: "Cambiar estado" },
-  ],
-  categorias: [
-    { key: "ver", label: "Ver" },
-    { key: "crear", label: "Crear" },
-    { key: "editar", label: "Editar" },
-    { key: "eliminar", label: "Eliminar" },
-    { key: "cambiar_estado", label: "Cambiar estado" },
-  ],
-  productos: [
-    { key: "ver", label: "Ver" },
-    { key: "crear", label: "Crear" },
-    { key: "editar", label: "Editar" },
-    { key: "eliminar", label: "Eliminar" },
-    { key: "cambiar_estado", label: "Cambiar estado" },
-  ],
-  carrito: [
-    { key: "ver", label: "Ver" },
-    { key: "crear", label: "Crear" },
-    { key: "editar", label: "Editar" },
-    { key: "eliminar", label: "Eliminar" },
-    { key: "cambiar_estado", label: "Cambiar estado" },
-  ],
-  resenas: [
-    { key: "ver", label: "Ver" },
-    { key: "crear", label: "Crear" },
-    { key: "editar", label: "Editar" },
-    { key: "eliminar", label: "Eliminar" },
-    { key: "cambiar_estado", label: "Cambiar estado" },
-  ],
-  pedidos: [
-    { key: "ver", label: "Ver" },
-    { key: "crear", label: "Crear" },
-    { key: "editar", label: "Editar" },
-    { key: "eliminar", label: "Eliminar" },
-    { key: "cambiar_estado", label: "Cambiar estado" },
-  ],
+const MODULE_ICONS = {
+  dashboard: "fa-chart-line",
+  roles: "fa-shield-halved",
+  usuarios: "fa-users",
+  categorias: "fa-tag",
+  productos: "fa-store",
+  carrito: "fa-cart-shopping",
+  resenas: "fa-star",
+  pedidos: "fa-box",
+  ventas: "fa-credit-card",
 };
 
-// Acciones por defecto para módulos no definidos explícitamente (CRUD + Cambiar estado)
-const DEFAULT_ACTIONS = [
-  { key: "ver", label: "Ver" },
-  { key: "crear", label: "Crear" },
-  { key: "editar", label: "Editar" },
-  { key: "eliminar", label: "Eliminar" },
-  { key: "cambiar_estado", label: "Cambiar estado" },
-];
+function normalizar(texto) {
+  return String(texto ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
 
-function buildInitialPermissions() {
-  const permissions = [];
-  let autoId = 1;
-  for (const mod of MODULES) {
-    const actions = MODULE_ACTIONS[mod.key] || DEFAULT_ACTIONS;
-    for (const action of actions) {
-      permissions.push({
-        id: autoId++,
-        module: mod.key,
-        moduleLabel: mod.label,
-        action: action.key,
-        actionLabel: action.label,
-        label: `${action.label} ${mod.label}`,
-        status: "activo",
+export function getModuleIcon(moduleName) {
+  return MODULE_ICONS[normalizar(moduleName)] || "fa-key";
+}
+
+/** Agrupa permisos por módulo respetando el orden conocido del panel. */
+export function groupPermissionsByModule(permissions) {
+  const groups = new Map();
+
+  for (const permiso of permissions) {
+    if (!groups.has(permiso.module)) {
+      groups.set(permiso.module, {
+        module: permiso.module,
+        moduleLabel: permiso.moduleLabel,
+        moduleIcon: getModuleIcon(permiso.module),
+        permissions: [],
       });
     }
+    groups.get(permiso.module).permissions.push(permiso);
   }
-  return permissions;
+
+  return [...groups.values()].sort((a, b) => {
+    const indexA = MODULE_ORDER.indexOf(a.module);
+    const indexB = MODULE_ORDER.indexOf(b.module);
+
+    if (indexA === -1 && indexB === -1) return a.module.localeCompare(b.module);
+    if (indexA === -1) return 1;
+    if (indexB === -1) return -1;
+    return indexA - indexB;
+  });
 }
 
-export const INITIAL_PERMISSIONS = buildInitialPermissions();
-
-/** Agrupa un arreglo de permisos por módulo, en el orden definido en MODULES. */
-export function groupPermissionsByModule(permissions) {
-  return MODULES.map((mod) => ({
-    module: mod.key,
-    moduleLabel: mod.label,
-    moduleIcon: mod.icon,
-    permissions: permissions.filter((p) => p.module === mod.key),
-  })).filter((group) => group.permissions.length > 0);
-}
-
-// Ícono sugerido por nombre de rol, para el badge del listado (fallback:
+// Icono sugerido por nombre de rol, para el badge del listado (fallback:
 // fa-user-shield para roles nuevos que el admin cree).
 const ROLE_ICONS = {
   administrador: "fa-shield-halved",
@@ -130,5 +74,5 @@ const ROLE_ICONS = {
 };
 
 export function getRoleIcon(roleName) {
-  return ROLE_ICONS[roleName.trim().toLowerCase()] || "fa-user-shield";
+  return ROLE_ICONS[normalizar(roleName)] || "fa-user-shield";
 }

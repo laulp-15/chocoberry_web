@@ -2,11 +2,23 @@
 // Helpers de presentación compartidos entre OrderDetailContent (Pedidos)
 // y SaleReceipt (Ventas) — misma data, distintas vistas.
 import { MUNICIPIOS } from "../../../cart/data/Shipping";
+import { imageUrl } from "../../../../shared/utils/imageUrl";
 
 export function formatDisplayDate(iso) {
   if (!iso) return "—";
-  const [y, m, d] = iso.split("-");
+  const [y, m, d] = String(iso).slice(0, 10).split("-");
   return `${d}/${m}/${y}`;
+}
+
+/** Fecha larga en español: "29 de octubre de 2026". */
+export function formatLongDate(iso) {
+  if (!iso) return "—";
+  const [y, m, d] = String(iso).slice(0, 10).split("-").map(Number);
+  return new Intl.DateTimeFormat("es-CO", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(y, m - 1, d));
 }
 
 export function getMunicipioLabel(municipio) {
@@ -31,7 +43,7 @@ export function getInitials(name) {
  */
 export function getProofUrl(comprobante) {
   if (!comprobante) return null;
-  if (typeof comprobante === "string") return comprobante;
+  if (typeof comprobante === "string") return imageUrl(comprobante);
   return URL.createObjectURL(comprobante);
 }
 

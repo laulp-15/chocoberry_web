@@ -1,6 +1,4 @@
-/* src/features/cart/components/PaymentSection.css
-   Los estilos del dropzone ahora viven en shared/components/FileDropzone.css */
-
+/* src/features/cart/components/PaymentSection.css */
 .payment-intro {
   font-size: 13px;
   color: var(--texto-muted);
@@ -17,7 +15,7 @@
   padding: 10px 14px;
   font-size: 13px;
   color: var(--texto);
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 .payment-nequi i {
   color: var(--primario);
@@ -25,4 +23,106 @@
 }
 .payment-nequi strong {
   color: var(--primario);
+}
+
+/* Código QR */
+.payment-qr {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  background: var(--secundario-3);
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+}
+
+.payment-qr-image-wrapper {
+  flex-shrink: 0;
+  background: #ffffff;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  padding: 10px;
+  line-height: 0;
+}
+
+.payment-qr-image {
+  display: block;
+  width: 200px;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.payment-qr-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  max-width: 260px;
+}
+
+.payment-qr-caption {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--texto-muted);
+}
+
+.payment-qr-download {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid var(--borde);
+  border-radius: 20px;
+  background: var(--bg-card);
+  color: var(--texto);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+.payment-qr-download i {
+  color: var(--primario);
+  font-size: 13px;
+}
+.payment-qr-download:hover {
+  background: var(--secundario-1);
+  border-color: var(--primario-claro);
+  color: var(--texto);
+}
+.payment-qr-download:focus-visible {
+  outline: 2px solid var(--primario-claro);
+  outline-offset: 2px;
+}
+
+/* Móvil */
+@media (max-width: 576px) {
+  .payment-qr {
+    flex-direction: column;
+    gap: 14px;
+    padding: 16px 14px;
+    text-align: center;
+  }
+
+  .payment-qr-image {
+    width: 170px;
+  }
+
+  .payment-qr-info {
+    align-items: center;
+    max-width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .payment-qr-download {
+    transition: none;
+  }
 }

@@ -1,6 +1,6 @@
 // src/features/login/pages/LoginPage.jsx
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   Link,
@@ -12,6 +12,11 @@ import AuthLayout from "../components/AuthLayout";
 import AuthInput from "../components/AuthInput";
 import GoogleButton from "../components/GoogleButton";
 import Navbar from "../../../shared/components/Navbar";
+import {
+  canEnterPanel,
+  firstAllowedAdminPath,
+  isAllowedAdminPath,
+} from "../../../shared/permissions/panelPermissions";
 
 import { useAuth } from "../hooks/useAuth";
 
@@ -138,15 +143,25 @@ export default function LoginPage() {
       });
 
       const userRole = sessionUser?.role || sessionUser?.rol || sessionUser?.tipo;
-      
-      let redirectTo = location.state?.from;
+      const from = location.state?.from;
+      const panelPath = canEnterPanel(
+        sessionUser?.permissions,
+        sessionUser?.role,
+        sessionUser?.roleId
+      )
+        ? firstAllowedAdminPath(sessionUser?.permissions)
+        : null;
 
-      if (!redirectTo) {
-        if (email === "admin@chocoberry.com" || userRole === "administrador" || userRole === "admin") {
-          redirectTo = "/admin";
-        } else {
-          redirectTo = defaultRouteForRole(userRole);
-        }
+      let redirectTo;
+
+      if (panelPath) {
+        // El destino administrativo manda sobre un "from" viejo (por ejemplo,
+        // /users/orders cuando el usuario era cliente).
+        redirectTo = isAllowedAdminPath(from, sessionUser?.permissions)
+          ? from
+          : panelPath;
+      } else {
+        redirectTo = from || defaultRouteForRole(userRole);
       }
 
       navigate(redirectTo, {
@@ -338,17 +353,18 @@ export default function LoginPage() {
 }
 
 /**
- * Ruta inicial según el rol.
+ * Ruta inicial de respaldo cuando el rol es Cliente o no tiene módulos de
+ * panel. Los roles con panel usan firstAllowedAdminPath.
  */
 function defaultRouteForRole(role) {
   const normalizedRole = role ? String(role).trim().toLowerCase() : "";
 
   if (normalizedRole === "administrador" || normalizedRole === "admin") {
-    return "/admin";
+    return "/productos";
   }
 
   if (normalizedRole === "repartidor" || normalizedRole === "delivery") {
-    return "/admin/pedidos";
+    return "/users/orders";
   }
 
   return "/users/orders";

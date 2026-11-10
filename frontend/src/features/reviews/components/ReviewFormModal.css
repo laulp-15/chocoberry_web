@@ -387,6 +387,14 @@
   box-shadow: 0 16px 28px -12px rgba(201, 47, 60, 0.75);
 }
 
+.review-submit:disabled,
+.review-cancel:disabled {
+  opacity: 0.65;
+  cursor: wait;
+  transform: none;
+  box-shadow: none;
+}
+
 .review-submit i {
   font-size: 0.85rem;
   transition: transform 0.2s ease;

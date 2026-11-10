@@ -74,4 +74,29 @@
   color: var(--error-100);
 }
 
+/* Aviso de error de carga / reintentar */
+.products-error-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1rem 0.25rem 0;
+  color: var(--error-100);
+  font-size: 0.9rem;
+}
+
+.products-retry {
+  margin-left: 0.5rem;
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  border-radius: 8px;
+  padding: 0.2rem 0.6rem;
+  cursor: pointer;
+  font: inherit;
+}
+
+.products-retry:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
 

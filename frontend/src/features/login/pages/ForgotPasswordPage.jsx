@@ -1,5 +1,5 @@
 // src/features/login/pages/ForgotPasswordPage.jsx
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import AuthLayout from "../components/AuthLayout";
 import AuthInput from "../components/AuthInput";
@@ -10,7 +10,7 @@ import { validateEmail } from "../utils/validators";
 const RESEND_COOLDOWN = 30;
 
 /**
- * Recuperar contraseña — SOLO pide el correo y envía (simula) un enlace
+ * Recuperar contraseña — SOLO pide el correo y solicita el envío del enlace
  * de recuperación. Distinto de "Cambiar contraseña" (ChangePasswordPage),
  * que pide contraseña actual + nueva y requiere sesión iniciada.
  */

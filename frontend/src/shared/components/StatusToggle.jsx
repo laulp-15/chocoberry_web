@@ -9,13 +9,15 @@ import "./StatusToggle.css";
  * @param {object} props
  * @param {boolean} props.checked
  * @param {(checked: boolean) => void} props.onChange
+ * @param {boolean} [props.disabled]
  */
-export default function StatusToggle({ checked, onChange }) {
+export default function StatusToggle({ checked, onChange, disabled = false }) {
   return (
     <Switch
       className="status-toggle"
       checked={checked}
       onChange={(e) => onChange(e.target.checked)}
+      disabled={disabled}
       disableRipple
     />
   );

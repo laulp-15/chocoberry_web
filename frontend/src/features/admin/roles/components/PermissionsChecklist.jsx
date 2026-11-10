@@ -1,5 +1,5 @@
 // src/features/admin/roles/components/PermissionsChecklist.jsx
-import React, { useState } from "react";
+import { useState } from "react";
 import { Checkbox } from "@mui/material";
 import { groupPermissionsByModule } from "../data/Permissions";
 import "./PermissionsChecklist.css";
@@ -7,7 +7,7 @@ import "./PermissionsChecklist.css";
 /**
  * Checklist de permisos por módulo con acciones individuales.
  * Cada módulo tiene un header expandible con checkbox "seleccionar todo"
- * y lista de 4 acciones (Ver, Crear, Editar, Eliminar).
+ * y la lista de acciones que devuelve el catálogo del backend.
  *
  * @param {object} props
  * @param {object[]} props.permissions - catálogo de permisos activos

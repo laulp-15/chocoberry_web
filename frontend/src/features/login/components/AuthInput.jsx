@@ -1,4 +1,3 @@
-
 // src/features/login/components/AuthInput.jsx
 
 import React, { useId, useState } from "react";
@@ -12,21 +11,6 @@ import {
 
 import "./AuthInput.css";
 
-/**
- * Campo reutilizable para las vistas de autenticación.
- *
- * Características:
- * - Label accesible.
- * - Ícono inicial.
- * - Mostrar / ocultar contraseña.
- * - Estado de error.
- * - Texto de ayuda.
- * - Estados disabled y required.
- * - Soporte para onBlur / onFocus.
- * - Atributos ARIA para accesibilidad.
- * - Variante select: si se pasa `options`, el campo se renderiza como
- *   lista desplegable (mismo look que los campos de texto).
- */
 export default function AuthInput({
   label,
   name,
@@ -56,10 +40,8 @@ export default function AuthInput({
       : "password"
     : type;
 
-  /**
-   * useId evita posibles colisiones si el componente
-   * aparece varias veces en la misma página.
-   */
+  const resolvedPlaceholder = label || placeholder;
+
   const reactId = useId();
 
   const inputId = `auth-field-${name}-${reactId.replace(/:/g, "")}`;
@@ -94,8 +76,6 @@ export default function AuthInput({
     </InputAdornment>
   ) : null;
 
-  // Props compartidos por las dos variantes (texto y select). En el select
-  // se pasan al propio <Select>, que clona el OutlinedInput de abajo.
   const commonProps = {
     id: inputId,
     name,
@@ -122,15 +102,6 @@ export default function AuthInput({
           className="auth-field-label"
         >
           {label}
-
-          {required && (
-            <span
-              className="auth-field-required"
-              aria-hidden="true"
-            >
-              *
-            </span>
-          )}
         </label>
       )}
 
@@ -142,7 +113,9 @@ export default function AuthInput({
           input={<OutlinedInput inputProps={{ "data-field": name }} />}
         >
           <MenuItem value="">
-            <span className="auth-select-placeholder">{placeholder}</span>
+            <span className="auth-select-placeholder">
+              {resolvedPlaceholder}
+            </span>
           </MenuItem>
 
           {options.map((option) => (
@@ -155,7 +128,7 @@ export default function AuthInput({
         <OutlinedInput
           {...commonProps}
           type={resolvedType}
-          placeholder={placeholder}
+          placeholder={resolvedPlaceholder}
           inputProps={{
             "data-field": name,
           }}

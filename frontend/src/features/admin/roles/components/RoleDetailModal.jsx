@@ -1,5 +1,4 @@
 // src/features/admin/roles/components/RoleDetailModal.jsx
-import React from "react";
 import Modal from "../../../../shared/components/Modal";
 import RoleDetailContent from "./RoleDetailContent";
 

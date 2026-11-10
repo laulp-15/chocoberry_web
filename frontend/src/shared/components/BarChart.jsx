@@ -1,5 +1,5 @@
 // src/shared/components/BarChart.jsx
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "./BarChart.css";
 
 const compact = new Intl.NumberFormat("es-CO", { notation: "compact", maximumFractionDigits: 1 });
@@ -27,6 +27,7 @@ function niceScale(max, intervals = 4) {
  * @param {(value: number) => string} [props.formatValue] - tooltip y resumen (ej: formatPrice)
  * @param {(value: number) => string} [props.formatTick] - marcas del eje Y (por defecto, formato compacto)
  * @param {string} [props.unit] - texto tras el valor en el tooltip (ej: "ventas")
+ * @param {{ label: string, active: boolean, onClick: () => void }[]} [props.tabs]
  */
 export default function BarChart({
   title,
@@ -35,6 +36,14 @@ export default function BarChart({
   formatValue = (v) => v,
   formatTick = (v) => compact.format(v),
   unit = "",
+  periodLabel,
+  onPrevious,
+  onNext,
+  previousDisabled = false,
+  nextDisabled = false,
+  previousLabel = "Período anterior",
+  nextLabel = "Período siguiente",
+  tabs = [],
 }) {
   const [hovered, setHovered] = useState(null);
   const [pinned, setPinned] = useState(null);
@@ -68,10 +77,41 @@ export default function BarChart({
           {title && <h3 className="bc-title">{title}</h3>}
           {subtitle && <p className="bc-subtitle">{subtitle}</p>}
         </div>
-        <div className="bc-stats">
-          <div className="bc-stat">
-            <span className="bc-stat-value">{formatValue(total)}</span>
-            <span className="bc-stat-label">Total</span>
+        <div className="bc-header-side">
+          {periodLabel && (
+            <div className="bc-period">
+              {(onPrevious || onNext) && (
+                <button
+                  type="button"
+                  className="bc-nav-btn"
+                  onClick={onPrevious}
+                  disabled={!onPrevious || previousDisabled}
+                  aria-label={previousLabel}
+                  title={previousLabel}
+                >
+                  <i className="fa-solid fa-angles-left" aria-hidden="true" />
+                </button>
+              )}
+              <span className="bc-period-label">{periodLabel}</span>
+              {(onPrevious || onNext) && (
+                <button
+                  type="button"
+                  className="bc-nav-btn"
+                  onClick={onNext}
+                  disabled={!onNext || nextDisabled}
+                  aria-label={nextLabel}
+                  title={nextLabel}
+                >
+                  <i className="fa-solid fa-angles-right" aria-hidden="true" />
+                </button>
+              )}
+            </div>
+          )}
+          <div className="bc-stats">
+            <div className="bc-stat">
+              <span className="bc-stat-value">{formatValue(total)}</span>
+              <span className="bc-stat-label">Total</span>
+            </div>
           </div>
         </div>
       </div>
@@ -130,6 +170,23 @@ export default function BarChart({
           </div>
         </div>
       </div>
+
+      {tabs.length > 0 && (
+        <div className="bc-tabs" role="tablist" aria-label="Semanas del mes">
+          {tabs.map((tab) => (
+            <button
+              key={tab.label}
+              type="button"
+              role="tab"
+              aria-selected={tab.active}
+              className={`bc-tab ${tab.active ? "is-active" : ""}`}
+              onClick={tab.onClick}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,9 @@
-@"
+# Dependencias
 node_modules/
+
+# Variables de entorno (NUNCA subir los .env)
 .env
+
+# Caché de Vite y artefactos de build
 .vite/
 dist/
-"@ | Set-Content .gitignore

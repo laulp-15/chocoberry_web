@@ -6,30 +6,28 @@
   gap: 20px;
 }
 
-/* --- Fila superior: info del cliente/pago + total --- */
-.sale-top-row {
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-
-.sale-info-card {
-  flex: 1;
-  min-width: 280px;
+/* =========================================================
+   Franja superior: Cliente · Estado · Fecha · Total
+   ========================================================= */
+.sale-summary-strip {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 24px;
   background: var(--blanco);
   border: 1px solid var(--borde);
   border-radius: 16px;
-  padding: 24px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  padding: 16px 16px 16px 24px;
 }
 
-.sale-info-col-full {
-  grid-column: 1 / -1;
+.sale-strip-cell {
+  min-width: 0;
 }
 
 .sale-info-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.03em;
@@ -42,6 +40,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
 }
 .sale-client-avatar {
   width: 40px;
@@ -56,27 +55,20 @@
   align-items: center;
   justify-content: center;
 }
+.sale-client-text {
+  min-width: 0;
+}
 .sale-client-name {
   font-size: 14px;
   font-weight: 700;
   color: var(--texto);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .sale-client-sub {
   font-size: 12px;
   color: var(--texto-muted);
-}
-
-.sale-info-with-icon {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--texto);
-}
-.sale-info-with-icon i {
-  color: var(--primario);
-  font-size: 13px;
 }
 
 .sale-info-value {
@@ -85,13 +77,12 @@
   color: var(--texto);
 }
 
-/* --- Tarjeta de total, destacada --- */
-.sale-total-card {
-  width: 240px;
-  flex-shrink: 0;
+/* --- Total destacado (dentro de la franja) --- */
+.sale-strip-total {
+  min-width: 220px;
   background: linear-gradient(160deg, var(--primario) 0%, var(--primario-oscuro) 100%);
-  border-radius: 16px;
-  padding: 24px;
+  border-radius: 12px;
+  padding: 14px 22px;
   color: var(--blanco);
   display: flex;
   flex-direction: column;
@@ -99,30 +90,34 @@
 }
 
 .sale-total-label {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;
   opacity: 0.85;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .sale-total-value {
-  font-size: 30px;
+  font-size: 26px;
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.15;
 }
 
 .sale-total-caption {
   font-size: 11px;
   opacity: 0.75;
-  margin-top: 6px;
+  margin-top: 2px;
 }
 
-@media (max-width: 767px) {
-  .sale-total-card {
-    width: 100%;
-  }
+/* =========================================================
+   Cuerpo: productos (izq) | comprobantes (der)
+   ========================================================= */
+.sale-main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 20px;
+  align-items: start;
 }
 
 /* --- Productos --- */
@@ -131,6 +126,7 @@
   border: 1px solid var(--borde);
   border-radius: 16px;
   padding: 24px;
+  min-width: 0;
 }
 
 .sale-products-title {
@@ -139,13 +135,18 @@
   margin-bottom: 18px;
 }
 
+.sale-products-scroll {
+  overflow-x: auto;
+}
+
 .sale-products-table {
   width: 100%;
+  min-width: 480px;
 }
 
 .sale-products-head {
   display: grid;
-  grid-template-columns: 2.4fr 1fr 1fr 1fr;
+  grid-template-columns: 2.4fr 0.8fr 1fr 1.1fr;
   gap: 12px;
   padding: 0 0 10px;
   border-bottom: 1px solid var(--borde);
@@ -158,7 +159,7 @@
 
 .sale-products-row {
   display: grid;
-  grid-template-columns: 2.4fr 1fr 1fr 1fr;
+  grid-template-columns: 2.4fr 0.8fr 1fr 1.1fr;
   gap: 12px;
   align-items: center;
   padding: 14px 0;
@@ -225,13 +226,15 @@
   align-items: flex-end;
   gap: 8px;
   margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--borde);
 }
 
 .sale-totals-row {
   display: flex;
   justify-content: space-between;
   gap: 40px;
-  width: 220px;
+  width: 240px;
   font-size: 13px;
   color: var(--texto-muted);
 }
@@ -244,16 +247,55 @@
   color: var(--primario);
 }
 
-/* --- Comprobante --- */
+/* =========================================================
+   Comprobantes (columna derecha, sticky)
+   ========================================================= */
 .sale-proof-card {
+  position: sticky;
+  top: 16px;
   background: var(--blanco);
   border: 1px solid var(--borde);
   border-radius: 16px;
-  padding: 20px 24px;
+  padding: 20px;
+  min-width: 0;
+}
+
+.sale-proof-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--secundario-1);
+  color: var(--primario);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.sale-proof-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+}
+
+.sale-proof-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--bg-main);
 }
 
 .sale-proof-link {
   display: inline-block;
+  flex-shrink: 0;
   border: none;
   background: none;
   padding: 0;
@@ -261,11 +303,77 @@
 }
 
 .sale-proof-thumb {
-  width: 72px;
-  height: 72px;
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
   object-fit: cover;
   border-radius: 10px;
   border: 1px solid var(--borde);
+}
+
+.sale-proof-thumb-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--texto-suave);
+  background: var(--secundario-3);
+}
+
+.sale-proof-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.sale-proof-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.sale-proof-status {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.sale-proof-status--pendiente {
+  color: var(--warning-100);
+  background: var(--warning-20);
+}
+.sale-proof-status--aprobado {
+  color: var(--success-100);
+  background: var(--success-20);
+}
+.sale-proof-status--rechazado {
+  color: var(--error-100);
+  background: var(--error-20);
+}
+
+.sale-proof-date {
+  font-size: 11px;
+  color: var(--texto-suave);
+}
+
+.sale-proof-amount {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+  color: var(--texto-muted);
+}
+.sale-proof-amount strong {
+  font-size: 14px;
+  color: var(--texto);
+}
+
+.sale-proof-reason {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--error-100);
 }
 
 .sale-proof-empty {
@@ -277,6 +385,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
   padding: 8px 14px;
   border: 1px solid var(--borde);
   border-radius: 10px;
@@ -291,4 +400,50 @@
 }
 .sale-proof-pdf i {
   font-size: 15px;
+}
+
+/* =========================================================
+   Responsive
+   ========================================================= */
+
+/* Tablet / laptop pequeña: comprobantes pasan debajo */
+@media (max-width: 1100px) {
+  .sale-main-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sale-proof-card {
+    position: static;
+  }
+  .sale-proof-list {
+    max-height: none;
+  }
+}
+
+/* Franja en 2 columnas, total ocupa todo el ancho */
+@media (max-width: 900px) {
+  .sale-summary-strip {
+    grid-template-columns: 1fr 1fr;
+    padding: 20px;
+  }
+  .sale-strip-client {
+    grid-column: 1 / -1;
+  }
+  .sale-strip-total {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 575px) {
+  .sale-summary-strip {
+    grid-template-columns: 1fr;
+  }
+  .sale-products-card {
+    padding: 18px;
+  }
+  .sale-totals-row {
+    width: 100%;
+  }
+  .sale-proof-item {
+    flex-direction: column;
+  }
 }

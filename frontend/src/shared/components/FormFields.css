@@ -104,6 +104,12 @@
   margin-top: 6px;
 }
 
+/* Error general del formulario (fallo de red, 409, etc.). */
+.form-error-block {
+  margin: 0 0 12px;
+  font-size: 13px;
+}
+
 .form-input.MuiOutlinedInput-root.MuiInputBase-root.MuiInputBase-multiline {
   height: auto !important;
   min-height: 42px !important;

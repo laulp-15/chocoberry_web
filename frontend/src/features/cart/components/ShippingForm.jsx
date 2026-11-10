@@ -1,14 +1,14 @@
 // src/features/cart/components/ShippingForm.jsx
-import React from "react";
 import { OutlinedInput, Select, MenuItem } from "@mui/material";
 import DatePicker, { addDaysISO } from "../../../shared/components/DatePicker";
-import { MUNICIPIOS } from "../data/Shipping";
 import { PICKUP_SCHEDULE } from "../data/pickupInfo";
+import { formatPrice } from "../../../shared/utils/formatPrice";
+import { formatearFechaISO } from "../../../shared/utils/orderRules";
 import "./ShippingForm.css";
 
-// La entrega no puede ser para hoy: mínimo el día siguiente (mañana) y
-// máximo 15 días a futuro.
-const MIN_DELIVERY_DATE = addDaysISO(1);
+// La entrega no puede ser para hoy: el mínimo lo calcula el checkout (mañana
+// normalmente y pasado mañana si el pedido supera 10 unidades). El máximo es
+// de 15 días a futuro.
 const MAX_DELIVERY_DATE = addDaysISO(15);
 
 /**
@@ -20,26 +20,29 @@ const MAX_DELIVERY_DATE = addDaysISO(15);
  * @param {string} [props.deliveryDateError]
  * @param {string} [props.municipioError]
  * @param {string} [props.addressError]
- * @param {string} [props.neighborhoodError]
  * @param {string} [props.recipientNameError]
  * @param {string} [props.recipientPhoneError]
+ * @param {string} [props.minDeliveryDate] - ISO; mínimo según el total del carrito
+ * @param {boolean} [props.largeOrder] - true si el pedido supera 10 unidades
  */
 export default function ShippingForm({
   values,
   onChange,
   onBlurField,
+  municipios = [],
+  municipiosLoading = false,
+  minDeliveryDate = addDaysISO(1),
+  largeOrder = false,
   fullNameError,
   deliveryDateError,
   municipioError,
   addressError,
-  neighborhoodError,
   recipientNameError,
   recipientPhoneError,
 }) {
   const {
     fullName,
     address,
-    neighborhood,
     municipio,
     recipientName,
     recipientPhone,
@@ -51,7 +54,7 @@ export default function ShippingForm({
     <div className="checkout-section">
       <div className="checkout-section-title">
         <i className="fa-solid fa-truck-fast" />
-        Detalles de Envío
+        Detalles del domicilio
       </div>
 
       <div className="form-field">
@@ -72,15 +75,19 @@ export default function ShippingForm({
         required
         value={deliveryDate}
         onChange={(v) => onChange("deliveryDate", v)}
-        minDate={MIN_DELIVERY_DATE}
+        minDate={minDeliveryDate}
         maxDate={MAX_DELIVERY_DATE}
         error={deliveryDateError}
-        hint="Disponible desde mañana y hasta 15 días a futuro."
+        hint={
+          largeOrder
+            ? `Con más de 10 unidades en total, la entrega más próxima es el ${formatearFechaISO(minDeliveryDate)}.`
+            : "Disponible desde mañana y hasta 15 días a futuro."
+        }
       />
 
       <div className="form-row">
         <div className="form-field">
-          <label className="form-label">Dirección *</label>
+          <label className="form-label">Dirección de entrega *</label>
           <OutlinedInput
             className={`form-input ${addressError ? "has-error" : ""}`}
             fullWidth
@@ -89,42 +96,38 @@ export default function ShippingForm({
             onChange={(e) => onChange("address", e.target.value)}
             onBlur={() => onBlurField?.("address")}
           />
-          {addressError && <div className="form-error">{addressError}</div>}
+          {addressError ? (
+            <div className="form-error">{addressError}</div>
+          ) : (
+            <div className="form-hint">
+              Para mayor precisión, indícanos en qué barrio será la entrega.
+            </div>
+          )}
         </div>
 
         <div className="form-field">
-          <label className="form-label">Barrio *</label>
-          <OutlinedInput
-            className={`form-input ${neighborhoodError ? "has-error" : ""}`}
+          <label className="form-label">Municipio de entrega *</label>
+          <Select
+            className={`form-input form-select ${municipioError ? "has-error" : ""}`}
             fullWidth
-            placeholder="Ej. El Poblado"
-            value={neighborhood}
-            onChange={(e) => onChange("neighborhood", e.target.value)}
-            onBlur={() => onBlurField?.("neighborhood")}
-          />
-          {neighborhoodError && <div className="form-error">{neighborhoodError}</div>}
-        </div>
-      </div>
-
-      <div className="form-field">
-        <label className="form-label">Municipio de entrega *</label>
-        <Select
-          className={`form-input form-select ${municipioError ? "has-error" : ""}`}
-          fullWidth
-          displayEmpty
-          value={municipio}
-          onChange={(e) => onChange("municipio", e.target.value)}
-        >
-          <MenuItem value="">
-            <span className="form-select-placeholder">Selecciona un municipio</span>
-          </MenuItem>
-          {MUNICIPIOS.map((m) => (
-            <MenuItem key={m.value} value={m.value}>
-              {m.label}
+            displayEmpty
+            value={municipio}
+            disabled={municipiosLoading}
+            onChange={(e) => onChange("municipio", e.target.value)}
+          >
+            <MenuItem value="">
+              <span className="form-select-placeholder">
+                {municipiosLoading ? "Cargando municipios..." : "Selecciona un municipio"}
+              </span>
             </MenuItem>
-          ))}
-        </Select>
-        {municipioError && <div className="form-error">{municipioError}</div>}
+            {municipios.map((m) => (
+              <MenuItem key={m.id} value={m.id}>
+                {m.nombre} — {formatPrice(m.precioDomicilio)}
+              </MenuItem>
+            ))}
+          </Select>
+          {municipioError && <div className="form-error">{municipioError}</div>}
+        </div>
       </div>
 
       <div className="form-row">

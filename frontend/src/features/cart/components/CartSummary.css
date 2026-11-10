@@ -5,7 +5,18 @@
   border-radius: 16px;
   padding: 28px 24px;
   position: sticky;
-  top: 24px;
+  /* El navbar es fijo: el resumen debe quedar por debajo de él. */
+  top: calc(var(--navbar-height) + 24px);
+  z-index: 2;
+}
+
+/* En móvil el resumen va debajo del listado; sticky causaría saltos. */
+@media (max-width: 991px) {
+  .cart-summary {
+    position: static;
+    top: auto;
+    z-index: auto;
+  }
 }
 
 .cart-summary-title {
@@ -69,6 +80,24 @@
   margin-bottom: 24px;
 }
 
+.cart-summary-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--error-20);
+  border-radius: 10px;
+  background: var(--error-20);
+  color: var(--error-100);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.cart-summary-warning i {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
 .btn-checkout.MuiButton-root {
   background: var(--primario) !important;
   color: var(--blanco) !important;
@@ -83,4 +112,9 @@
 .btn-checkout.MuiButton-root:hover {
   background: var(--primario-oscuro) !important;
   box-shadow: none !important;
+}
+.btn-checkout.MuiButton-root.Mui-disabled {
+  background: var(--texto-suave) !important;
+  color: var(--blanco) !important;
+  opacity: 0.65;
 }

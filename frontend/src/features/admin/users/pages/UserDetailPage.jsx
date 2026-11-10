@@ -1,7 +1,7 @@
 // src/features/admin/users/pages/UserDetailPage.jsx
-import React from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import useUsersAdmin from "../hooks/useUsersAdmin";
+import useRoleOptions from "../hooks/useRoleOptions";
 import RoleBadge from "../components/RoleBadge";
 import { docTypeLabel } from "../../../../shared/utils/documentTypes";
 import "./UserDetailPage.css";
@@ -18,8 +18,25 @@ function formatDate(iso) {
 export default function UserDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getUserById } = useUsersAdmin();
+  const { loading, error, getUserById } = useUsersAdmin();
+  const roleOptions = useRoleOptions();
   const user = getUserById(id);
+
+  // La lista se carga al entrar a la página (también por enlace directo),
+  // así que esperamos a que termine antes de decidir que no existe.
+  if (loading) {
+    return (
+      <div className="user-detail-page">
+        <button type="button" className="user-detail-back" onClick={() => navigate(-1)}>
+          <i className="fa-solid fa-arrow-left-long" /> Regresar al listado
+        </button>
+        <div className="user-detail-empty">
+          <i className="fa-solid fa-spinner" />
+          <p>Cargando el usuario...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
@@ -29,7 +46,9 @@ export default function UserDetailPage() {
         </button>
         <div className="user-detail-empty">
           <i className="fa-solid fa-circle-exclamation" />
-          <p>No encontramos ese usuario. Puede que ya haya sido eliminado.</p>
+          <p>
+            {error || "No encontramos ese usuario. Puede que ya haya sido eliminado."}
+          </p>
           <Link to="/admin/usuarios" className="btn-save" style={{ textDecoration: "none" }}>
             Ir al listado de usuarios
           </Link>
@@ -139,21 +158,12 @@ export default function UserDetailPage() {
               </div>
               <div className="user-detail-field">
                 <span className="user-detail-field-icon">
-                  <i className="fa-solid fa-map" />
-                </span>
-                <div className="user-detail-field-body">
-                  <dt>Barrio</dt>
-                  <dd>{user.neighborhood || "—"}</dd>
-                </div>
-              </div>
-              <div className="user-detail-field">
-                <span className="user-detail-field-icon">
                   <i className="fa-solid fa-user-shield" />
                 </span>
                 <div className="user-detail-field-body">
                   <dt>Rol de usuario</dt>
                   <dd>
-                    <RoleBadge role={user.role} />
+                    <RoleBadge role={user.role} options={roleOptions} />
                   </dd>
                 </div>
               </div>

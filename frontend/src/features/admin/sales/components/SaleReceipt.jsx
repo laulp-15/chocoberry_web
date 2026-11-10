@@ -1,8 +1,8 @@
 // src/features/admin/sales/components/SaleReceipt.jsx
-import React, { useState } from "react";
+import { useState } from "react";
 import { formatPrice } from "../../../../shared/utils/formatPrice";
-import { formatDisplayDate, getMunicipioLabel, getProofUrl, isPdfProof } from "../../orders/utils/orderDisplay";
-import { PRODUCTS } from "../../../catalog/data/Products";
+import { formatDisplayDate, getProofUrl, isPdfProof } from "../../orders/utils/orderDisplay";
+import OrderStatusBadge from "../../orders/components/OrderStatusBadge";
 import ImageLightbox from "../../../../shared/components/ImageLightbox";
 import "./SaleReceipt.css";
 
@@ -15,133 +15,220 @@ function getInitials(name) {
     .toUpperCase();
 }
 
-function getProductImage(productId) {
-  return PRODUCTS.find((p) => p.id === productId)?.image ?? null;
-}
-
 /**
- * Presentación de "ver venta": tarjeta de cliente/pago + total destacado
- * arriba, tabla de productos abajo. Misma data que OrderDetailContent
- * (Pedidos), pero organizada distinto porque aquí el foco es el comprobante.
+ * Presentación de "ver venta":
+ *  - Franja superior única: cliente · estado · fecha · total destacado.
+ *  - Debajo, dos columnas: resumen de productos (izquierda) y
+ *    comprobantes de pago (derecha, sticky en escritorio).
  *
  * @param {object} props
  * @param {object} props.sale
  */
 export default function SaleReceipt({ sale }) {
-  const municipioLabel = getMunicipioLabel(sale.municipio);
-  const proofUrl = getProofUrl(sale.comprobante);
-  const proofIsPdf = isPdfProof(sale.comprobante);
-  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const clienteMeta = [
+    `N. Identificación: ${sale.clienteIdentificacion || "—"}`,
+    sale.municipio,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const comprobantes = sale.comprobantes ?? [];
+  const [activeProof, setActiveProof] = useState(null);
 
   return (
     <div className="sale-receipt">
-      {/* --- Cliente/Pago + Total --- */}
-      <div className="sale-top-row">
-        <div className="sale-info-card">
-          <div className="sale-info-col">
-            <div className="sale-info-label">Cliente</div>
-            <div className="sale-client">
-              <div className="sale-client-avatar">{getInitials(sale.cliente)}</div>
-              <div>
-                <div className="sale-client-name">{sale.cliente}</div>
-                <div className="sale-client-sub">{municipioLabel}</div>
-              </div>
+      {/* --- Franja superior: Cliente · Estado · Fecha · Total --- */}
+      <div className="sale-summary-strip">
+        <div className="sale-strip-cell sale-strip-client">
+          <div className="sale-info-label">Cliente</div>
+          <div className="sale-client">
+            <div className="sale-client-avatar">{getInitials(sale.cliente)}</div>
+            <div className="sale-client-text">
+              <div className="sale-client-name">{sale.cliente}</div>
+              <div className="sale-client-sub">{clienteMeta}</div>
             </div>
-          </div>
-
-          <div className="sale-info-col sale-info-col-full">
-            <div className="sale-info-label">Fecha de venta</div>
-            <div className="sale-info-value">{formatDisplayDate(sale.fecha)}</div>
           </div>
         </div>
 
-        <div className="sale-total-card">
+        <div className="sale-strip-cell">
+          <div className="sale-info-label">Estado de la venta</div>
+          <OrderStatusBadge status={sale.estado} title="Estado de la venta" />
+        </div>
+
+        <div className="sale-strip-cell">
+          <div className="sale-info-label">Fecha de venta</div>
+          <div className="sale-info-value">{formatDisplayDate(sale.fecha)}</div>
+        </div>
+
+        <div className="sale-strip-total">
           <div className="sale-total-label">Total de la venta</div>
           <div className="sale-total-value">{formatPrice(sale.total)}</div>
           <div className="sale-total-caption">Incluye envío</div>
         </div>
       </div>
 
-      {/* --- Productos --- */}
-      <div className="sale-products-card">
-        <h2 className="sale-products-title">Resumen de Productos</h2>
+      {/* --- Cuerpo: productos | comprobantes --- */}
+      <div className="sale-main-grid">
+        {/* Productos */}
+        <div className="sale-products-card">
+          <h2 className="sale-products-title">Resumen de Productos</h2>
 
-        <div className="sale-products-table">
-          <div className="sale-products-head">
-            <span>Producto</span>
-            <span>Cantidad</span>
-            <span>Precio unitario</span>
-            <span>Subtotal</span>
-          </div>
-
-          {sale.products.map((line) => {
-            const image = getProductImage(line.productId);
-            const personalization = [
-              line.color && `Color ${line.color}`,
-              line.decorativeMessage && `“${line.decorativeMessage}”`,
-              line.extraCustomization,
-            ]
-              .filter(Boolean)
-              .join(" · ");
-
-            return (
-              <div key={line.lineId} className="sale-products-row">
-                <div className="sale-product-cell">
-                  <div className="sale-product-thumb">
-                    {image ? <img src={image} alt={line.productName} /> : <i className="fa-solid fa-image" />}
-                  </div>
-                  <div>
-                    <div className="sale-product-name">{line.productName}</div>
-                    {personalization && <div className="sale-product-personalization">{personalization}</div>}
-                  </div>
-                </div>
-                <span className="sale-products-qty">{line.units}</span>
-                <span>{formatPrice(line.unitPrice)}</span>
-                <span className="sale-products-subtotal">{formatPrice(line.unitPrice * line.units)}</span>
+          <div className="sale-products-scroll">
+            <div className="sale-products-table">
+              <div className="sale-products-head">
+                <span>Producto</span>
+                <span>Cantidad</span>
+                <span>Precio unitario</span>
+                <span>Subtotal</span>
               </div>
-            );
-          })}
+
+              {sale.products.map((line) => {
+                const image = line.productImage;
+                const personalization = [
+                  line.color && `Color ${line.color}`,
+                  line.decorativeMessage && `“${line.decorativeMessage}”`,
+                ]
+                  .filter(Boolean)
+                  .join(" · ");
+
+                return (
+                  <div key={line.lineId} className="sale-products-row">
+                    <div className="sale-product-cell">
+                      <div className="sale-product-thumb">
+                        {image ? (
+                          <img src={image} alt={line.productName} />
+                        ) : (
+                          <i className="fa-solid fa-image" />
+                        )}
+                      </div>
+                      <div>
+                        <div className="sale-product-name">{line.productName}</div>
+                        {personalization && (
+                          <div className="sale-product-personalization">{personalization}</div>
+                        )}
+                      </div>
+                    </div>
+                    <span className="sale-products-qty">{line.units}</span>
+                    <span>{formatPrice(line.unitPrice)}</span>
+                    <span className="sale-products-subtotal">
+                      {formatPrice(line.unitPrice * line.units)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="sale-products-totals">
+            <div className="sale-totals-row">
+              <span>Subtotal</span>
+              <span>{formatPrice(sale.subtotal)}</span>
+            </div>
+            <div className="sale-totals-row">
+              <span>Envío</span>
+              <span>{formatPrice(sale.shippingCost)}</span>
+            </div>
+            <div className="sale-totals-row sale-totals-final">
+              <span>Total</span>
+              <span>{formatPrice(sale.total)}</span>
+            </div>
+          </div>
         </div>
 
-        <div className="sale-products-totals">
-          <div className="sale-totals-row">
-            <span>Subtotal</span>
-            <span>{formatPrice(sale.subtotal)}</span>
+        {/* Comprobantes */}
+        <aside className="sale-proof-card">
+          <div className="sale-info-label">
+            Comprobantes de pago
+            {comprobantes.length > 0 && (
+              <span className="sale-proof-count">{comprobantes.length}</span>
+            )}
           </div>
-          <div className="sale-totals-row">
-            <span>Envío</span>
-            <span>{formatPrice(sale.shippingCost)}</span>
-          </div>
-          <div className="sale-totals-row sale-totals-final">
-            <span>Total</span>
-            <span>{formatPrice(sale.total)}</span>
-          </div>
-        </div>
-      </div>
 
-      <div className="sale-proof-card">
-        <div className="sale-info-label">Comprobante de pago</div>
-        {proofUrl ? (
-          proofIsPdf ? (
-            <a href={proofUrl} target="_blank" rel="noreferrer" className="sale-proof-pdf">
-              <i className="fa-solid fa-file-pdf" />
-              Ver comprobante PDF
-            </a>
+          {comprobantes.length === 0 ? (
+            <span className="sale-proof-empty">Sin comprobante adjunto</span>
           ) : (
-            <button type="button" className="sale-proof-link" onClick={() => setLightboxOpen(true)}>
-              <img src={proofUrl} alt="Comprobante de pago" className="sale-proof-thumb" />
-            </button>
-          )
-        ) : (
-          <span className="sale-proof-empty">Sin comprobante adjunto</span>
-        )}
+            <div className="sale-proof-list">
+              {comprobantes.map((comprobante) => {
+                const proofUrl = getProofUrl(comprobante.url);
+                const proofIsPdf = isPdfProof(comprobante.url);
+                const estadoClass = (comprobante.estado || "pendiente").toLowerCase();
+
+                return (
+                  <div key={comprobante.id} className="sale-proof-item">
+                    {proofUrl ? (
+                      proofIsPdf ? (
+                        <a
+                          href={proofUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="sale-proof-pdf"
+                        >
+                          <i className="fa-solid fa-file-pdf" />
+                          Ver PDF
+                        </a>
+                      ) : (
+                        <button
+                          type="button"
+                          className="sale-proof-link"
+                          onClick={() =>
+                            setActiveProof({
+                              url: proofUrl,
+                              alt: `Comprobante #${comprobante.id}`,
+                            })
+                          }
+                        >
+                          <img
+                            src={proofUrl}
+                            alt={`Comprobante #${comprobante.id}`}
+                            className="sale-proof-thumb"
+                          />
+                        </button>
+                      )
+                    ) : (
+                      <span className="sale-proof-thumb sale-proof-thumb-empty">
+                        <i className="fa-solid fa-image" />
+                      </span>
+                    )}
+
+                    <div className="sale-proof-info">
+                      <div className="sale-proof-head">
+                        <span className={`sale-proof-status sale-proof-status--${estadoClass}`}>
+                          {comprobante.estado}
+                        </span>
+                        <span className="sale-proof-date">
+                          {formatDisplayDate(comprobante.fecha)}
+                        </span>
+                      </div>
+                      <div className="sale-proof-amount">
+                        <span>
+                          {comprobante.estado === "Rechazado"
+                            ? "Valor entregado"
+                            : "Monto verificado"}
+                        </span>
+                        <strong>
+                          {comprobante.monto === null
+                            ? "Pendiente de verificación"
+                            : formatPrice(comprobante.monto)}
+                        </strong>
+                      </div>
+                      {comprobante.motivoRechazo && (
+                        <div className="sale-proof-reason">
+                          <strong>Motivo del rechazo:</strong> {comprobante.motivoRechazo}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </aside>
       </div>
 
       <ImageLightbox
-        open={lightboxOpen}
-        onClose={() => setLightboxOpen(false)}
-        src={proofUrl}
-        alt="Comprobante de pago"
+        open={Boolean(activeProof)}
+        onClose={() => setActiveProof(null)}
+        src={activeProof?.url}
+        alt={activeProof?.alt ?? "Comprobante de pago"}
       />
     </div>
   );

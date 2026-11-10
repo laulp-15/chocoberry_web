@@ -1,5 +1,5 @@
 // src/features/catalog/components/ProductGallery.jsx
-import React, { useState } from "react";
+import { useState } from "react";
 import "./ProductGallery.css";
 
 /**
@@ -13,7 +13,9 @@ import "./ProductGallery.css";
 export default function ProductGallery({ images = [], alt = "" }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const hasImages = images.length > 0;
-  const activeImage = images[activeIndex];
+  // Si la lista cambia y el índice queda fuera de rango, se ajusta.
+  const safeIndex = hasImages ? Math.min(activeIndex, images.length - 1) : 0;
+  const activeImage = images[safeIndex];
 
   return (
     <div className="product-gallery">
@@ -29,9 +31,9 @@ export default function ProductGallery({ images = [], alt = "" }) {
         <div className="gallery-thumbs">
           {images.map((src, i) => (
             <button
-              key={src}
+              key={`${src}-${i}`}
               type="button"
-              className={`gallery-thumb ${activeIndex === i ? "active" : ""}`}
+              className={`gallery-thumb ${safeIndex === i ? "active" : ""}`}
               onClick={() => setActiveIndex(i)}
             >
               <img src={src} alt={`${alt} ${i + 1}`} />
