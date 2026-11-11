@@ -3,6 +3,8 @@ node_modules/
 
 # Variables de entorno (NUNCA subir el .env)
 .env
+.env.*
+!.env.example
 
 # Certificados y claves
 *.pem
