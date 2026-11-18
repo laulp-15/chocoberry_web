@@ -1,6 +1,7 @@
 // src/features/cart/pages/CartPage.jsx
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../../login/hooks/useAuth";
 import { useCart } from "../hooks/UseCart";
 import CartItemCard from "../components/CartItemCard";
 import CartSummary from "../components/CartSummary";
@@ -16,8 +17,10 @@ import "./CartPage.css";
 export default function CartPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const { items, removeItem, updateUnits, updateField, clearCart } = useCart();
   const [clearModalOpen, setClearModalOpen] = useState(false);
+  const [loginAlertOpen, setLoginAlertOpen] = useState(false);
   const [mergedNotificationOpen, setMergedNotificationOpen] = useState(
     () => Boolean(location.state?.merged)
   );
@@ -27,8 +30,27 @@ export default function CartPage() {
     navigate(location.pathname, { replace: true, state: {} });
   }, [location.state, location.pathname, navigate]);
 
+  // Sin sesión: se muestra el aviso y se redirige al login, recordando que
+  // debe volver al checkout para conservar los productos del carrito.
+  useEffect(() => {
+    if (!loginAlertOpen) return undefined;
+
+    const timer = setTimeout(() => {
+      navigate("/login", {
+        state: { from: "/carrito/pago" },
+        replace: true,
+      });
+    }, 2500);
+
+    return () => clearTimeout(timer);
+  }, [loginAlertOpen, navigate]);
+
   const handleCheckout = () => {
     if (excedeLimiteCarrito(items)) return;
+    if (!user) {
+      setLoginAlertOpen(true);
+      return;
+    }
     navigate("/carrito/pago");
   };
 
@@ -141,6 +163,13 @@ export default function CartPage() {
         open={mergedNotificationOpen}
         onClose={() => setMergedNotificationOpen(false)}
         message="El producto ya estaba en el carrito. Se ha añadido una cantidad más."
+      />
+
+      <CartNotification
+        open={loginAlertOpen}
+        onClose={() => setLoginAlertOpen(false)}
+        variant="warning"
+        message="Debes iniciar sesión o registrarte para continuar con tu pedido. Redirigiendo..."
       />
     </div>
   );

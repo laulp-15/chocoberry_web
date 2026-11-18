@@ -3,10 +3,8 @@ import { useState, useEffect } from 'react';
 import useAuthTheme from '../../login/hooks/useAuthTheme';
 import { useAuth } from '../../login/hooks/useAuth';
 import {
-  getPasswordChecks,
   validateApellidos,
   validateAddress,
-  validateConfirmPassword,
   validateDocType,
   validateEmail,
   validateIdNumber,
@@ -57,21 +55,12 @@ function validateProfileField(field, value) {
 
 const PersonalInfo = () => {
   const { theme } = useAuthTheme();
-  const { user, changePassword, updateUser } = useAuth();
+  const { user, updateUser } = useAuth();
   const isDark = theme === 'dark';
 
   const [editingSection, setEditingSection] = useState(null);
-  const [showPasswordChange, setShowPasswordChange] = useState(false);
-  const [passwordForm, setPasswordForm] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
-  });
-  const [passwordErrors, setPasswordErrors] = useState({});
   const [profileErrors, setProfileErrors] = useState({});
   const [profileMessage, setProfileMessage] = useState(null);
-  const [passwordChanging, setPasswordChanging] = useState(false);
-  const [passwordMessage, setPasswordMessage] = useState(null);
 
   const [userInfo, setUserInfo] = useState({
     id: '',
@@ -127,47 +116,6 @@ const PersonalInfo = () => {
     setUserInfo((prev) => ({ ...prev, [name]: value }));
     setProfileErrors((prev) => (prev[name] ? { ...prev, [name]: '' } : prev));
     setProfileMessage(null);
-  };
-
-  const handlePasswordChange = (name, value) => {
-    setPasswordForm((prev) => ({ ...prev, [name]: value }));
-    if (passwordErrors[name]) {
-      setPasswordErrors((prev) => ({ ...prev, [name]: '' }));
-    }
-    if (name === 'newPassword') {
-      const checks = getPasswordChecks(value);
-      setPasswordErrors((prev) => ({
-        ...prev,
-        newPassword:
-          !checks.minLength || !checks.hasUpper || !checks.hasNumber || !checks.hasSpecial
-            ? 'La contraseña no cumple con los requisitos mínimos.'
-            : '',
-      }));
-    }
-  };
-
-  const validatePasswordForm = () => {
-    const errors = {};
-    if (!passwordForm.currentPassword) {
-      errors.currentPassword = 'La contraseña actual es obligatoria';
-    }
-    if (!passwordForm.newPassword) {
-      errors.newPassword = 'La contraseña es obligatoria.';
-    } else {
-      const checks = getPasswordChecks(passwordForm.newPassword);
-      if (!checks.minLength || !checks.hasUpper || !checks.hasNumber || !checks.hasSpecial) {
-        errors.newPassword = 'La contraseña no cumple con los requisitos mínimos.';
-      }
-    }
-    const confirmError = validateConfirmPassword(
-      passwordForm.newPassword,
-      passwordForm.confirmPassword
-    );
-    if (confirmError) {
-      errors.confirmPassword = confirmError;
-    }
-    setPasswordErrors(errors);
-    return Object.keys(errors).length === 0;
   };
 
   const validateProfileForm = (section = editingSection) => {
@@ -266,29 +214,9 @@ const PersonalInfo = () => {
     }
   };
 
-  const handlePasswordSubmit = async () => {
-    if (passwordChanging || !validatePasswordForm()) return;
-    setPasswordChanging(true);
-    setPasswordMessage(null);
-    try {
-      await changePassword({
-        currentPassword: passwordForm.currentPassword,
-        newPassword: passwordForm.newPassword,
-      });
-      setPasswordMessage({ type: 'success', text: 'Contraseña actualizada correctamente' });
-      setShowPasswordChange(false);
-      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-    } catch (error) {
-      setPasswordMessage({ type: 'error', text: error.message || 'Error al actualizar la contraseña' });
-    } finally {
-      setPasswordChanging(false);
-    }
-  };
-
   const handleFormSubmit = (e) => {
     e.preventDefault();
-    if (showPasswordChange) handlePasswordSubmit();
-    else if (editingSection) handleSubmit();
+    if (editingSection) handleSubmit();
   };
 
   const cancelEdit = () => {
@@ -318,23 +246,6 @@ const PersonalInfo = () => {
     setProfileMessage(null);
     setEditingSection(section);
   };
-
-  const togglePasswordChange = () => {
-    setShowPasswordChange(!showPasswordChange);
-    if (!showPasswordChange) {
-      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      setPasswordErrors({});
-      setPasswordMessage(null);
-    }
-  };
-
-  const passwordChecks = getPasswordChecks(passwordForm.newPassword);
-  const passwordRequirements = [
-    { key: 'minLength', label: 'Mínimo 8 caracteres' },
-    { key: 'hasUpper', label: 'Una mayúscula' },
-    { key: 'hasNumber', label: 'Un número' },
-    { key: 'hasSpecial', label: 'Un carácter especial' },
-  ];
 
   const renderSection = (
     title,
@@ -569,109 +480,6 @@ const PersonalInfo = () => {
           handleSubmit,
           'Editar',
           profileMessage
-        )}
-
-        {/* Sección 2: Contraseña */}
-        {renderSection(
-          'Contraseña',
-          'fa-lock',
-          (
-            <>
-              {!showPasswordChange ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', color: colors.text, fontSize: '15px' }}>
-                  <div style={{ padding: '16px', background: colors.inputBg, borderRadius: '8px', border: `1px solid ${colors.inputBorder}` }}>
-                    <strong style={{ color: colors.textMuted, fontSize: '13px', textTransform: 'uppercase' }}>Contraseña actual</strong>
-                    <div style={{
-                      marginTop: '8px',
-                      padding: '12px',
-                      background: isDark ? '#181013' : '#f5f5f5',
-                      borderRadius: '6px',
-                      fontFamily: 'monospace',
-                      letterSpacing: '2px',
-                      color: colors.text,
-                    }}>
-                      {'••••••••'}
-                    </div>
-                    <p style={{ margin: '8px 0 0', fontSize: '13px', color: colors.textMuted }}>
-                      Tu contraseña está protegida. Haz clic en "Cambiar contraseña" para actualizarla.
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  {passwordMessage && (
-                    <div style={{
-                      padding: '12px 16px',
-                      borderRadius: '8px',
-                      background: passwordMessage.type === 'success'
-                        ? (isDark ? '#1a3a2a' : '#d8f3dc')
-                        : (isDark ? '#3a1a1a' : '#ffe8e8'),
-                      border: `1px solid ${passwordMessage.type === 'success' ? colors.success : colors.error}`,
-                      color: passwordMessage.type === 'success' ? colors.success : colors.error,
-                      fontSize: '14px',
-                      fontWeight: '500',
-                    }}>
-                      {passwordMessage.text}
-                    </div>
-                  )}
-                  <FormTextField
-                    label="Contraseña actual"
-                    type="password"
-                    name="currentPassword"
-                    value={passwordForm.currentPassword}
-                    onChange={(value) => handlePasswordChange('currentPassword', value)}
-                    error={passwordErrors.currentPassword}
-                  />
-                  <FormTextField
-                    label="Nueva contraseña"
-                    type="password"
-                    name="newPassword"
-                    value={passwordForm.newPassword}
-                    onChange={(value) => handlePasswordChange('newPassword', value)}
-                    error={passwordErrors.newPassword}
-                  />
-                  <div style={{ marginTop: '8px', fontSize: '12px', lineHeight: '1.6' }}>
-                    {passwordRequirements.map((req, index) => {
-                      const ok = passwordChecks[req.key];
-                      return (
-                        <div
-                          key={req.key}
-                          style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: index < passwordRequirements.length - 1 ? '4px' : 0 }}
-                        >
-                          <i
-                            className={`fa-solid ${ok ? 'fa-circle-check' : 'fa-circle-xmark'}`}
-                            style={{ color: ok ? colors.success : colors.error }}
-                            aria-hidden="true"
-                          />
-                          <span style={{ color: ok ? colors.success : colors.error, fontWeight: '600' }}>
-                            {req.label}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <FormTextField
-                    label="Confirmar nueva contraseña"
-                    type="password"
-                    name="confirmPassword"
-                    value={passwordForm.confirmPassword}
-                    onChange={(value) => handlePasswordChange('confirmPassword', value)}
-                    error={passwordErrors.confirmPassword}
-                  />
-                </div>
-              )}
-            </>
-          ),
-          showPasswordChange,
-          () => togglePasswordChange(),
-          () => {
-            setShowPasswordChange(false);
-            setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-            setPasswordErrors({});
-            setPasswordMessage(null);
-          },
-          handlePasswordSubmit,
-          'Cambiar contraseña'
         )}
 
         {/* Sección 3: Información de contacto */}

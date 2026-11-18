@@ -1,6 +1,6 @@
 // src/features/catalog/pages/ProductDetail.jsx
 import { useState, useRef, useLayoutEffect } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@mui/material";
 import { useCart } from "../../cart/hooks/UseCart";
 import ProductGallery from "../components/ProductGallery";
@@ -65,7 +65,6 @@ function ProductDescription({ text }) {
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
   const { addItem, items } = useCart();
   const { producto, relacionados, presentaciones, glaseados, loading, error, reload } =
     useProducto(id);
@@ -149,31 +148,27 @@ export default function ProductDetail() {
   const handleAddToCart = () => {
     if (!canAddToCart) return;
 
-    const resultado = addItem(
-      {
-        productId: producto.id,
-        name: producto.name,
-        image: producto.image,
-        quantity: selectedQuantity,
-        presentationId: selectedPresentation.id,
-        unitPrice: currentPrice,
-        colorId: Number(selectedColor.id),
-        color: selectedColor.label,
-        colorHex: selectedColor.hex,
-        units: selectedUnits,
-      },
-      { fromPath: location.pathname }
-    );
+    const resultado = addItem({
+      productId: producto.id,
+      name: producto.name,
+      image: producto.image,
+      quantity: selectedQuantity,
+      presentationId: selectedPresentation.id,
+      unitPrice: currentPrice,
+      colorId: Number(selectedColor.id),
+      color: selectedColor.label,
+      colorHex: selectedColor.hex,
+      units: selectedUnits,
+    });
     // El carrito ya suma 20 unidades: no se agrega y se muestra el contacto.
     if (resultado?.limitReached) {
       setLimitAlertOpen(true);
       return;
     }
-    // Si el usuario ya estaba logueado y se añadió al carrito, navegar al carrito
+    // Se añadió al carrito (con o sin sesión), navegar al carrito.
     if (resultado?.merged !== undefined) {
       navigate("/carrito", resultado.merged ? { state: { merged: true } } : undefined);
     }
-    // Si no estaba logueado, addItem ya redirigió a login; el flush ocurrirá tras login
   };
 
   const handleRelatedViewDetail = (p) => {
