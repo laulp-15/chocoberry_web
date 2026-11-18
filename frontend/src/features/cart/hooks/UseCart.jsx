@@ -1,8 +1,5 @@
 // src/features/cart/hooks/useCart.jsx
-import { createContext, useContext, useState, useMemo, useCallback, useEffect, useRef } from "react";
-import { useAuth } from "../../login/hooks/useAuth";
-import { useNavigate, useLocation } from "react-router-dom";
-import CartNotification from "../components/CartNotification";
+import { createContext, useContext, useState, useMemo, useCallback, useEffect } from "react";
 import {
   MAX_CART_UNITS,
   normalizarCantidad,
@@ -11,21 +8,34 @@ import {
 
 const CartContext = createContext(null);
 
-const PENDING_ITEM_KEY = "cb_pending_cart_item";
+// El carrito vive en localStorage para sobrevivir al login, a las recargas y
+// al cierre del navegador hasta que el usuario lo vacíe.
+const CART_STORAGE_KEY = "cb_cart_items";
+
+function leerCarritoGuardado() {
+  try {
+    const raw = localStorage.getItem(CART_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
 
 export function CartProvider({ children }) {
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState(leerCarritoGuardado);
 
-  // Aviso de sesión (advertencia) o de producto añadido tras el login (éxito).
-  const [authAlert, setAuthAlert] = useState(false);
+  useEffect(() => {
+    try {
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+    } catch {
+      // Sin almacenamiento disponible: el carrito vive solo en memoria.
+    }
+  }, [items]);
 
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const flushPendingRef = useRef(false);
-
-  // Función interna para añadir item al carrito (sin verificación de auth)
-  const doAddItem = useCallback(
+  // Añadir item al carrito (disponible con o sin sesión iniciada).
+  const addItem = useCallback(
     (item) => {
       // El pedido de la tienda no puede superar 20 unidades en total.
       const remaining = MAX_CART_UNITS - totalUnidades(items);
@@ -68,71 +78,6 @@ export function CartProvider({ children }) {
     [items]
   );
 
-  // Flushea el item pendiente si hay uno y el usuario está autenticado
-  const flushPendingItem = useCallback(() => {
-    if (!user) return;
-
-    try {
-      const raw = sessionStorage.getItem(PENDING_ITEM_KEY);
-      if (!raw) return;
-
-      const pending = JSON.parse(raw);
-      sessionStorage.removeItem(PENDING_ITEM_KEY);
-
-      // Añadir el item al carrito
-      doAddItem(pending.item);
-      
-      // Opcional: mostrar notificación de éxito
-      setAuthAlert(true);
-      setTimeout(() => setAuthAlert(false), 3000);
-    } catch (e) {
-      console.warn("Error al procesar item pendiente:", e);
-      sessionStorage.removeItem(PENDING_ITEM_KEY);
-    }
-  }, [user, doAddItem]);
-
-  // Efecto: cuando el usuario inicia sesión (user pasa de null a truthy), flushear item pendiente
-  useEffect(() => {
-    if (user && !flushPendingRef.current) {
-      flushPendingRef.current = true;
-      flushPendingItem();
-    } else if (!user) {
-      flushPendingRef.current = false;
-    }
-  }, [user, flushPendingItem]);
-
-  // API pública: addItem guarda item pendiente y redirige a login si no hay sesión
-  const addItem = useCallback(
-    (item, options = {}) => {
-      const { fromPath } = options;
-
-      // Validar si el usuario está autenticado
-      if (!user) {
-        // Guardar item pendiente con la ruta de retorno
-        const pendingData = {
-          item,
-          fromPath: fromPath || location.pathname,
-          timestamp: Date.now(),
-        };
-        sessionStorage.setItem(PENDING_ITEM_KEY, JSON.stringify(pendingData));
-
-        setAuthAlert(true);
-        // Esperar 3 segundos antes de redirigir (comportamiento original)
-        // y cerrar la alerta tras 3s
-        const alertTimer = setTimeout(() => setAuthAlert(false), 3000);
-        const redirectTimer = setTimeout(() => {
-          navigate("/login", { state: { from: fromPath || location.pathname }, replace: true });
-        }, 3000);
-        
-        // Devolver timers por si el consumidor quiere limpiar (opcional)
-        return { alertTimer, redirectTimer };
-      }
-
-      return doAddItem(item);
-    },
-    [user, location, navigate, doAddItem]
-  );
-
   const removeItem = useCallback((cartItemId) => {
     setItems((prev) => prev.filter((it) => it.cartItemId !== cartItemId));
   }, []);
@@ -171,22 +116,7 @@ export function CartProvider({ children }) {
     [items, addItem, removeItem, updateUnits, updateField, clearCart]
   );
 
-  return (
-    <CartContext.Provider value={value}>
-      {children}
-      
-      <CartNotification
-        open={authAlert}
-        onClose={() => setAuthAlert(false)}
-        variant={user ? "success" : "warning"}
-        message={
-          user
-            ? "Producto añadido al carrito"
-            : "Debes iniciar sesión o registrarte para continuar con tu pedido. Redirigiendo..."
-        }
-      />
-    </CartContext.Provider>
-  );
+  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
 
 // El hook se exporta junto al provider porque comparten el mismo contexto.

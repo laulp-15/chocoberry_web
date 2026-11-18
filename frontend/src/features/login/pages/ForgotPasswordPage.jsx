@@ -11,8 +11,8 @@ const RESEND_COOLDOWN = 30;
 
 /**
  * Recuperar contraseña — SOLO pide el correo y solicita el envío del enlace
- * de recuperación. Distinto de "Cambiar contraseña" (ChangePasswordPage),
- * que pide contraseña actual + nueva y requiere sesión iniciada.
+ * de recuperación. Es el único camino para cambiar la contraseña: el perfil
+ * del cliente ya no expone un formulario de cambio.
  */
 export default function ForgotPasswordPage() {
   const { requestPasswordReset } = useAuth();
