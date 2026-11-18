@@ -7,6 +7,7 @@
 
 export const MAX_CART_UNITS = 20;
 export const LARGE_ORDER_UNITS = 10;
+export const MAX_MENSAJE_TARJETA = 255;
 export const CONTACT_PHONE = "317 217 5887";
 export const CONTACT_MESSAGE = `Si quieres un pedido más grande puedes contactarte al teléfono: ${CONTACT_PHONE}.`;
 

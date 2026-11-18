@@ -35,7 +35,6 @@ const EMPTY_ORDER = {
   recipientPhone: "",
   instrucciones: "",
   comprobante: null,
-  cardMessage: "",
   lineas: [],
 };
 
@@ -55,7 +54,6 @@ function toFormValues(order) {
     recipientPhone: order.telefonoReceptor ?? order.recipientPhone ?? "",
     instrucciones: order.instruccionesEntrega ?? order.instrucciones ?? "",
     comprobante: null,
-    cardMessage: order.mensajeTarjeta ?? order.cardMessage ?? "",
     lineas: Array.isArray(order.lineas) ? order.lineas : [],
   };
 }
@@ -144,10 +142,6 @@ export default function OrderFormModal({
       instrucciones: (o) =>
         o.instrucciones.trim().length > 255
           ? "Las instrucciones no pueden superar los 255 caracteres."
-          : "",
-      cardMessage: (o) =>
-        o.cardMessage.trim().length > 255
-          ? "El mensaje de la tarjeta no puede superar los 255 caracteres."
           : "",
       lineas: (o) => {
         if (o.lineas.length === 0) return "Agrega al menos un producto.";
@@ -333,7 +327,6 @@ export default function OrderFormModal({
           nombreReceptor: order.recipientName.trim(),
           telefonoReceptor: order.recipientPhone.trim(),
           instruccionesEntrega: order.instrucciones.trim(),
-          mensajeTarjeta: order.cardMessage.trim(),
           lineas,
         });
       } else {
@@ -346,7 +339,6 @@ export default function OrderFormModal({
           nombreReceptor: order.recipientName.trim(),
           telefonoReceptor: order.recipientPhone.trim(),
           instruccionesEntrega: order.instrucciones.trim(),
-          mensajeTarjeta: order.cardMessage.trim(),
           lineas,
         });
       }
@@ -517,6 +509,25 @@ export default function OrderFormModal({
             />
           </div>
 
+          <div className="order-form-row">
+            <FormSelect
+              label="Municipio"
+              required
+              value={order.municipioId}
+              onChange={(v) => setField("municipioId", v)}
+              onBlur={() => handleBlur("municipioId")}
+              options={municipioOptions}
+              placeholder="Selecciona un municipio"
+              error={errors.municipioId}
+            />
+            <FormTextField
+              label="Costo domicilio"
+              value={formatPrice(shippingCost)}
+              readOnly
+              placeholder="—"
+            />
+          </div>
+
           <FormTextField
             label="Dirección"
             required
@@ -545,25 +556,6 @@ export default function OrderFormModal({
               onBlur={() => handleBlur("recipientPhone")}
               placeholder="Ej. 300 123 4567"
               error={errors.recipientPhone}
-            />
-          </div>
-
-          <div className="order-form-row">
-            <FormSelect
-              label="Municipio"
-              required
-              value={order.municipioId}
-              onChange={(v) => setField("municipioId", v)}
-              onBlur={() => handleBlur("municipioId")}
-              options={municipioOptions}
-              placeholder="Selecciona un municipio"
-              error={errors.municipioId}
-            />
-            <FormTextField
-              label="Costo domicilio"
-              value={formatPrice(shippingCost)}
-              readOnly
-              placeholder="—"
             />
           </div>
 
@@ -610,16 +602,6 @@ export default function OrderFormModal({
             errors.lineas && <div className="form-error">{errors.lineas}</div>
           )}
 
-          <FormTextField
-            label="Mensaje para la tarjeta del pedido"
-            value={order.cardMessage}
-            onChange={(v) => setField("cardMessage", v)}
-            onBlur={() => handleBlur("cardMessage")}
-            multiline
-            minRows={2}
-            placeholder="Una sola tarjeta para todo el pedido, no por producto..."
-            error={errors.cardMessage}
-          />
         </div>
 
         {/* SECCIÓN 3: PAGO Y COMPROBANTE */}

@@ -11,6 +11,7 @@ import {
 } from "../../../shared/api/session";
 import {
   mapChangePasswordError,
+  mapForgotPasswordError,
   mapLoginError,
   mapProfileError,
   mapRegisterError,
@@ -83,9 +84,8 @@ export async function changePassword({ currentPassword, newPassword }) {
 /**
  * POST /auth/forgot-password.
  *
- * La respuesta es siempre genérica (por seguridad no revela si el correo
- * existe), así que un fallo de red tampoco se propaga: la página solo
- * confirma "enlace enviado".
+ * El backend valida que el correo exista y que la cuenta esté habilitada;
+ * cualquier rechazo se traduce a un `code` que la página puede mostrar.
  */
 export async function requestPasswordReset(email) {
   try {
@@ -94,8 +94,8 @@ export async function requestPasswordReset(email) {
       { correo: String(email ?? "").trim().toLowerCase() },
       { auth: false }
     );
-  } catch {
-    // best effort.
+  } catch (error) {
+    throw mapForgotPasswordError(error);
   }
   return { ok: true };
 }

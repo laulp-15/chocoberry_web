@@ -17,7 +17,7 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  margin-bottom: 36px;
+  margin-bottom: 28px;
   animation: cartHeaderIn 0.45s ease both;
 }
 
@@ -73,12 +73,45 @@
   }
 }
 
+/* --- Recuadro de recordatorio (mismo ancho que la tarjeta de producto) --- */
+.cart-reminder {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-bottom: 16px;
+  padding: 10px 16px;
+  background: rgba(230, 57, 80, 0.08);
+  border: 1px solid rgba(230, 57, 80, 0.25);
+  border-radius: 12px;
+}
+
+.cart-reminder-icon {
+  flex-shrink: 0;
+  font-size: 14px;
+  color: var(--primario, #E63950);
+}
+
+.cart-reminder-text {
+  flex: 1;
+  margin: 0;
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--texto);
+}
+
+.cart-reminder-text strong {
+  color: var(--primario, #E63950);
+  font-weight: 700;
+}
+
 /* --- Acciones debajo del resumen --- */
 .cart-side-actions {
   display: flex;
   flex-direction: column;
   gap: 10px;
   margin-top: 16px;
+  padding: 0 24px;
 }
 
 .btn-back-catalog {
@@ -86,6 +119,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
+  width: 100%;
   border: 1px solid var(--primario, #E63950);
   background: var(--bg-card);
   color: var(--primario, #E63950);
@@ -184,7 +218,7 @@
   }
 
   .cart-header {
-    margin-bottom: 28px;
+    margin-bottom: 24px;
   }
 
   .cart-heading-row {

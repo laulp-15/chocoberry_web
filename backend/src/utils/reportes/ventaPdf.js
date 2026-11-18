@@ -258,7 +258,8 @@ export async function generarPdfVenta(venta) {
   const filasProductos = lineas.map((linea) => {
     const personalizacion = [
       linea.colorGlaseado?.nombre ? `Color ${linea.colorGlaseado.nombre}` : null,
-      linea.mensajePersonalizado ? `“${linea.mensajePersonalizado}”` : null,
+      linea.letrasFresas ? `Letras: “${linea.letrasFresas}”` : null,
+      linea.mensajeTarjeta ? `Tarjeta: “${linea.mensajeTarjeta}”` : null,
     ]
       .filter(Boolean)
       .join(' · ');
@@ -377,7 +378,6 @@ export async function generarPdfVenta(venta) {
 
   // Información adicional (solo los campos que existan)
   const detalles = [
-    venta.mensajeTarjeta ? ['Mensaje de la tarjeta', venta.mensajeTarjeta] : null,
     venta.instruccionesEntrega
       ? ['Instrucciones de entrega', venta.instruccionesEntrega]
       : null,

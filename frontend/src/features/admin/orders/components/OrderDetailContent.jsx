@@ -211,9 +211,14 @@ export default function OrderDetailContent({
                       {linea.colorNombre || "—"}
                     </span>
                   </div>
-                  {linea.mensajePersonalizado && (
+                  {linea.letrasFresas && (
                     <div className="order-detail-product-note">
-                      <span>“{linea.mensajePersonalizado}”</span>
+                      <span>Letras: “{linea.letrasFresas}”</span>
+                    </div>
+                  )}
+                  {linea.mensajeTarjeta && (
+                    <div className="order-detail-product-note">
+                      <span>Tarjeta: “{linea.mensajeTarjeta}”</span>
                     </div>
                   )}
                 </div>
@@ -225,15 +230,6 @@ export default function OrderDetailContent({
           </div>
         )}
 
-        {order.mensajeTarjeta && (
-          <div className="order-detail-card-message">
-            <i className="fa-solid fa-envelope" />
-            <div>
-              <div className="order-detail-label">Mensaje para la tarjeta</div>
-              <div className="order-detail-value">{order.mensajeTarjeta}</div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* --- Totales --- */}

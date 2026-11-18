@@ -84,7 +84,7 @@ describe('Activación y recuperación de contraseña', () => {
     expect(repetido.status).toBe(400);
   });
 
-  it('olvidar contraseña responde igual exista o no el correo y crea el token', async () => {
+  it('olvidar contraseña rechaza correos no registrados y crea el token para los existentes', async () => {
     const existente = await request(app)
       .post('/api/auth/forgot-password')
       .send({ correo });
@@ -93,8 +93,8 @@ describe('Activación y recuperación de contraseña', () => {
       .send({ correo: CORREO_INEXISTENTE });
 
     expect(existente.status).toBe(200);
-    expect(inexistente.status).toBe(200);
-    expect(existente.body.message).toBe(inexistente.body.message);
+    expect(inexistente.status).toBe(404);
+    expect(inexistente.body.code).toBe('NOT_FOUND');
 
     const tokens = await query(
       `SELECT id
@@ -103,6 +103,33 @@ describe('Activación y recuperación de contraseña', () => {
       [usuarioId]
     );
     expect(tokens).toHaveLength(1);
+  });
+
+  it('olvidar contraseña rechaza cuentas deshabilitadas sin crear token', async () => {
+    const contarTokens = async () => {
+      const rows = await query(
+        `SELECT COUNT(*) AS total
+           FROM tokenContrasena
+          WHERE id_usuario = ? AND tipo = 'recuperacion' AND usado = FALSE`,
+        [usuarioId]
+      );
+      return rows[0]?.total ?? 0;
+    };
+
+    await query('UPDATE usuario SET estado = FALSE WHERE id = ?', [usuarioId]);
+
+    try {
+      const antes = await contarTokens();
+      const res = await request(app)
+        .post('/api/auth/forgot-password')
+        .send({ correo });
+
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe('FORBIDDEN');
+      expect(await contarTokens()).toBe(antes);
+    } finally {
+      await query('UPDATE usuario SET estado = TRUE WHERE id = ?', [usuarioId]);
+    }
   });
 
   it('rechaza un token inexistente, vencido o ausente', async () => {

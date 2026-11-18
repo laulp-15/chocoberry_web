@@ -2,18 +2,20 @@
 import { useNavigate } from "react-router-dom";
 import { IconButton, OutlinedInput, Button } from "@mui/material";
 import { formatPrice } from "../../../shared/utils/formatPrice";
-import { contarCaracteresSinEspacios } from "../../../shared/utils/orderRules";
+import {
+  MAX_MENSAJE_TARJETA,
+  contarCaracteresSinEspacios,
+} from "../../../shared/utils/orderRules";
 import QuantityStepper from "../../../shared/components/QuantityStepper";
 import "./CartItemCard.css";
 
 /**
  * Una línea del carrito: una configuración específica (producto + cantidad
  * de fresas + color de glaseado + personalización), con su propio contador
- * de unidades. El mensaje de tarjeta NO va aquí: es uno solo por pedido
- * completo (ver OrderCardMessage en CartPage).
+ * de unidades y sus propios mensajes.
  *
  * @param {object} props
- * @param {object} props.item - { cartItemId, productId, name, image, quantity, presentationId, unitPrice, colorId, color, colorHex, units, decorativeMessage }
+ * @param {object} props.item - { cartItemId, productId, name, image, quantity, presentationId, unitPrice, colorId, color, colorHex, units, letrasFresas, mensajeTarjeta }
  * @param {(cartItemId: string, units: number) => void} props.onUnitsChange
  * @param {(cartItemId: string, field: string, value: string) => void} props.onFieldChange
  * @param {(cartItemId: string) => void} props.onRemove
@@ -36,12 +38,13 @@ export default function CartItemCard({
     color,
     colorHex,
     units,
-    decorativeMessage,
+    letrasFresas,
+    mensajeTarjeta,
   } = item;
 
   const unitPrice = Number(item.unitPrice ?? 0);
   const lineTotal = unitPrice * units;
-  const maxDecorative = Math.min(Number(quantity) || 0, 255);
+  const maxLetras = Math.min(Number(quantity) || 0, 255);
 
   return (
     <div className="cart-item-card">
@@ -74,20 +77,40 @@ export default function CartItemCard({
 
         <div className="cart-item-fields">
           <div>
-            <div className="cart-field-label">Mensaje decorativo</div>
+            <div className="cart-field-label">Letras personalizadas para tus fresas</div>
             <OutlinedInput
               className="cart-item-input"
               placeholder="Ej: TE AMO"
-              value={decorativeMessage}
+              value={letrasFresas ?? ""}
               onChange={(e) => {
                 const next = e.target.value;
-                if (contarCaracteresSinEspacios(next) <= maxDecorative) {
-                  onFieldChange(cartItemId, "decorativeMessage", next);
+                if (contarCaracteresSinEspacios(next) <= maxLetras) {
+                  onFieldChange(cartItemId, "letrasFresas", next);
                 }
               }}
             />
             <div className="cart-field-hint">
-              Máximo {maxDecorative} caracteres (una letra por fresa de esta caja).
+              Máximo {maxLetras} caracteres sin contar espacios (una letra por fresa de esta caja).
+            </div>
+          </div>
+
+          <div>
+            <div className="cart-field-label">Mensaje para tu tarjeta</div>
+            <OutlinedInput
+              className="cart-item-input"
+              placeholder="Ej: Feliz cumpleaños"
+              multiline
+              minRows={1}
+              value={mensajeTarjeta ?? ""}
+              onChange={(e) => {
+                const next = e.target.value;
+                if (contarCaracteresSinEspacios(next) <= MAX_MENSAJE_TARJETA) {
+                  onFieldChange(cartItemId, "mensajeTarjeta", next);
+                }
+              }}
+            />
+            <div className="cart-field-hint">
+              Máximo {MAX_MENSAJE_TARJETA} caracteres.
             </div>
           </div>
         </div>

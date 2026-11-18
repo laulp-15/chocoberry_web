@@ -123,22 +123,31 @@ export async function cerrarSesion(usuario) {
   registrarAcceso({ correo: usuario.correo, resultado: 'cierre_sesion' });
 }
 
-/** Solicita la recuperación de contraseña (respuesta genérica por seguridad). */
+/**
+ * Solicita la recuperación de contraseña. Se valida que el correo exista y
+ * que la cuenta esté habilitada antes de generar el token y enviar el correo.
+ */
 export async function solicitarRecuperacion(correo) {
   const usuario = await usuarioModel.buscarPorCorreo(correo);
 
-  if (usuario?.estado) {
-    const token = await tokenService.crearToken(usuario.id, 'recuperacion');
-    registrarAcceso({ correo, resultado: 'solicitud_recuperacion' });
-
-    void emailService.enviarRecuperacionContrasena({
-      correo: usuario.correo,
-      nombre: usuario.nombres,
-      token,
-    });
+  if (!usuario) {
+    throw new NotFoundError('No existe una cuenta registrada con ese correo.');
   }
 
-  return { mensaje: 'Si el correo está registrado, recibirás un enlace de recuperación.' };
+  if (!usuario.estado) {
+    throw new ForbiddenError('Esta cuenta se encuentra deshabilitada. Contacta al administrador.');
+  }
+
+  const token = await tokenService.crearToken(usuario.id, 'recuperacion');
+  registrarAcceso({ correo, resultado: 'solicitud_recuperacion' });
+
+  void emailService.enviarRecuperacionContrasena({
+    correo: usuario.correo,
+    nombre: usuario.nombres,
+    token,
+  });
+
+  return { mensaje: 'Te enviamos un enlace de recuperación a tu correo electrónico.' };
 }
 
 /**

@@ -7,6 +7,7 @@
 }
 
 .gallery-main {
+  position: relative;
   aspect-ratio: 4 / 3;
   border-radius: 16px;
   background: linear-gradient(160deg, var(--secundario-2), var(--secundario-1));
@@ -20,9 +21,34 @@
   height: 100%;
   object-fit: cover;
 }
-.gallery-main i {
+.gallery-main > i {
   font-size: 48px;
   color: var(--primario-claro);
+}
+
+/* Etiqueta sobre la imagen principal. */
+.gallery-reference-tag {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(30, 20, 20, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  color: #ffffff;
+  font-family: "Poppins", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+}
+.gallery-reference-tag i {
+  font-size: 11px;
 }
 
 .gallery-thumbs {
@@ -50,4 +76,13 @@
 }
 .gallery-thumb.active {
   border-color: var(--primario);
+}
+
+@media (max-width: 576px) {
+  .gallery-reference-tag {
+    left: 10px;
+    bottom: 10px;
+    padding: 5px 10px;
+    font-size: 11px;
+  }
 }

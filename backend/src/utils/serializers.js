@@ -178,7 +178,8 @@ export function serializarLineaPedido(row) {
     // DECIMAL llega como texto desde MySQL; se normaliza a número.
     precioUnitario: Number(row.precio_unitario),
     subtotal: Number(row.subtotal),
-    mensajePersonalizado: row.mensaje_personalizado,
+    letrasFresas: row.letras_fresas,
+    mensajeTarjeta: row.mensaje_tarjeta,
     colorGlaseado: row.id_color_glaseado
       ? { id: row.id_color_glaseado, nombre: row.color_nombre, codigoHex: row.color_hex }
       : null,
@@ -229,7 +230,6 @@ export function serializarPedido(row, lineas = [], comprobantes = []) {
 
   return {
     id: row.id,
-    mensajeTarjeta: row.mensaje_tarjeta,
     fecha: row.fecha,
     fechaEntrega: formatearFecha(row.fecha_entrega),
     estado: { id: row.id_estado, nombre: row.estado },

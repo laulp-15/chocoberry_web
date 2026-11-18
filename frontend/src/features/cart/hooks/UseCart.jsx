@@ -15,8 +15,7 @@ const PENDING_ITEM_KEY = "cb_pending_cart_item";
 
 export function CartProvider({ children }) {
   const [items, setItems] = useState([]);
-  const [cardMessage, setCardMessage] = useState("");
-  
+
   // Aviso de sesión (advertencia) o de producto añadido tras el login (éxito).
   const [authAlert, setAuthAlert] = useState(false);
 
@@ -58,7 +57,8 @@ export function CartProvider({ children }) {
         ...items,
         {
           cartItemId,
-          decorativeMessage: "",
+          letrasFresas: "",
+          mensajeTarjeta: "",
           ...item,
           units: unitsToAdd,
         },
@@ -139,7 +139,6 @@ export function CartProvider({ children }) {
 
   const clearCart = useCallback(() => {
     setItems([]);
-    setCardMessage("");
   }, []);
 
   // `nextUnits` es la cantidad absoluta escrita o calculada por el stepper.
@@ -168,10 +167,8 @@ export function CartProvider({ children }) {
       updateUnits,
       updateField,
       clearCart,
-      cardMessage,
-      setCardMessage,
     }),
-    [items, addItem, removeItem, updateUnits, updateField, clearCart, cardMessage]
+    [items, addItem, removeItem, updateUnits, updateField, clearCart]
   );
 
   return (

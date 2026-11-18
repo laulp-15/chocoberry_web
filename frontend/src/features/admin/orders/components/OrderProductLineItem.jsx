@@ -35,9 +35,14 @@ export default function OrderProductLineItem({
             {line.colorNombre || "—"}
           </span>
         </div>
-        {line.mensajePersonalizado && (
+        {line.letrasFresas && (
           <div className="order-line-item-notes">
-            <span>“{line.mensajePersonalizado}”</span>
+            <span>Letras: “{line.letrasFresas}”</span>
+          </div>
+        )}
+        {line.mensajeTarjeta && (
+          <div className="order-line-item-notes">
+            <span>Tarjeta: “{line.mensajeTarjeta}”</span>
           </div>
         )}
       </div>

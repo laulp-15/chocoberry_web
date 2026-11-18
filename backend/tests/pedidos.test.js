@@ -42,7 +42,8 @@ describe('Módulo de pedidos', () => {
     idPresentacion: presentacion.id,
     cantidadProductos: 2,
     idColorGlaseado: color.id,
-    mensajePersonalizado: 'TQM',
+    letrasFresas: 'TQM',
+    mensajeTarjeta: '¡Feliz cumpleaños!',
   });
 
   /** Fecha ISO local de hoy + N días, para no depender de fechas fijas. */
@@ -71,7 +72,6 @@ describe('Módulo de pedidos', () => {
     conComprobante = true,
   } = {}) {
     const campos = {
-      mensajeTarjeta: '¡Feliz cumpleaños!',
       fechaEntrega: '2026-12-24',
       direccion: 'Calle 10 # 20-30',
       idMunicipio: municipio.id,
@@ -316,36 +316,45 @@ describe('Módulo de pedidos', () => {
       );
     });
 
-    it('rechaza un mensaje personalizado más largo que las fresas de la presentación', async () => {
+    it('rechaza letras para las fresas más largas que las fresas de la presentación', async () => {
       const res = await solicitudPedido({
         lineas: [
           {
             ...lineaBase(),
-            mensajePersonalizado: 'A'.repeat(presentacion.cantidadFresas + 1),
+            letrasFresas: 'A'.repeat(presentacion.cantidadFresas + 1),
           },
         ],
       });
 
       expect(res.status).toBe(422);
-      expect(res.body.errors?.[0]?.campo).toBe('lineas.0.mensajePersonalizado');
+      expect(res.body.errors?.[0]?.campo).toBe('lineas.0.letrasFresas');
     });
 
-    it('acepta un mensaje del tamaño exacto de la presentación', async () => {
+    it('acepta letras del tamaño exacto de la presentación', async () => {
       const mensaje = 'A'.repeat(presentacion.cantidadFresas);
       const pedido = await crearPedido({
-        lineas: [{ ...lineaBase(), mensajePersonalizado: mensaje }],
+        lineas: [{ ...lineaBase(), letrasFresas: mensaje }],
       });
 
-      expect(pedido.lineas[0].mensajePersonalizado).toBe(mensaje);
+      expect(pedido.lineas[0].letrasFresas).toBe(mensaje);
     });
 
-    it('ignora los espacios al contar el mensaje personalizado', async () => {
+    it('ignora los espacios al contar las letras para las fresas', async () => {
       const mensaje = 'A '.repeat(presentacion.cantidadFresas).trim();
       const pedido = await crearPedido({
-        lineas: [{ ...lineaBase(), mensajePersonalizado: mensaje }],
+        lineas: [{ ...lineaBase(), letrasFresas: mensaje }],
       });
 
-      expect(pedido.lineas[0].mensajePersonalizado).toBe(mensaje);
+      expect(pedido.lineas[0].letrasFresas).toBe(mensaje);
+    });
+
+    it('guarda el mensaje de tarjeta por línea sin limitarlo a las fresas', async () => {
+      const mensajeTarjeta = 'A '.repeat(120).trim() + ' de regalo';
+      const pedido = await crearPedido({
+        lineas: [{ ...lineaBase(), mensajeTarjeta }],
+      });
+
+      expect(pedido.lineas[0].mensajeTarjeta).toBe(mensajeTarjeta);
     });
 
     it('POST con municipio inexistente devuelve 400', async () => {
@@ -808,12 +817,10 @@ describe('Módulo de pedidos', () => {
       const res = await auth(request(app).put(`/api/pedidos/${pedido.id}`)).send({
         direccion: 'Carrera 50 # 10-20',
         idMunicipio: otroMunicipio.id,
-        mensajeTarjeta: 'Nuevo mensaje',
       });
 
       expect(res.status).toBe(200);
       expect(res.body.data.direccion).toBe('Carrera 50 # 10-20');
-      expect(res.body.data.mensajeTarjeta).toBe('Nuevo mensaje');
       expect(res.body.data.municipio.id).toBe(otroMunicipio.id);
       expect(res.body.data.precioDomicilio).toBe(otroMunicipio.precioDomicilio);
       expect(res.body.data.lineas).toHaveLength(pedido.lineas.length);
@@ -835,7 +842,7 @@ describe('Módulo de pedidos', () => {
             idPresentacion: presentacion.id,
             cantidadProductos: 3,
             idColorGlaseado: color.id,
-            mensajePersonalizado: 'TQM',
+            letrasFresas: 'TQM',
           },
           {
             idProducto: producto.id,

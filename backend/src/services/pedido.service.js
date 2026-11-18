@@ -283,18 +283,37 @@ async function resolverUsuarioPedido(idUsuario, usuario) {
 }
 
 /** Valida la regla de las letras de chocolate (una letra por fresa). */
-function validarMensajeLinea(mensaje, fresas, numero, indice) {
+function validarLetrasFresas(letras, fresas, numero, indice) {
+  const caracteres = letras
+    ? Array.from(letras.replace(/\s/g, '')).length
+    : 0;
+
+  if (letras && caracteres > fresas) {
+    throw new UnprocessableEntityError(
+      `Línea ${numero}: las letras para las fresas tienen ${caracteres} caracteres sin contar espacios y la presentación solo admite ${fresas} (una letra de chocolate por fresa).`,
+      [
+        {
+          campo: `lineas.${indice}.letrasFresas`,
+          mensaje: `Máximo ${fresas} caracteres para esta presentación.`,
+        },
+      ]
+    );
+  }
+}
+
+/** El mensaje de la tarjeta no depende de las fresas: solo cuenta sin espacios. */
+function validarMensajeTarjetaLinea(mensaje, numero, indice) {
   const caracteres = mensaje
     ? Array.from(mensaje.replace(/\s/g, '')).length
     : 0;
 
-  if (mensaje && caracteres > fresas) {
+  if (mensaje && caracteres > 255) {
     throw new UnprocessableEntityError(
-      `Línea ${numero}: el mensaje personalizado tiene ${caracteres} caracteres sin contar espacios y la presentación solo admite ${fresas} (una letra de chocolate por fresa).`,
+      `Línea ${numero}: el mensaje de la tarjeta tiene ${caracteres} caracteres sin contar espacios y el máximo es 255.`,
       [
         {
-          campo: `lineas.${indice}.mensajePersonalizado`,
-          mensaje: `Máximo ${fresas} caracteres para esta presentación.`,
+          campo: `lineas.${indice}.mensajeTarjeta`,
+          mensaje: 'Máximo 255 caracteres sin contar espacios.',
         },
       ]
     );
@@ -341,14 +360,16 @@ async function prepararLineas(lineas, existentes = []) {
       idsVistos.add(idLinea);
     }
 
-    const mensaje = limpiarTexto(linea.mensajePersonalizado);
+    const letrasFresas = limpiarTexto(linea.letrasFresas);
+    const mensajeTarjeta = limpiarTexto(linea.mensajeTarjeta);
     const cantidad = linea.cantidadProductos;
 
     // Línea existente que conserva producto, presentación y glaseado: se
     // mantiene el precio unitario guardado al crear el pedido.
     if (existente && conservaDatosDePrecio(existente, linea)) {
       const fresas = Number(existente.cantidad_fresas);
-      validarMensajeLinea(mensaje, fresas, numero, indice);
+      validarLetrasFresas(letrasFresas, fresas, numero, indice);
+      validarMensajeTarjetaLinea(mensajeTarjeta, numero, indice);
 
       const precioUnitario = redondear2(existente.precio_unitario);
       preparadas.push({
@@ -357,7 +378,8 @@ async function prepararLineas(lineas, existentes = []) {
         cantidad_productos: cantidad,
         precio_unitario: precioUnitario,
         subtotal: redondear2(precioUnitario * cantidad),
-        mensaje_personalizado: mensaje,
+        letras_fresas: letrasFresas,
+        mensaje_tarjeta: mensajeTarjeta,
         id_color_glaseado: existente.id_color_glaseado,
       });
       continue;
@@ -379,7 +401,8 @@ async function prepararLineas(lineas, existentes = []) {
     }
 
     const fresas = Number(presentacion.cantidad_fresas);
-    validarMensajeLinea(mensaje, fresas, numero, indice);
+    validarLetrasFresas(letrasFresas, fresas, numero, indice);
+    validarMensajeTarjetaLinea(mensajeTarjeta, numero, indice);
 
     const precioUnitario = redondear2(presentacion.precio);
     preparadas.push({
@@ -388,7 +411,8 @@ async function prepararLineas(lineas, existentes = []) {
       cantidad_productos: cantidad,
       precio_unitario: precioUnitario,
       subtotal: redondear2(precioUnitario * cantidad),
-      mensaje_personalizado: mensaje,
+      letras_fresas: letrasFresas,
+      mensaje_tarjeta: mensajeTarjeta,
       id_color_glaseado: color.id,
     });
   }
@@ -450,7 +474,6 @@ export async function crear(datos, usuario, comprobante) {
   try {
     const id = await pedidoModel.crearConLineas({
       pedido: {
-        mensaje_tarjeta: limpiarTexto(datos.mensajeTarjeta),
         fecha_entrega: normalizarFechaEntrega(datos.fechaEntrega),
         direccion: datos.direccion,
         // Snapshot: si el municipio cambia de precio, el pedido conserva el suyo.
@@ -497,7 +520,6 @@ export async function actualizar(id, datos, usuario) {
 
   const campos = {};
 
-  if (datos.mensajeTarjeta !== undefined) campos.mensaje_tarjeta = limpiarTexto(datos.mensajeTarjeta);
   if (datos.fechaEntrega !== undefined) campos.fecha_entrega = normalizarFechaEntrega(datos.fechaEntrega);
   if (datos.direccion !== undefined) campos.direccion = datos.direccion;
   if (datos.nombreReceptor !== undefined) campos.nombre_receptor = datos.nombreReceptor;

@@ -4,7 +4,10 @@ import FormSearchableSelect from "../../../../shared/components/FormSearchableSe
 import FormTextField from "../../../../shared/components/FormTextField";
 import useFormValidation from "../../../../shared/hooks/useFormValidation";
 import { formatPrice } from "../../../../shared/utils/formatPrice";
-import { contarCaracteresSinEspacios } from "../../../../shared/utils/orderRules";
+import {
+  MAX_MENSAJE_TARJETA,
+  contarCaracteresSinEspacios,
+} from "../../../../shared/utils/orderRules";
 import "./OrderProductLineForm.css";
 
 const EMPTY_LINE = {
@@ -12,7 +15,8 @@ const EMPTY_LINE = {
   presentacionId: "",
   colorId: "",
   unidades: "1",
-  mensajePersonalizado: "",
+  letrasFresas: "",
+  mensajeTarjeta: "",
 };
 
 function toLineValues(line) {
@@ -24,7 +28,8 @@ function toLineValues(line) {
       line.presentacionId != null ? String(line.presentacionId) : "",
     colorId: line.colorId != null ? String(line.colorId) : "",
     unidades: line.unidades != null ? String(line.unidades) : "1",
-    mensajePersonalizado: line.mensajePersonalizado ?? "",
+    letrasFresas: line.letrasFresas ?? "",
+    mensajeTarjeta: line.mensajeTarjeta ?? "",
   };
 }
 
@@ -115,13 +120,22 @@ export default function OrderProductLineForm({
           if (numero > 100) return "La cantidad máxima por línea es 100.";
           return "";
         },
-        mensajePersonalizado: (l) => {
+        letrasFresas: (l) => {
           const presentacion = presentaciones.find(
             (p) => String(p.id) === String(l.presentacionId)
           );
           const maximo = presentacion?.cantidadFresas ?? 255;
-          if (contarCaracteresSinEspacios(l.mensajePersonalizado) > maximo) {
+          if (contarCaracteresSinEspacios(l.letrasFresas) > maximo) {
             return `Máximo ${maximo} caracteres sin contar espacios para esta presentación (una letra por fresa).`;
+          }
+          return "";
+        },
+        mensajeTarjeta: (l) => {
+          if (
+            contarCaracteresSinEspacios(l.mensajeTarjeta) >
+            MAX_MENSAJE_TARJETA
+          ) {
+            return `Máximo ${MAX_MENSAJE_TARJETA} caracteres sin contar espacios.`;
           }
           return "";
         },
@@ -134,9 +148,11 @@ export default function OrderProductLineForm({
   const presentacion = presentaciones.find(
     (p) => String(p.id) === String(line.presentacionId)
   );
-  const maxMensaje = presentacion?.cantidadFresas ?? 255;
-  const mensajeValido =
-    contarCaracteresSinEspacios(line.mensajePersonalizado) <= maxMensaje;
+  const maxLetras = presentacion?.cantidadFresas ?? 255;
+  const letrasValidas =
+    contarCaracteresSinEspacios(line.letrasFresas) <= maxLetras;
+  const tarjetaValida =
+    contarCaracteresSinEspacios(line.mensajeTarjeta) <= MAX_MENSAJE_TARJETA;
 
   // Si la línea conserva producto, presentación y glaseado, se mantiene su
   // precio histórico. Al cambiar cualquiera de esos datos se muestra el precio
@@ -168,7 +184,8 @@ export default function OrderProductLineForm({
     line.presentacionId &&
     line.colorId &&
     Number(line.unidades) > 0 &&
-    mensajeValido;
+    letrasValidas &&
+    tarjetaValida;
 
   const handleSubmit = () => {
     if (!validateAll()) return;
@@ -192,7 +209,8 @@ export default function OrderProductLineForm({
       colorId: glaseado.id,
       colorNombre: glaseado.nombre,
       colorHex: glaseado.hex,
-      mensajePersonalizado: line.mensajePersonalizado.trim(),
+      letrasFresas: line.letrasFresas.trim(),
+      mensajeTarjeta: line.mensajeTarjeta.trim(),
     };
 
     if (isEditing) {
@@ -255,18 +273,29 @@ export default function OrderProductLineForm({
         />
       </div>
 
-      <FormTextField
-        label="Mensaje decorativo (chocolate)"
-        value={line.mensajePersonalizado}
-        onChange={(v) => update("mensajePersonalizado", v)}
-        onBlur={() => handleBlur("mensajePersonalizado")}
-        placeholder={
-          presentacion
-            ? `Máximo ${maxMensaje} caracteres sin contar espacios (una letra por fresa)`
-            : "Ej: TE AMO"
-        }
-        error={errors.mensajePersonalizado}
-      />
+      <div className="order-line-form-messages">
+        <FormTextField
+          label="Letras para tus fresas"
+          value={line.letrasFresas}
+          onChange={(v) => update("letrasFresas", v)}
+          onBlur={() => handleBlur("letrasFresas")}
+          placeholder={
+            presentacion
+              ? `Máximo ${maxLetras} caracteres sin contar espacios (una letra por fresa)`
+              : "Ej: TE AMO"
+          }
+          error={errors.letrasFresas}
+        />
+
+        <FormTextField
+          label="Mensaje de la tarjeta"
+          value={line.mensajeTarjeta}
+          onChange={(v) => update("mensajeTarjeta", v)}
+          onBlur={() => handleBlur("mensajeTarjeta")}
+          placeholder={`Máximo ${MAX_MENSAJE_TARJETA} caracteres sin contar espacios`}
+          error={errors.mensajeTarjeta}
+        />
+      </div>
 
       <div className="order-line-form-footer">
         <span className="order-line-unit-price">

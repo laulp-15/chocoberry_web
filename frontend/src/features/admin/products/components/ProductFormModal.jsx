@@ -10,6 +10,7 @@ import { imageUrl } from '../../../../shared/utils/imageUrl';
 import './ProductFormModal.css';
 
 const MAX_IMAGENES = 4;
+const MAX_DESCRIPCION = 1000;
 
 /**
  * Imágenes iniciales del formulario a partir de los datos del producto.
@@ -64,7 +65,14 @@ function ProductoFormulario({
       },
       validators: {
         nombre: (v) => (v.nombre.trim() ? '' : 'El nombre es obligatorio.'),
-        descripcion: (v) => (v.descripcion.trim() ? '' : 'La descripción es obligatoria.'),
+        descripcion: (v) => {
+          const descripcion = v.descripcion.trim();
+          if (!descripcion) return 'La descripción es obligatoria.';
+          if (descripcion.length > MAX_DESCRIPCION) {
+            return `La descripción no puede superar los ${MAX_DESCRIPCION} caracteres.`;
+          }
+          return '';
+        },
         categoria: (v) => (v.categoria ? '' : 'Selecciona una categoría.'),
       },
       immediate: ['categoria'],
@@ -164,11 +172,40 @@ function ProductoFormulario({
       });
       onClose();
     } catch (err) {
-      // Nombre repetido: el backend responde 409 y se marca bajo el campo.
-      if (err?.code === 'NAME_TAKEN') {
+      // Errores de validación por campo: se muestran bajo el campo correcto.
+      const fieldErrors = new Map();
+      const imageErrors = [];
+      const generalErrors = [];
+      const campoAlias = {
+        idCategoria: 'categoria',
+        id_categoria: 'categoria',
+      };
+
+      for (const item of err?.errors ?? []) {
+        const campo = String(item?.campo ?? '').split('.')[0];
+        const mappedCampo = campoAlias[campo] ?? campo;
+
+        if (mappedCampo === 'nombre' || mappedCampo === 'descripcion' || mappedCampo === 'categoria') {
+          if (!fieldErrors.has(mappedCampo)) {
+            fieldErrors.set(mappedCampo, item.mensaje);
+          }
+        } else if (mappedCampo === 'imagen' || mappedCampo === 'imagenesUrl' || mappedCampo === 'ordenImagenes') {
+          imageErrors.push(item.mensaje);
+        } else if (item?.mensaje) {
+          generalErrors.push(item.mensaje);
+        }
+      }
+
+      if (fieldErrors.size > 0) {
+        fieldErrors.forEach((message, campo) => setFieldError(campo, message));
+        setFormError(generalErrors[0] ?? '');
+      } else if (imageErrors.length > 0) {
+        setImagenError(imageErrors[0]);
+      } else if (err?.code === 'NAME_TAKEN') {
+        // Nombre repetido: el backend responde 409 y se marca bajo el campo.
         setFieldError('nombre', err.message);
       } else {
-        setFormError(err?.message || 'No fue posible guardar el producto.');
+        setFormError(generalErrors[0] || err?.message || 'No fue posible guardar el producto.');
       }
     }
   };
@@ -364,7 +401,7 @@ function ProductoFormulario({
             value={values.descripcion}
             onChange={(v) => setField('descripcion', v)}
             onBlur={() => handleBlur('descripcion')}
-            placeholder="Breve descripción del producto..."
+            placeholder="Describe el producto, ingredientes, tamaño y detalles..."
             multiline
             minRows={3}
             required

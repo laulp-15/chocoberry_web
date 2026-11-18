@@ -66,7 +66,6 @@ describe('Módulo de ventas', () => {
 
   async function crearPedido() {
     const res = await auth(request(app).post('/api/pedidos'))
-      .field('mensajeTarjeta', 'Venta de prueba')
       .field('fechaEntrega', '2026-12-24')
       .field('direccion', 'Calle 10 # 20-30')
       .field('idMunicipio', String(municipio.id))
@@ -81,7 +80,8 @@ describe('Módulo de ventas', () => {
             idPresentacion: presentacion.id,
             cantidadProductos: 1,
             idColorGlaseado: color.id,
-            mensajePersonalizado: 'OK',
+            letrasFresas: 'OK',
+            mensajeTarjeta: 'Venta de prueba',
           },
         ])
       )

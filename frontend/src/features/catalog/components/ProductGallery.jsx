@@ -5,6 +5,7 @@ import "./ProductGallery.css";
 /**
  * Galería de imágenes del producto: imagen principal + miniaturas.
  * Si no se pasan imágenes, muestra un ícono placeholder.
+ * La imagen principal lleva la etiqueta "Imagen de referencia".
  *
  * @param {object} props
  * @param {string[]} [props.images] - rutas de imágenes, ej: ["/img/productos/caja-lujo-1.jpg", ...]
@@ -21,7 +22,13 @@ export default function ProductGallery({ images = [], alt = "" }) {
     <div className="product-gallery">
       <div className="gallery-main">
         {hasImages ? (
-          <img src={activeImage} alt={alt} />
+          <>
+            <img src={activeImage} alt={alt} />
+            <span className="gallery-reference-tag">
+              <i className="fa-solid fa-image" aria-hidden="true" />
+              Imagen de referencia
+            </span>
+          </>
         ) : (
           <i className="fa-solid fa-image" />
         )}

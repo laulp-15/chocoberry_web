@@ -85,7 +85,8 @@ export default function SaleReceipt({ sale }) {
                 const image = line.productImage;
                 const personalization = [
                   line.color && `Color ${line.color}`,
-                  line.decorativeMessage && `“${line.decorativeMessage}”`,
+                  line.letrasFresas && `Letras: “${line.letrasFresas}”`,
+                  line.mensajeTarjeta && `Tarjeta: “${line.mensajeTarjeta}”`,
                 ]
                   .filter(Boolean)
                   .join(" · ");

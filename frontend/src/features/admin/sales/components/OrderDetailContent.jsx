@@ -1,5 +1,4 @@
 // src/features/admin/orders/components/OrderDetailContent.jsx
-import React from "react";
 import OrderStatusBadge from "./OrderStatusBadge";
 import { formatPrice } from "../../../../shared/utils/formatPrice";
 import { formatDisplayDate, getMunicipioLabel, getProofUrl } from "../utils/orderDisplay";
@@ -96,9 +95,14 @@ export default function OrderDetailContent({ order }) {
                     {line.color}
                   </span>
                 </div>
-                {line.decorativeMessage && (
+                {line.letrasFresas && (
                   <div className="order-detail-product-note">
-                    <span>“{line.decorativeMessage}”</span>
+                    <span>Letras: “{line.letrasFresas}”</span>
+                  </div>
+                )}
+                {line.mensajeTarjeta && (
+                  <div className="order-detail-product-note">
+                    <span>Tarjeta: “{line.mensajeTarjeta}”</span>
                   </div>
                 )}
               </div>
@@ -107,15 +111,6 @@ export default function OrderDetailContent({ order }) {
           ))}
         </div>
 
-        {order.cardMessage && (
-          <div className="order-detail-card-message">
-            <i className="fa-solid fa-envelope" />
-            <div>
-              <div className="order-detail-label">Mensaje para la tarjeta</div>
-              <div className="order-detail-value">{order.cardMessage}</div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* --- Totales --- */}

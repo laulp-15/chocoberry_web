@@ -55,6 +55,23 @@ const mensajeField = (maximo, etiqueta) =>
     .max(maximo, `${etiqueta} no puede superar los ${maximo} caracteres.`)
     .optional();
 
+/** Cuenta caracteres visibles ignorando los espacios en blanco. */
+const contarCaracteresSinEspacios = (texto) =>
+  Array.from(String(texto ?? '').replace(/\s/g, '')).length;
+
+/**
+ * El mensaje de tarjeta de cada línea no depende de la cantidad de fresas:
+ * solo limita a 255 caracteres sin contar espacios.
+ */
+const mensajeTarjetaField = z
+  .string()
+  .trim()
+  .refine(
+    (valor) => contarCaracteresSinEspacios(valor) <= 255,
+    'El mensaje de la tarjeta no puede superar los 255 caracteres sin contar espacios.'
+  )
+  .optional();
+
 /**
  * Una línea de pedido. En creación el `id` no se usa; al actualizar identifica
  * una línea existente para conservar su precio histórico.
@@ -71,7 +88,8 @@ const lineaPedidoSchema = z.object({
     .int('La cantidad de productos debe ser un número entero.')
     .positive('La cantidad de productos debe ser mayor que cero.')
     .max(100, 'La cantidad de productos es demasiado alta.'),
-  mensajePersonalizado: mensajeField(255, 'El mensaje personalizado'),
+  letrasFresas: mensajeField(255, 'Las letras para las fresas'),
+  mensajeTarjeta: mensajeTarjetaField,
   idColorGlaseado: enteroPositivo('El color del glaseado es obligatorio.'),
 });
 
@@ -96,7 +114,6 @@ const lineasField = z.preprocess((valor) => {
   .max(50, 'El pedido no puede tener más de 50 líneas.'));
 
 export const crearPedidoSchema = z.object({
-  mensajeTarjeta: mensajeField(255, 'El mensaje de la tarjeta'),
   fechaEntrega: fechaEntregaField,
   direccion: z
     .string({ required_error: 'La dirección es obligatoria.' })
@@ -120,7 +137,6 @@ export const crearPedidoSchema = z.object({
 // llega `lineas`, se interpreta como la lista completa resultante del pedido y
 // reemplaza a las líneas anteriores. Cada línea existente envía su `id`.
 export const actualizarPedidoSchema = z.object({
-  mensajeTarjeta: mensajeField(255, 'El mensaje de la tarjeta'),
   fechaEntrega: fechaEntregaField.optional(),
   direccion: z.string().trim().min(5, 'La dirección es demasiado corta.').max(200).optional(),
   idMunicipio: idOpcional('El municipio debe ser un id numérico.'),

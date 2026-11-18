@@ -267,7 +267,7 @@ const UserOrders = () => {
               </div>
             </div>
 
-            {linea.mensajePersonalizado && (
+            {linea.letrasFresas && (
               <div style={{
                 marginTop: '10px',
                 padding: '10px 12px',
@@ -276,10 +276,27 @@ const UserOrders = () => {
                 border: `1px solid ${colors.divider}`,
               }}>
                 <span style={{ fontSize: '12px', fontWeight: '600', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  Mensaje decorativo (chocolate)
+                  Letras para tus fresas
                 </span>
                 <p style={{ margin: '4px 0 0', fontSize: '13px', color: colors.textMain, fontStyle: 'italic', lineHeight: 1.4 }}>
-                  "{linea.mensajePersonalizado}"
+                  "{linea.letrasFresas}"
+                </p>
+              </div>
+            )}
+
+            {linea.mensajeTarjeta && (
+              <div style={{
+                marginTop: '10px',
+                padding: '10px 12px',
+                background: isDark ? '#2d1e22' : '#fff0f1',
+                borderRadius: '8px',
+                border: `1px solid ${colors.divider}`,
+              }}>
+                <span style={{ fontSize: '12px', fontWeight: '600', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Mensaje de la tarjeta
+                </span>
+                <p style={{ margin: '4px 0 0', fontSize: '13px', color: colors.textMain, fontStyle: 'italic', lineHeight: 1.4 }}>
+                  "{linea.mensajeTarjeta}"
                 </p>
               </div>
             )}
@@ -299,9 +316,6 @@ const UserOrders = () => {
 
     if (order.instruccionesEntrega) {
       filas.push(['Instrucciones', order.instruccionesEntrega]);
-    }
-    if (order.mensajeTarjeta) {
-      filas.push(['Mensaje de tarjeta', `"${order.mensajeTarjeta}"`]);
     }
     if (order.motivoRechazo) {
       filas.push(['Motivo del rechazo', order.motivoRechazo]);

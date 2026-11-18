@@ -8,7 +8,7 @@ const FEATURES = [
   {
     icon: "fa-pen",
     title: "Personalización",
-    desc: "Puedes personalizar el diseño de tu pedido escogiendo el color del glaseado o retirando alguna decoración que no desees.",
+    desc: "Puedes personalizar el diseño de tu pedido escogiendo el color del glaseado.",
   },
   {
     icon: "fa-envelope",

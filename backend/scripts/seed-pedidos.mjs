@@ -43,7 +43,7 @@ const PEDIDOS_SEED = [
     mensajeTarjeta: 'Gracias por estar siempre.',
     instrucciones: 'Entregar en portería.',
     lineas: [
-      { producto: 'detalle sorpresa', presentacion: 8, color: 'amarillo', cantidad: 1, mensaje: 'TE AMO', extra: 'Incluye globo pequeño' },
+      { producto: 'detalle sorpresa', presentacion: 8, color: 'amarillo', cantidad: 1, letrasFresas: 'TE AMO', extra: 'Incluye globo pequeño' },
     ],
   },
   {
@@ -56,7 +56,7 @@ const PEDIDOS_SEED = [
     mensajeTarjeta: 'Feliz aniversario, mi amor.',
     instrucciones: 'Llamar al llegar.',
     lineas: [
-      { producto: 'caja aniversario', presentacion: 12, color: 'azul', cantidad: 1, mensaje: 'FELIZ DÍA' },
+      { producto: 'caja aniversario', presentacion: 12, color: 'azul', cantidad: 1, letrasFresas: 'FELIZ DÍA' },
     ],
   },
   {
@@ -69,7 +69,7 @@ const PEDIDOS_SEED = [
     mensajeTarjeta: 'Para compartir en familia.',
     instrucciones: 'Dejar en recepción.',
     lineas: [
-      { producto: 'combo antojo doble', presentacion: 16, color: 'blanco', cantidad: 2, mensaje: 'GRACIAS', extra: 'Dos cajas para compartir' },
+      { producto: 'combo antojo doble', presentacion: 16, color: 'blanco', cantidad: 2, letrasFresas: 'GRACIAS', extra: 'Dos cajas para compartir' },
     ],
   },
   {
@@ -82,7 +82,7 @@ const PEDIDOS_SEED = [
     mensajeTarjeta: 'Un detalle para alegrar tu día.',
     instrucciones: null,
     lineas: [
-      { producto: 'mini antojo', presentacion: 6, color: 'chocolate', cantidad: 1, mensaje: 'AMOR' },
+      { producto: 'mini antojo', presentacion: 6, color: 'chocolate', cantidad: 1, letrasFresas: 'AMOR' },
     ],
   },
   {
@@ -95,7 +95,7 @@ const PEDIDOS_SEED = [
     mensajeTarjeta: '¡Feliz cumpleaños!',
     instrucciones: 'Coordinar con el cliente.',
     lineas: [
-      { producto: 'caja fiesta', presentacion: 30, color: 'morado', cantidad: 1, mensaje: 'FELIZ CUMPLE', extra: 'Incluye velas y globos' },
+      { producto: 'caja fiesta', presentacion: 30, color: 'morado', cantidad: 1, letrasFresas: 'FELIZ CUMPLE', extra: 'Incluye velas y globos' },
     ],
   },
   {
@@ -109,7 +109,7 @@ const PEDIDOS_SEED = [
     mensajeTarjeta: 'Que cumplas muchos más.',
     instrucciones: 'Confirmar horario de entrega.',
     lineas: [
-      { producto: 'torre cumpleanos', presentacion: 16, color: 'rosa', cantidad: 1, mensaje: 'FELIZ DÍA' },
+      { producto: 'torre cumpleanos', presentacion: 16, color: 'rosa', cantidad: 1, letrasFresas: 'FELIZ DÍA' },
     ],
   },
   {
@@ -123,7 +123,7 @@ const PEDIDOS_SEED = [
     mensajeTarjeta: 'Te amo mucho.',
     instrucciones: 'Enviar mensaje antes de salir.',
     lineas: [
-      { producto: 'fresas elegancia', presentacion: 12, color: 'verde', cantidad: 1, mensaje: 'TE AMO' },
+      { producto: 'fresas elegancia', presentacion: 12, color: 'verde', cantidad: 1, letrasFresas: 'TE AMO' },
     ],
   },
   {
@@ -137,7 +137,7 @@ const PEDIDOS_SEED = [
     mensajeTarjeta: '¡Mucha fuerza!',
     instrucciones: 'Entregar después de las 3 p. m.',
     lineas: [
-      { producto: 'detalle poder', presentacion: 8, color: 'amarillo', cantidad: 2, mensaje: 'FUERZA' },
+      { producto: 'detalle poder', presentacion: 8, color: 'amarillo', cantidad: 2, letrasFresas: 'FUERZA' },
     ],
   },
   {
@@ -150,7 +150,7 @@ const PEDIDOS_SEED = [
     mensajeTarjeta: 'Feliz día, papá.',
     instrucciones: null,
     lineas: [
-      { producto: 'caja clasica papa', presentacion: 16, color: 'azul', cantidad: 1, mensaje: 'PAPÁ' },
+      { producto: 'caja clasica papa', presentacion: 16, color: 'azul', cantidad: 1, letrasFresas: 'PAPÁ' },
     ],
   },
   {
@@ -164,7 +164,7 @@ const PEDIDOS_SEED = [
     mensajeTarjeta: 'Con todo mi cariño.',
     instrucciones: null,
     lineas: [
-      { producto: 'set fuerza papa', presentacion: 12, color: 'blanco', cantidad: 1, mensaje: 'PAPÁ' },
+      { producto: 'set fuerza papa', presentacion: 12, color: 'blanco', cantidad: 1, letrasFresas: 'PAPÁ' },
     ],
   },
   {
@@ -177,7 +177,7 @@ const PEDIDOS_SEED = [
     mensajeTarjeta: 'Feliz día, mamá.',
     instrucciones: null,
     lineas: [
-      { producto: 'ramo dulce mama', presentacion: 30, color: 'chocolate', cantidad: 1, mensaje: 'MAMÁ', extra: 'Tarjeta con dedicatoria' },
+      { producto: 'ramo dulce mama', presentacion: 30, color: 'chocolate', cantidad: 1, letrasFresas: 'MAMÁ', extra: 'Tarjeta con dedicatoria' },
     ],
   },
   {
@@ -190,7 +190,7 @@ const PEDIDOS_SEED = [
     mensajeTarjeta: 'Por muchos momentos juntos.',
     instrucciones: null,
     lineas: [
-      { producto: 'caja romance', presentacion: 16, color: 'morado', cantidad: 1, mensaje: 'TE AMO' },
+      { producto: 'caja romance', presentacion: 16, color: 'morado', cantidad: 1, letrasFresas: 'TE AMO' },
     ],
   },
   {
@@ -204,8 +204,8 @@ const PEDIDOS_SEED = [
     mensajeTarjeta: 'Dos detalles para una persona especial.',
     instrucciones: 'Entregar en la portería principal.',
     lineas: [
-      { producto: 'detalle sorpresa', presentacion: 6, color: 'rosa', cantidad: 1, mensaje: 'AMOR' },
-      { producto: 'mini antojo', presentacion: 8, color: 'verde', cantidad: 1, mensaje: 'FELIZ' },
+      { producto: 'detalle sorpresa', presentacion: 6, color: 'rosa', cantidad: 1, letrasFresas: 'AMOR' },
+      { producto: 'mini antojo', presentacion: 8, color: 'verde', cantidad: 1, letrasFresas: 'FELIZ' },
     ],
   },
   {
@@ -220,8 +220,8 @@ const PEDIDOS_SEED = [
     mensajeTarjeta: 'Celebremos juntos.',
     instrucciones: 'Entregar en portería.',
     lineas: [
-      { producto: 'caja aniversario', presentacion: 30, color: 'amarillo', cantidad: 1, mensaje: 'ANIVERSARIO' },
-      { producto: 'fresas elegancia', presentacion: 12, color: 'azul', cantidad: 1, mensaje: 'TE AMO' },
+      { producto: 'caja aniversario', presentacion: 30, color: 'amarillo', cantidad: 1, letrasFresas: 'ANIVERSARIO' },
+      { producto: 'fresas elegancia', presentacion: 12, color: 'azul', cantidad: 1, letrasFresas: 'TE AMO' },
     ],
   },
   {
@@ -235,9 +235,9 @@ const PEDIDOS_SEED = [
     mensajeTarjeta: 'Una sorpresa para consentirte.',
     instrucciones: 'El cliente canceló la entrega.',
     lineas: [
-      { producto: 'combo antojo doble', presentacion: 8, color: 'blanco', cantidad: 1, mensaje: 'GRACIAS' },
-      { producto: 'caja fiesta', presentacion: 16, color: 'chocolate', cantidad: 1, mensaje: 'FELIZ DÍA' },
-      { producto: 'detalle poder', presentacion: 6, color: 'morado', cantidad: 3, mensaje: 'AMOR' },
+      { producto: 'combo antojo doble', presentacion: 8, color: 'blanco', cantidad: 1, letrasFresas: 'GRACIAS' },
+      { producto: 'caja fiesta', presentacion: 16, color: 'chocolate', cantidad: 1, letrasFresas: 'FELIZ DÍA' },
+      { producto: 'detalle poder', presentacion: 6, color: 'morado', cantidad: 3, letrasFresas: 'AMOR' },
     ],
   },
 ];
@@ -395,7 +395,7 @@ function lineasHistoricas(indice) {
       presentacion,
       color: COLORES_HISTORICOS[(indice + variante) % COLORES_HISTORICOS.length],
       cantidad: 1 + ((indice + variante * 2) % 4),
-      mensaje: (indice + variante) % 3 === 0 ? 'AMOR' : null,
+      letrasFresas: (indice + variante) % 3 === 0 ? 'AMOR' : null,
       extra: null,
     };
   });
@@ -704,7 +704,8 @@ async function main() {
         idPresentacion: presentacion.id,
         idColorGlaseado: color.id,
         cantidadProductos: linea.cantidad,
-        mensajePersonalizado: linea.mensaje ?? null,
+        letrasFresas: linea.letrasFresas ?? null,
+        mensajeTarjeta: linea.tarjeta ?? definicion.mensajeTarjeta ?? null,
       };
     });
 
@@ -716,7 +717,6 @@ async function main() {
       direccion: definicion.direccion ?? cliente.direccion ?? 'Dirección por confirmar',
       nombreReceptor: `${cliente.nombres ?? ''} ${cliente.apellidos ?? ''}`.trim(),
       telefonoReceptor: cliente.telefono || '3000000000',
-      mensajeTarjeta: definicion.mensajeTarjeta ?? null,
       instruccionesEntrega: definicion.instrucciones ?? null,
       lineas,
     };

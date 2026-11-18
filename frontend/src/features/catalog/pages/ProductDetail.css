@@ -1,5 +1,4 @@
-/* src/features/catalog/pages/ProductDetail.css
-*/
+/* src/features/catalog/pages/ProductDetail.css */
 
 .detail-page {
   background: var(--secundario-3);
@@ -18,7 +17,16 @@
   margin-bottom: 8px;
 }
 
+/* La columna de info se estira a la altura de la galería. */
+.detail-info-col {
+  display: flex;
+}
+
 .product-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
   padding-top: 4px;
 }
 
@@ -41,27 +49,131 @@
   font-weight: 700;
   font-size: 28px;
   line-height: 36px;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 
 .product-price {
   font-size: 22px;
   font-weight: 700;
+  line-height: 28px;
   color: var(--primario-oscuro);
 }
 
 .product-divider {
   border: none;
   border-top: 1px solid var(--borde);
-  margin: 16px 0;
+  margin: 8px 0 10px;
+}
+
+/* Descripción desplegable (recortada a 2 líneas). */
+.product-description-wrap {
+  margin-bottom: 14px;
 }
 
 .product-description {
+  margin: 0;
   font-style: italic;
   font-size: 14px;
   color: var(--texto-muted);
   line-height: 1.6;
-  margin-bottom: 24px;
+}
+
+.product-description.is-collapsed {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+.product-description-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--primario, #E63950);
+  font-family: "Poppins", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.product-description-toggle:hover {
+  text-decoration: underline;
+}
+
+.product-description-toggle i {
+  font-size: 10px;
+  transition: transform 0.2s ease;
+}
+
+.product-description-toggle.is-open i {
+  transform: rotate(180deg);
+}
+
+/* Aviso de personalización, pegado al botón de compra. */
+.product-personalize-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  background: rgba(230, 57, 80, 0.07);
+  border: 1px solid rgba(230, 57, 80, 0.3);
+  border-left: 4px solid var(--primario, #E63950);
+  border-radius: 12px;
+}
+
+.product-personalize-icon {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: var(--primario, #E63950);
+  color: #ffffff;
+  font-size: 12px;
+}
+
+.product-personalize-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.product-personalize-body p {
+  margin: 0;
+}
+
+.product-personalize-title {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 20px;
+  color: var(--texto);
+}
+
+.product-personalize-text {
+  margin-top: 2px !important;
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--texto);
+}
+
+.product-personalize-text strong {
+  font-weight: 700;
+  color: var(--primario, #E63950);
+}
+
+.product-personalize-hint {
+  margin-top: 4px !important;
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--texto-muted);
 }
 
 .btn-add-to-cart.MuiButton-root {
@@ -85,6 +197,16 @@
   --add-control-height: 44px;
   margin-top: 8px;
 }
+
+/* En escritorio, el bloque de compra se pega al borde inferior de la
+   columna para alinearse con el final de la galería. */
+@media (min-width: 992px) {
+  .product-add-block {
+    margin-top: auto;
+    padding-top: 8px;
+  }
+}
+
 .product-add-row {
   display: flex;
   align-items: center;
@@ -166,6 +288,11 @@
     right: 16px;
     bottom: 16px;
     max-width: none;
+  }
+
+  .product-personalize-note {
+    padding: 10px 12px;
+    gap: 10px;
   }
 }
 

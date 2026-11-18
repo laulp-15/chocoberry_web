@@ -156,6 +156,27 @@ export function mapRegisterError(error) {
   return error;
 }
 
+export function mapForgotPasswordError(error) {
+  if (!(error instanceof Error)) return error;
+
+  // 404: no existe una cuenta registrada con ese correo.
+  if (error.status === 404) {
+    return errorConCodigo(error, "EMAIL_NOT_FOUND");
+  }
+
+  // 403: la cuenta existe pero está deshabilitada.
+  if (error.status === 403) {
+    return errorConCodigo(error, "USER_DISABLED");
+  }
+
+  // 429: demasiadas solicitudes de recuperación.
+  if (error.status === 429) {
+    return errorConCodigo(error, "LOCKED");
+  }
+
+  return error;
+}
+
 export function mapChangePasswordError(error) {
   if (!(error instanceof Error)) return error;
 

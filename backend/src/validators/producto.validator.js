@@ -12,7 +12,7 @@ const nombreField = z
 const descripcionField = z
   .string()
   .trim()
-  .max(255, 'La descripción no puede superar los 255 caracteres.')
+  .max(1000, 'La descripción no puede superar los 1000 caracteres.')
   .optional();
 
 // Ruta o URL de la imagen. Los archivos subidos (multipart) se resuelven en el

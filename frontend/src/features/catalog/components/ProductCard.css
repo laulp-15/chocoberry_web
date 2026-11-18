@@ -250,6 +250,13 @@
    ========================================================= */
 
 .product-desc {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+
   font-size: 13px;
 
   line-height: 20px;

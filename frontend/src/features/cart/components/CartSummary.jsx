@@ -17,6 +17,8 @@ export default function CartSummary({ items, onCheckout }) {
     cartItemId: it.cartItemId,
     name: it.name,
     units: it.units,
+    letrasFresas: it.letrasFresas,
+    mensajeTarjeta: it.mensajeTarjeta,
     total: Number(it.unitPrice ?? 0) * it.units,
   }));
 
@@ -32,6 +34,16 @@ export default function CartSummary({ items, onCheckout }) {
           <div key={line.cartItemId} className="cart-summary-line">
             <span className="cart-summary-line-name">
               {line.name} <span className="cart-summary-line-units">x{line.units}</span>
+              {line.letrasFresas && (
+                <span className="cart-summary-line-note">
+                  Letras: “{line.letrasFresas}”
+                </span>
+              )}
+              {line.mensajeTarjeta && (
+                <span className="cart-summary-line-note">
+                  Tarjeta: “{line.mensajeTarjeta}”
+                </span>
+              )}
             </span>
             <span className="cart-summary-line-price">{formatPrice(line.total)}</span>
           </div>

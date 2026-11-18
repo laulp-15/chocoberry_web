@@ -165,6 +165,29 @@ describe('Módulo de catálogo (categorías, productos y presentaciones)', () =>
       expect(res.body.data.imagenes).toHaveLength(2);
     });
 
+    it('PUT /api/productos/:id acepta una descripción de 1000 caracteres', async () => {
+      const descripcion = 'a'.repeat(1000);
+      const res = await auth(request(app).put(`/api/productos/${productoId}`)).send({
+        descripcion,
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.descripcion).toHaveLength(1000);
+    });
+
+    it('PUT /api/productos/:id rechaza una descripción de más de 1000 caracteres', async () => {
+      const res = await auth(request(app).put(`/api/productos/${productoId}`)).send({
+        descripcion: 'a'.repeat(1001),
+      });
+
+      expect(res.status).toBe(422);
+      expect(res.body.errors).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ campo: 'descripcion' }),
+        ])
+      );
+    });
+
     it('PUT /api/productos/:id rechaza dejar un producto sin imágenes', async () => {
       const creado = await query(
         'INSERT INTO producto (nombre, estado, id_categoria) VALUES (?, TRUE, ?)',
