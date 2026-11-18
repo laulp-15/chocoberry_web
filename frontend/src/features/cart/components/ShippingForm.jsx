@@ -87,25 +87,6 @@ export default function ShippingForm({
 
       <div className="form-row">
         <div className="form-field">
-          <label className="form-label">Dirección de entrega *</label>
-          <OutlinedInput
-            className={`form-input ${addressError ? "has-error" : ""}`}
-            fullWidth
-            placeholder="Ej. Calle 10 # 43 - 21, Torre 2 Apto 402"
-            value={address}
-            onChange={(e) => onChange("address", e.target.value)}
-            onBlur={() => onBlurField?.("address")}
-          />
-          {addressError ? (
-            <div className="form-error">{addressError}</div>
-          ) : (
-            <div className="form-hint">
-              Para mayor precisión, indícanos en qué barrio será la entrega.
-            </div>
-          )}
-        </div>
-
-        <div className="form-field">
           <label className="form-label">Municipio de entrega *</label>
           <Select
             className={`form-input form-select ${municipioError ? "has-error" : ""}`}
@@ -127,6 +108,25 @@ export default function ShippingForm({
             ))}
           </Select>
           {municipioError && <div className="form-error">{municipioError}</div>}
+        </div>
+
+        <div className="form-field">
+          <label className="form-label">Dirección de entrega *</label>
+          <OutlinedInput
+            className={`form-input ${addressError ? "has-error" : ""}`}
+            fullWidth
+            placeholder="Ej. Calle 10 # 43 - 21, Torre 2 Apto 402"
+            value={address}
+            onChange={(e) => onChange("address", e.target.value)}
+            onBlur={() => onBlurField?.("address")}
+          />
+          {addressError ? (
+            <div className="form-error">{addressError}</div>
+          ) : (
+            <div className="form-hint">
+              Para mayor precisión, indícanos en qué barrio será la entrega.
+            </div>
+          )}
         </div>
       </div>
 

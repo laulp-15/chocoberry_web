@@ -40,12 +40,20 @@
 }
 
 .payment-qr-image-wrapper {
+  position: relative;
+  display: block;
   flex-shrink: 0;
   background: #ffffff;
   border: 1px solid var(--borde);
   border-radius: 12px;
   padding: 10px;
   line-height: 0;
+  cursor: zoom-in;
+}
+
+.payment-qr-image-wrapper:focus-visible {
+  outline: 2px solid var(--primario-claro);
+  outline-offset: 2px;
 }
 
 .payment-qr-image {
@@ -54,6 +62,30 @@
   max-width: 100%;
   height: auto;
   object-fit: contain;
+}
+
+.payment-qr-zoom {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(42, 35, 29, 0.72);
+  color: #ffffff;
+  font-size: 12px;
+  line-height: 1;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.payment-qr-image-wrapper:hover .payment-qr-zoom,
+.payment-qr-image-wrapper:focus-visible .payment-qr-zoom {
+  opacity: 1;
 }
 
 .payment-qr-info {
@@ -121,8 +153,15 @@
   }
 }
 
+@media (hover: none) {
+  .payment-qr-zoom {
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .payment-qr-download {
+  .payment-qr-download,
+  .payment-qr-zoom {
     transition: none;
   }
 }

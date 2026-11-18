@@ -92,7 +92,7 @@ CREATE TABLE categoria (
 CREATE TABLE producto (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
-    descripcion VARCHAR(255),
+    descripcion VARCHAR(1000),
     estado BOOLEAN NOT NULL DEFAULT TRUE,
     id_categoria INT NOT NULL,
     CONSTRAINT fk_producto_categoria
@@ -148,7 +148,6 @@ CREATE TABLE municipio (
 
 CREATE TABLE pedido (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    mensaje_tarjeta VARCHAR(255),
     fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     fecha_entrega DATETIME,
     direccion VARCHAR(200) NOT NULL,
@@ -181,7 +180,8 @@ CREATE TABLE productoPedido (
     cantidad_productos INT NOT NULL,
     precio_unitario DECIMAL(10,2) NOT NULL,
     subtotal DECIMAL(10,2) NOT NULL,
-    mensaje_personalizado VARCHAR(255),
+    letras_fresas VARCHAR(255),
+    mensaje_tarjeta VARCHAR(500),
     id_color_glaseado INT,
     CONSTRAINT fk_prodPedido_pedido
         FOREIGN KEY (id_pedido) REFERENCES pedido(id)

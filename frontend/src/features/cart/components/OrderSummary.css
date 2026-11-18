@@ -75,6 +75,12 @@
   color: var(--texto-muted);
 }
 
+.order-summary-item-note {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--texto-muted);
+}
+
 .order-summary-item-price {
   flex-shrink: 0;
   font-size: 13px;

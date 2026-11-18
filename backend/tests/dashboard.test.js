@@ -84,7 +84,6 @@ describe('Módulo de dashboard', () => {
 
   async function crearPedido({ cantidad = 1 } = {}) {
     const res = await auth(request(app).post('/api/pedidos'))
-      .field('mensajeTarjeta', 'Dashboard de prueba')
       .field('fechaEntrega', fechaISO(2))
       .field('direccion', 'Calle 10 # 20-30')
       .field('idMunicipio', String(municipio.id))
@@ -99,6 +98,7 @@ describe('Módulo de dashboard', () => {
             idPresentacion: presentacion.id,
             cantidadProductos: cantidad,
             idColorGlaseado: color.id,
+            mensajeTarjeta: 'Dashboard de prueba',
           },
         ])
       )

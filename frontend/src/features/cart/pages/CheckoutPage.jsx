@@ -8,6 +8,7 @@ import useMunicipiosEntrega from "../hooks/useMunicipiosEntrega";
 import useFormValidation from "../../../shared/hooks/useFormValidation";
 import { validatePhone } from "../../login/utils/validators";
 import {
+  MAX_MENSAJE_TARJETA,
   contarCaracteresSinEspacios,
   esPedidoGrande,
   excedeLimiteCarrito,
@@ -18,7 +19,6 @@ import {
 import ShippingForm from "../components/ShippingForm";
 import PaymentSection from "../components/PaymentSection";
 import OrderSummary from "../components/OrderSummary";
-import OrderCardMessage from "../components/OrderCardMessage";
 import * as orderService from "../../orders/services/orderService";
 import "./CheckoutPage.css";
 
@@ -30,7 +30,6 @@ const INITIAL_FORM = {
   recipientPhone: "",
   instructions: "",
   deliveryDate: "",
-  cardMessage: "",
   proofFile: null,
 };
 
@@ -49,11 +48,7 @@ function initialFormForUser(user) {
  * Reglas que el backend también valida. Se comprueban antes de subir el
  * comprobante para no dejar archivos huérfanos por un error de texto.
  */
-function validarLineas(items, cardMessage) {
-  if (String(cardMessage ?? "").trim().length > 255) {
-    return "El mensaje de la tarjeta no puede superar los 255 caracteres.";
-  }
-
+function validarLineas(items) {
   if (excedeLimiteCarrito(items)) {
     return mensajeLimiteCarrito();
   }
@@ -64,10 +59,15 @@ function validarLineas(items, cardMessage) {
     }
 
     const maximo = Math.min(Number(item.quantity) || 0, 255);
-    if (contarCaracteresSinEspacios(item.decorativeMessage) > maximo) {
-      return `El mensaje decorativo de "${item.name}" no puede superar ${maximo} caracteres sin contar espacios (una letra por fresa).`;
+    if (contarCaracteresSinEspacios(item.letrasFresas) > maximo) {
+      return `Las letras para las fresas de "${item.name}" no pueden superar ${maximo} caracteres sin contar espacios (una letra por fresa).`;
     }
 
+    if (
+      contarCaracteresSinEspacios(item.mensajeTarjeta) > MAX_MENSAJE_TARJETA
+    ) {
+      return `El mensaje de la tarjeta de "${item.name}" no puede superar ${MAX_MENSAJE_TARJETA} caracteres sin contar espacios.`;
+    }
   }
 
   return "";
@@ -130,7 +130,7 @@ export default function CheckoutPage() {
     setSubmitError("");
     if (!validateAll()) return;
 
-    const errorLineas = validarLineas(items, form.cardMessage);
+    const errorLineas = validarLineas(items);
     if (errorLineas) {
       setSubmitError(errorLineas);
       return;
@@ -149,9 +149,6 @@ export default function CheckoutPage() {
     datos.append("nombreReceptor", form.recipientName.trim());
     datos.append("telefonoReceptor", form.recipientPhone.trim());
 
-    if (form.cardMessage.trim()) {
-      datos.append("mensajeTarjeta", form.cardMessage.trim());
-    }
     if (form.instructions.trim()) {
       datos.append("instruccionesEntrega", form.instructions.trim());
     }
@@ -164,8 +161,11 @@ export default function CheckoutPage() {
           idPresentacion: item.presentationId,
           cantidadProductos: item.units,
           idColorGlaseado: item.colorId,
-          ...(String(item.decorativeMessage ?? "").trim()
-            ? { mensajePersonalizado: item.decorativeMessage.trim() }
+          ...(String(item.letrasFresas ?? "").trim()
+            ? { letrasFresas: item.letrasFresas.trim() }
+            : {}),
+          ...(String(item.mensajeTarjeta ?? "").trim()
+            ? { mensajeTarjeta: item.mensajeTarjeta.trim() }
             : {}),
         }))
       )
@@ -236,10 +236,6 @@ export default function CheckoutPage() {
 
         <div className="row">
           <div className="col-12 col-lg-7">
-            <OrderCardMessage
-              value={form.cardMessage}
-              onChange={(v) => handleFieldChange("cardMessage", v)}
-            />
             <ShippingForm
               values={form}
               onChange={handleFieldChange}

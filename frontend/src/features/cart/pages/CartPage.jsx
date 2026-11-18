@@ -78,6 +78,18 @@ export default function CartPage() {
         ) : (
           <div className="row">
             <div className="col-12 col-lg-8">
+              <div className="cart-reminder" role="note">
+                <i
+                  className="fa-solid fa-circle-exclamation cart-reminder-icon"
+                  aria-hidden="true"
+                />
+                <p className="cart-reminder-text">
+                  <strong>¡Recuerda!</strong> Si no personalizas las letras de
+                  tus fresas, recibirás el diseño original de la imagen de
+                  referencia.
+                </p>
+              </div>
+
               {items.map((item) => (
                 <CartItemCard
                   key={item.cartItemId}

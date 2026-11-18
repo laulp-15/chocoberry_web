@@ -77,7 +77,7 @@ describe('Módulo de comprobantes de pago', () => {
             idPresentacion: presentacion.id,
             cantidadProductos: 1,
             idColorGlaseado: color.id,
-            mensajePersonalizado: 'OK',
+            letrasFresas: 'OK',
           },
         ])
       )

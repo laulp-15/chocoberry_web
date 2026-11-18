@@ -61,7 +61,8 @@ function mapLinea(linea) {
     unidades: Number(linea.cantidadProductos ?? 0),
     precioUnitario: Number(linea.precioUnitario ?? 0),
     subtotal: Number(linea.subtotal ?? 0),
-    mensajePersonalizado: linea.mensajePersonalizado ?? "",
+    letrasFresas: linea.letrasFresas ?? "",
+    mensajeTarjeta: linea.mensajeTarjeta ?? "",
     colorId: linea.colorGlaseado?.id ?? null,
     colorNombre: linea.colorGlaseado?.nombre ?? "",
     colorHex: linea.colorGlaseado?.codigoHex ?? "",
@@ -101,8 +102,6 @@ export function mapPedidoAdmin(pedido) {
     estadoId: pedido.estado?.id ?? null,
     estado: mapEstadoSlug(pedido.estado?.nombre),
     estadoNombre: pedido.estado?.nombre ?? "",
-    mensajeTarjeta: pedido.mensajeTarjeta ?? "",
-    cardMessage: pedido.mensajeTarjeta ?? "",
     clienteId: pedido.cliente?.id ?? null,
     cliente: nombreCompleto || "Cliente",
     clienteIdentificacion: pedido.cliente?.numeroDocumento ?? "",
@@ -153,8 +152,11 @@ function toLineaPayload(linea) {
   const id = Number(linea.id);
   if (Number.isInteger(id) && id > 0) payload.id = id;
 
-  const mensaje = String(linea.mensajePersonalizado ?? "").trim();
-  if (mensaje) payload.mensajePersonalizado = mensaje;
+  const letras = String(linea.letrasFresas ?? "").trim();
+  if (letras) payload.letrasFresas = letras;
+
+  const mensajeTarjeta = String(linea.mensajeTarjeta ?? "").trim();
+  if (mensajeTarjeta) payload.mensajeTarjeta = mensajeTarjeta;
 
   return payload;
 }
@@ -174,9 +176,6 @@ export function toCrearPedidoFormData(datos = {}) {
   const instrucciones = String(datos.instruccionesEntrega ?? "").trim();
   if (instrucciones) formData.append("instruccionesEntrega", instrucciones);
 
-  const mensaje = String(datos.mensajeTarjeta ?? "").trim();
-  if (mensaje) formData.append("mensajeTarjeta", mensaje);
-
   formData.append("lineas", JSON.stringify((datos.lineas ?? []).map(toLineaPayload)));
   return formData;
 }
@@ -194,7 +193,6 @@ export function toActualizarPedidoPayload(datos = {}) {
     telefonoReceptor: String(datos.telefonoReceptor ?? "").trim(),
     // Se envían siempre para permitir dejar el campo vacío.
     instruccionesEntrega: String(datos.instruccionesEntrega ?? "").trim(),
-    mensajeTarjeta: String(datos.mensajeTarjeta ?? "").trim(),
     ...(datos.lineas !== undefined
       ? { lineas: datos.lineas.map(toLineaPayload) }
       : {}),

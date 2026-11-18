@@ -17,6 +17,8 @@ export default function OrderSummary({ items, shippingCost, onSubmit, submitting
     image: it.image,
     quantity: it.quantity,
     units: it.units,
+    letrasFresas: it.letrasFresas,
+    mensajeTarjeta: it.mensajeTarjeta,
     total: Number(it.unitPrice ?? 0) * it.units,
   }));
 
@@ -42,6 +44,16 @@ export default function OrderSummary({ items, shippingCost, onSubmit, submitting
               <div className="order-summary-item-qty">
                 {line.units} un. · {line.quantity} fresas
               </div>
+              {line.letrasFresas && (
+                <div className="order-summary-item-note">
+                  Letras: “{line.letrasFresas}”
+                </div>
+              )}
+              {line.mensajeTarjeta && (
+                <div className="order-summary-item-note">
+                  Tarjeta: “{line.mensajeTarjeta}”
+                </div>
+              )}
             </div>
             <div className="order-summary-item-price">{formatPrice(line.total)}</div>
           </div>

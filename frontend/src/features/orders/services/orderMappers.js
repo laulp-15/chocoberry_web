@@ -35,7 +35,8 @@ function mapLinea(linea) {
     unidades: Number(linea.cantidadProductos ?? 0),
     precioUnitario: Number(linea.precioUnitario ?? 0),
     subtotal: Number(linea.subtotal ?? 0),
-    mensajePersonalizado: linea.mensajePersonalizado ?? '',
+    letrasFresas: linea.letrasFresas ?? '',
+    mensajeTarjeta: linea.mensajeTarjeta ?? '',
     colorNombre: linea.colorGlaseado?.nombre ?? '',
     colorHex: linea.colorGlaseado?.codigoHex ?? '',
   };
@@ -50,7 +51,6 @@ export function mapPedido(pedido) {
     fechaEntrega: pedido.fechaEntrega,
     estadoId: pedido.estado?.id ?? null,
     estado: pedido.estado?.nombre ?? '',
-    mensajeTarjeta: pedido.mensajeTarjeta ?? '',
     clienteId: pedido.cliente?.id ?? null,
     municipioId: pedido.municipio?.id ?? null,
     municipio: pedido.municipio?.nombre ?? '',

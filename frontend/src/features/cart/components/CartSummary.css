@@ -49,6 +49,16 @@
   white-space: nowrap;
 }
 
+.cart-summary-line-note {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--texto-muted);
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .cart-summary-line-units {
   color: var(--texto-muted);
   font-size: 12px;

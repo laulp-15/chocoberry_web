@@ -6,7 +6,7 @@ import { query } from '../config/db.js';
 
 const SELECT_BASE = `SELECT pp.id, pp.id_pedido, pp.id_producto, pp.id_presentacion,
                             pp.cantidad_productos, pp.precio_unitario, pp.subtotal,
-                            pp.mensaje_personalizado, pp.id_color_glaseado,
+                            pp.letras_fresas, pp.mensaje_tarjeta, pp.id_color_glaseado,
                             pr.nombre AS producto,
                             (SELECT ip.url
                                FROM imagenProducto ip
@@ -47,8 +47,8 @@ export async function insertarLineas(conexion, idPedido, lineas) {
     await conexion.execute(
       `INSERT INTO productoPedido
          (id_pedido, id_producto, id_presentacion, cantidad_productos,
-          precio_unitario, subtotal, mensaje_personalizado, id_color_glaseado)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          precio_unitario, subtotal, letras_fresas, mensaje_tarjeta, id_color_glaseado)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         idPedido,
         linea.id_producto,
@@ -56,7 +56,8 @@ export async function insertarLineas(conexion, idPedido, lineas) {
         linea.cantidad_productos,
         linea.precio_unitario,
         linea.subtotal,
-        linea.mensaje_personalizado ?? null,
+        linea.letras_fresas ?? null,
+        linea.mensaje_tarjeta ?? null,
         linea.id_color_glaseado,
       ]
     );

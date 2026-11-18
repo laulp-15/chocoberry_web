@@ -1,5 +1,7 @@
 // src/features/cart/components/PaymentSection.jsx
+import { useState } from "react";
 import FileDropzone from "../../../shared/components/FileDropZone";
+import ImageLightbox from "../../../shared/components/ImageLightbox";
 import { IMAGE_ACCEPT } from "../../../shared/utils/fileValidation";
 import { NEQUI_ACCOUNT, NEQUI_QR } from "../data/paymentInfo";
 import "./PaymentSection.css";
@@ -15,6 +17,8 @@ export default function PaymentSection({
   onProofFileChange,
   proofFileError,
 }) {
+  const [qrLightboxOpen, setQrLightboxOpen] = useState(false);
+
   return (
     <div className="checkout-section">
       <div className="checkout-section-title">
@@ -33,7 +37,13 @@ export default function PaymentSection({
 
       {/* Código QR */}
       <div className="payment-qr">
-        <div className="payment-qr-image-wrapper">
+        <button
+          type="button"
+          className="payment-qr-image-wrapper"
+          onClick={() => setQrLightboxOpen(true)}
+          aria-label="Ampliar código QR de Nequi"
+          title="Ver QR ampliado"
+        >
           <img
             src={NEQUI_QR}
             alt={`Código QR para transferir a la cuenta Nequi ${NEQUI_ACCOUNT}`}
@@ -47,7 +57,10 @@ export default function PaymentSection({
               e.currentTarget.closest(".payment-qr").style.display = "none";
             }}
           />
-        </div>
+          <span className="payment-qr-zoom" aria-hidden="true">
+            <i className="fa-solid fa-magnifying-glass-plus" />
+          </span>
+        </button>
 
         <div className="payment-qr-info">
           <p className="payment-qr-caption">
@@ -63,6 +76,13 @@ export default function PaymentSection({
           </a>
         </div>
       </div>
+
+      <ImageLightbox
+        open={qrLightboxOpen}
+        onClose={() => setQrLightboxOpen(false)}
+        src={NEQUI_QR}
+        alt={`Código QR para transferir a la cuenta Nequi ${NEQUI_ACCOUNT}`}
+      />
 
       <div className="form-field">
         <label className="form-label">Comprobante de pago *</label>

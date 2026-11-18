@@ -8,7 +8,6 @@ import * as productoPedidoModel from './productoPedido.model.js';
 
 // Columnas de cabecera que se pueden actualizar (lista blanca).
 const CAMPOS_ACTUALIZABLES = [
-  'mensaje_tarjeta',
   'fecha_entrega',
   'direccion',
   'precio_domicilio',
@@ -114,12 +113,11 @@ export async function crearConLineas({ pedido, lineas, comprobante }) {
   return withTransaction(async (conexion) => {
     const [resultado] = await conexion.execute(
       `INSERT INTO pedido
-         (mensaje_tarjeta, fecha_entrega, direccion, precio_domicilio,
+         (fecha_entrega, direccion, precio_domicilio,
           nombre_receptor, telefono_receptor, instrucciones_entrega,
           id_usuario, id_estado, id_municipio)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        pedido.mensaje_tarjeta ?? null,
         pedido.fecha_entrega,
         pedido.direccion,
         pedido.precio_domicilio,

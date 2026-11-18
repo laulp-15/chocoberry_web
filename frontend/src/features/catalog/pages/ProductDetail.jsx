@@ -1,5 +1,5 @@
 // src/features/catalog/pages/ProductDetail.jsx
-import { useState } from "react";
+import { useState, useRef, useLayoutEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@mui/material";
 import { useCart } from "../../cart/hooks/UseCart";
@@ -17,6 +17,50 @@ import {
   totalUnidades,
 } from "../../../shared/utils/orderRules";
 import "./ProductDetail.css";
+
+// Descripción recortada a 2 líneas; el botón "Ver más" solo aparece si el
+// texto realmente se corta (se mide, así que se adapta a cualquier pantalla).
+function ProductDescription({ text }) {
+  const textRef = useRef(null);
+  const [expanded, setExpanded] = useState(false);
+  const [overflows, setOverflows] = useState(false);
+
+  useLayoutEffect(() => {
+    const el = textRef.current;
+    if (!el) return undefined;
+
+    const measure = () => {
+      if (expanded) return;
+      setOverflows(el.scrollHeight > el.clientHeight + 1);
+    };
+
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [text, expanded]);
+
+  return (
+    <div className="product-description-wrap">
+      <p
+        ref={textRef}
+        className={`product-description${expanded ? "" : " is-collapsed"}`}
+      >
+        {text}
+      </p>
+      {(overflows || expanded) && (
+        <button
+          type="button"
+          className={`product-description-toggle${expanded ? " is-open" : ""}`}
+          onClick={() => setExpanded((prev) => !prev)}
+          aria-expanded={expanded}
+        >
+          {expanded ? "Ver menos" : "Ver más"}
+          <i className="fa-solid fa-chevron-down" aria-hidden="true" />
+        </button>
+      )}
+    </div>
+  );
+}
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -151,12 +195,13 @@ export default function ProductDetail() {
               alt={producto.name}
             />
           </div>
-          <div className="col-12 col-lg-6">
+          <div className="col-12 col-lg-6 detail-info-col">
             <div className="product-info">
               <h1 className="product-title">{producto.name}</h1>
               <div className="product-price">{formatPrice(currentPrice)}</div>
               <hr className="product-divider" />
-              <p className="product-description">{producto.desc}</p>
+
+              <ProductDescription key={producto.id} text={producto.desc} />
 
               <QuantitySelector
                 options={quantityOptions}
@@ -177,6 +222,27 @@ export default function ProductDetail() {
               )}
 
               <div className="product-add-block">
+                <div className="product-personalize-note" role="note">
+                  <span className="product-personalize-icon" aria-hidden="true">
+                    <i className="fa-solid fa-wand-magic-sparkles" />
+                  </span>
+                  <div className="product-personalize-body">
+                    <p className="product-personalize-title">
+                      ¡Personaliza tus fresas!
+                    </p>
+                    <p className="product-personalize-text">
+                      <strong>
+                        Si no ingresas letras, recibirás el diseño de la imagen
+                        de referencia.
+                      </strong>
+                    </p>
+                    <p className="product-personalize-hint">
+                      Podrás escribirlas en el carrito: máximo{" "}
+                      {selectedQuantity} letras (una por fresa).
+                    </p>
+                  </div>
+                </div>
+
                 <div className="selector-label">Cantidad de cajas</div>
                 <div className="product-add-row">
                   <QuantityStepper

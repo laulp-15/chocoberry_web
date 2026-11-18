@@ -20,6 +20,7 @@ export default function ForgotPasswordPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [sentError, setSentError] = useState("");
   const [cooldown, setCooldown] = useState(0);
 
   const timerRef = useRef(null);
@@ -32,16 +33,26 @@ export default function ForgotPasswordPage() {
   }, [cooldown]);
 
   async function handleSubmit(e) {
-    e.preventDefault();
+    e?.preventDefault();
     const err = validateEmail(email);
     setError(err);
     if (err) return;
 
     setLoading(true);
+    setSentError("");
     try {
       await requestPasswordReset(email);
       setSent(true);
       setCooldown(RESEND_COOLDOWN);
+    } catch (requestError) {
+      const message =
+        requestError?.message ||
+        "No se pudo enviar el enlace. Inténtalo de nuevo.";
+      if (sent) {
+        setSentError(message);
+      } else {
+        setError(message);
+      }
     } finally {
       setLoading(false);
     }
@@ -64,17 +75,23 @@ export default function ForgotPasswordPage() {
       >
         {sent ? (
           <div className="auth-panel-body">
+            {sentError && (
+              <div className="auth-banner auth-banner--error" role="alert">
+                <i className="fa-solid fa-circle-exclamation" />
+                <span>{sentError}</span>
+              </div>
+            )}
             <div className="auth-banner auth-banner--success" role="status">
               <i className="fa-solid fa-circle-check" />
               <span>
-                Si <strong>{email}</strong> está registrado, te enviamos un enlace
-                para restablecer tu contraseña. Revisa también la carpeta de spam.
+                Te enviamos un enlace a <strong>{email}</strong> para restablecer
+                tu contraseña. Revisa también la carpeta de spam.
               </span>
             </div>
             <button
               type="button"
               className="auth-inline-link"
-              disabled={cooldown > 0}
+              disabled={cooldown > 0 || loading}
               onClick={handleSubmit}
             >
               {cooldown > 0
