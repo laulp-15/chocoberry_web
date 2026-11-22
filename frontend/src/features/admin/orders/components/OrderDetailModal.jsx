@@ -9,13 +9,6 @@ import OrderDetailContent from "./OrderDetailContent";
  * @param {object} props.order
  * @param {(fechaEntrega: string) => Promise<void>} [props.onReprogram]
  * @param {boolean} [props.reprogramming]
- * @param {(comprobante: object) => void} [props.onApprovePayment]
- * @param {(comprobante: object) => void} [props.onRejectPayment]
- * @param {() => void} [props.onUploadPayment]
- * @param {boolean} [props.canManagePayments]
- * @param {boolean} [props.canUploadPayments]
- * @param {number|string|null} [props.paymentSavingId]
- * @param {boolean} [props.uploadingPayment]
  */
 export default function OrderDetailModal({
   open,
@@ -23,13 +16,6 @@ export default function OrderDetailModal({
   order,
   onReprogram,
   reprogramming = false,
-  onApprovePayment,
-  onRejectPayment,
-  onUploadPayment,
-  canManagePayments = false,
-  canUploadPayments = false,
-  paymentSavingId = null,
-  uploadingPayment = false,
 }) {
   if (!order) return null;
 
@@ -38,19 +24,12 @@ export default function OrderDetailModal({
       open={open}
       onClose={onClose}
       title={`Pedido #${order.id}`}
-      maxWidth="md"
+      maxWidth="lg"
     >
       <OrderDetailContent
         order={order}
         onReprogram={onReprogram}
         reprogramming={reprogramming}
-        onApprovePayment={onApprovePayment}
-        onRejectPayment={onRejectPayment}
-        onUploadPayment={onUploadPayment}
-        canManagePayments={canManagePayments}
-        canUploadPayments={canUploadPayments}
-        paymentSavingId={paymentSavingId}
-        uploadingPayment={uploadingPayment}
       />
     </Modal>
   );

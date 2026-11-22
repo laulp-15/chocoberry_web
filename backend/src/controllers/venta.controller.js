@@ -22,3 +22,15 @@ export const exportarPdf = asyncHandler(async (req, res) => {
   );
   return sendArchivo(res, archivo);
 });
+
+export const vistaPreviaReporte = asyncHandler(async (req, res) => {
+  const datos = await ventaService.obtenerReporte(req.validado.query);
+  return sendSuccess(res, datos, 'Vista previa del reporte obtenida exitosamente.');
+});
+
+export const exportarReporteExcel = asyncHandler(async (req, res) => {
+  const archivo = await exportacionService.generarReporteVentasExcel({
+    filtros: req.validado.query,
+  });
+  return sendArchivo(res, archivo);
+});

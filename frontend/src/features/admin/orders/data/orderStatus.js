@@ -4,8 +4,8 @@ export const ORDER_STATUSES = [
   { value: "pendiente", label: "Pendiente", color: "#F49505" },
   { value: "en_preparacion", label: "En preparación", color: "#1D77ED" },
   { value: "despachado", label: "Despachado", color: "#24943C" },
-  { value: "rechazado", label: "Rechazado", color: "#DD322D" },
   { value: "entregado", label: "Entregado", color: "#2E8B57" },
+  { value: "rechazado", label: "Rechazado", color: "#DD322D" },
   { value: "cancelado", label: "Cancelado", color: "#DD322D" },
 ];
 

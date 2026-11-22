@@ -9,6 +9,9 @@ import { NotFoundError, UnprocessableEntityError } from '../errors/index.js';
 import * as comprobantePagoModel from '../models/comprobantePago.model.js';
 import * as pedidoModel from '../models/pedido.model.js';
 import * as productoPedidoModel from '../models/productoPedido.model.js';
+import * as ventaModel from '../models/venta.model.js';
+import { redondear2 } from '../utils/number.js';
+import { construirFilasPeriodo, determinarAgrupacion } from '../utils/reportes/ventasReporte.js';
 import { serializarPedido } from '../utils/serializers.js';
 import * as pedidoService from './pedido.service.js';
 
@@ -101,4 +104,53 @@ export async function obtener(id, usuario) {
   }
 
   return pedido;
+}
+
+/**
+ * Datos del reporte de ventas para un rango de fechas de Colombia. El total
+ * incluye todas las ventas (también las canceladas), y estas últimas se
+ * informan por separado en el resumen.
+ */
+export async function obtenerReporte({ desde, hasta }) {
+  const filas = await ventaModel.listarParaReporte({
+    desde,
+    hasta,
+    estados: ESTADOS_VENTA,
+  });
+
+  const totalesPorDia = new Map();
+  let canceladas = 0;
+  let total = 0;
+
+  for (const fila of filas) {
+    const totalVenta = redondear2(Number(fila.total));
+    total += totalVenta;
+
+    if (fila.estado === 'Cancelado') canceladas += 1;
+
+    const acumulado = totalesPorDia.get(fila.fecha) ?? { ventas: 0, total: 0 };
+    acumulado.ventas += 1;
+    acumulado.total = redondear2(acumulado.total + totalVenta);
+    totalesPorDia.set(fila.fecha, acumulado);
+  }
+
+  const agrupacion = determinarAgrupacion(desde, hasta);
+  const periodos = construirFilasPeriodo({
+    desde,
+    hasta,
+    agrupacion,
+    totalesPorDia,
+  });
+
+  return {
+    desde,
+    hasta,
+    agrupacion,
+    resumen: {
+      ventas: filas.length,
+      total: redondear2(total),
+      canceladas,
+    },
+    periodos,
+  };
 }

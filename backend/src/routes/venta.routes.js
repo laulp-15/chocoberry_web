@@ -7,7 +7,7 @@ import { verifyToken } from '../middlewares/auth.js';
 import { checkPermiso } from '../middlewares/checkPermiso.js';
 import { validar } from '../middlewares/validate.js';
 import { idParamSchema } from '../validators/common.validator.js';
-import { filtrosVentaSchema } from '../validators/venta.validator.js';
+import { filtrosVentaSchema, reporteVentaSchema } from '../validators/venta.validator.js';
 
 const router = Router();
 
@@ -18,6 +18,20 @@ router.get(
   checkPermiso('Ventas', 'Ver'),
   validar(filtrosVentaSchema, 'query'),
   ventaController.listar
+);
+
+router.get(
+  '/reporte/preview',
+  checkPermiso('Ventas', 'Exportar reporte'),
+  validar(reporteVentaSchema, 'query'),
+  ventaController.vistaPreviaReporte
+);
+
+router.get(
+  '/reporte/excel',
+  checkPermiso('Ventas', 'Exportar reporte'),
+  validar(reporteVentaSchema, 'query'),
+  ventaController.exportarReporteExcel
 );
 
 router.get(

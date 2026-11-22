@@ -17,7 +17,7 @@ function mapComprobante(comprobante) {
         ? null
         : Number(comprobante.monto),
     fecha: comprobante.fecha,
-    motivoRechazo: comprobante.motivoRechazo ?? '',
+    motivoDevolucion: comprobante.motivoDevolucion ?? '',
     estado: comprobante.estado?.nombre ?? '',
   };
 }

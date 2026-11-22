@@ -9,8 +9,8 @@ const redondear2 = (valor) =>
   Math.round((Number(valor) + Number.EPSILON) * 100) / 100;
 
 /**
- * Pide el monto realmente verificado al aprobar un comprobante. Solo se
- * permite cuando coincide exactamente con el saldo pendiente.
+ * Pide el monto realmente verificado al aprobar un comprobante. El monto puede
+ * ser parcial y nunca puede superar el saldo pendiente.
  *
  * @param {object} props
  * @param {boolean} props.open
@@ -46,8 +46,8 @@ export default function ApprovePaymentModal({
           if (saldoRedondeado <= 0) {
             return "El pedido no tiene saldo pendiente por aprobar.";
           }
-          if (redondear2(monto) !== saldoRedondeado) {
-            return `El monto debe coincidir exactamente con el saldo pendiente (${formatPrice(
+          if (redondear2(monto) > saldoRedondeado) {
+            return `El monto no puede superar el saldo pendiente (${formatPrice(
               saldoRedondeado
             )}).`;
           }
@@ -85,7 +85,9 @@ export default function ApprovePaymentModal({
       }
     >
       <p style={{ margin: "0 0 16px", fontSize: "13px", lineHeight: 1.5 }}>
-        Verifica el valor real de la transferencia antes de aprobarla.
+        Verifica el valor real de la transferencia. Puede ser un abono parcial;
+        el pedido solo pasará a preparación cuando el total aprobado complete el
+        pago.
       </p>
       <p style={{ margin: "0 0 16px", fontSize: "13px" }}>
         Saldo pendiente: <strong>{formatPrice(Math.max(saldoRedondeado, 0))}</strong>

@@ -7,39 +7,6 @@ import { useEffect, useState } from "react";
 
 import * as orderService from "../services/orderService";
 
-function hoyISO() {
-  const ahora = new Date();
-  const local = new Date(ahora.getTime() - ahora.getTimezoneOffset() * 60000);
-  return local.toISOString().slice(0, 10);
-}
-
-/**
- * Ordena por fecha de entrega: primero las futuras (de la más cercana a la más
- * lejana) y después las pasadas (de la más reciente a la más antigua). Las
- * entregas de hoy cuentan como futuras; los pedidos sin fecha van al final.
- */
-function ordenarPorEntrega(lista) {
-  const hoy = hoyISO();
-
-  return [...lista].sort((a, b) => {
-    const fechaA = String(a.fechaEntrega ?? "");
-    const fechaB = String(b.fechaEntrega ?? "");
-
-    if (!fechaA && !fechaB) return Number(b.id ?? 0) - Number(a.id ?? 0);
-    if (!fechaA) return 1;
-    if (!fechaB) return -1;
-
-    const pasadaA = fechaA < hoy;
-    const pasadaB = fechaB < hoy;
-    if (pasadaA !== pasadaB) return pasadaA ? 1 : -1;
-
-    const porFecha = pasadaA
-      ? fechaB.localeCompare(fechaA)
-      : fechaA.localeCompare(fechaB);
-    return porFecha !== 0 ? porFecha : Number(b.id ?? 0) - Number(a.id ?? 0);
-  });
-}
-
 export default function useOrders({ autoLoad = true } = {}) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(autoLoad);
@@ -62,7 +29,7 @@ export default function useOrders({ autoLoad = true } = {}) {
       .listar()
       .then((lista) => {
         if (!activo) return;
-        setOrders(ordenarPorEntrega(lista));
+        setOrders(lista);
         setError("");
       })
       .catch((err) => {
@@ -86,10 +53,8 @@ export default function useOrders({ autoLoad = true } = {}) {
 
   function reemplazar(actualizado) {
     setOrders((prev) =>
-      ordenarPorEntrega(
-        prev.map((pedido) =>
-          String(pedido.id) === String(actualizado.id) ? actualizado : pedido
-        )
+      prev.map((pedido) =>
+        String(pedido.id) === String(actualizado.id) ? actualizado : pedido
       )
     );
   }
@@ -98,7 +63,7 @@ export default function useOrders({ autoLoad = true } = {}) {
     setSubmitting(true);
     try {
       const creado = await orderService.crear(datos);
-      setOrders((prev) => ordenarPorEntrega([creado, ...prev]));
+      setOrders((prev) => [creado, ...prev]);
       return creado;
     } finally {
       setSubmitting(false);
@@ -167,10 +132,10 @@ export default function useOrders({ autoLoad = true } = {}) {
     }
   }
 
-  async function rejectPayment(id, motivo, monto) {
+  async function devolverComprobante(id, motivo) {
     setPaymentSavingId(id);
     try {
-      const pedido = await orderService.rechazarComprobante(id, motivo, monto);
+      const pedido = await orderService.devolverComprobante(id, motivo);
       reemplazar(pedido);
       return pedido;
     } finally {
@@ -208,7 +173,7 @@ export default function useOrders({ autoLoad = true } = {}) {
     rejectOrder,
     uploadPayment,
     approvePayment,
-    rejectPayment,
+    devolverComprobante,
     reprogramOrder,
   };
 }

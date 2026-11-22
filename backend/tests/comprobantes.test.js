@@ -1,13 +1,16 @@
 // tests/comprobantes.test.js
-// Pruebas de integración de los comprobantes de pago: cupo de activos, subida y
-// borrado por el cliente dueño, aprobación con monto verificado, advertencia por
-// sobrepago, rechazo con motivo y bloqueo del paso a preparación con saldo.
+// Pruebas de integración de los comprobantes de pago: cupo de pendientes,
+// subida y borrado por el cliente dueño, aprobación parcial, devolución con
+// motivo y bloqueo del paso a preparación con saldo.
 import request from 'supertest';
 import app from '../src/app.js';
 
 const ADMIN = { correo: 'admin@chocoberry.com', contrasena: 'Admin123!' };
 const CLAVE_PRUEBA = 'Prueba123!';
 const COMPROBANTE = Buffer.from('89504e470d0a1a0a', 'hex');
+
+const redondear2 = (valor) =>
+  Math.round((Number(valor) + Number.EPSILON) * 100) / 100;
 
 describe('Módulo de comprobantes de pago', () => {
   let tokenAdmin;
@@ -21,17 +24,31 @@ describe('Módulo de comprobantes de pago', () => {
   let municipio;
   let color;
 
-  let pedidoId;
-  let total;
-  let comprobanteInicialId;
+  let pedidoDetalleId;
+  let totalDetalle;
+  let comprobanteDetalleId;
+
+  let pedidoAdminId;
+  let totalAdmin;
+
+  let pedidoCupoId;
+  let totalCupo;
+  let comprobanteCupoId;
   let subidoAId;
   let subidoBId;
   let subidoCId;
 
+  let pedidoParcialId;
+  let totalParcial;
+  let comprobanteParcialId;
+
+  let pedidoDevolucionId;
+  let totalDevolucion;
+  let comprobanteDevolucionId;
+
   let pedidoSobrepagoId;
+  let totalSobrepago;
   let comprobanteSobrepagoId;
-  let pedidoRechazoId;
-  let comprobanteRechazoId;
 
   const pedidosCreados = [];
   const s = Date.now().toString().slice(-7);
@@ -107,6 +124,18 @@ describe('Módulo de comprobantes de pago', () => {
     return auth(request(app).get(`/api/pedidos/${id}`), token);
   }
 
+  async function aprobar(id, monto) {
+    return auth(
+      request(app).patch(`/api/comprobantes/${id}/aprobar`).send({ monto })
+    );
+  }
+
+  async function devolver(id, motivo) {
+    return auth(
+      request(app).patch(`/api/comprobantes/${id}/devolver`).send({ motivo })
+    );
+  }
+
   beforeAll(async () => {
     const login = await request(app).post('/api/auth/login').send(ADMIN);
     tokenAdmin = login.body?.data?.token;
@@ -141,18 +170,34 @@ describe('Módulo de comprobantes de pago', () => {
       municipios.body.data[0];
     color = colores.body.data[0];
 
-    const pedido = await crearPedido(clienteId);
-    pedidoId = pedido.id;
-    total = pedido.total;
-    comprobanteInicialId = pedido.comprobantes[0].id;
+    const pedidoDetalle = await crearPedido(clienteId);
+    pedidoDetalleId = pedidoDetalle.id;
+    totalDetalle = pedidoDetalle.total;
+    comprobanteDetalleId = pedidoDetalle.comprobantes[0].id;
+
+    const pedidoAdmin = await crearPedido(clienteId);
+    pedidoAdminId = pedidoAdmin.id;
+    totalAdmin = pedidoAdmin.total;
+
+    const pedidoCupo = await crearPedido(clienteId);
+    pedidoCupoId = pedidoCupo.id;
+    totalCupo = pedidoCupo.total;
+    comprobanteCupoId = pedidoCupo.comprobantes[0].id;
+
+    const pedidoParcial = await crearPedido(clienteId);
+    pedidoParcialId = pedidoParcial.id;
+    totalParcial = pedidoParcial.total;
+    comprobanteParcialId = pedidoParcial.comprobantes[0].id;
+
+    const pedidoDevolucion = await crearPedido(clienteId);
+    pedidoDevolucionId = pedidoDevolucion.id;
+    totalDevolucion = pedidoDevolucion.total;
+    comprobanteDevolucionId = pedidoDevolucion.comprobantes[0].id;
 
     const pedidoSobrepago = await crearPedido(clienteId);
     pedidoSobrepagoId = pedidoSobrepago.id;
+    totalSobrepago = pedidoSobrepago.total;
     comprobanteSobrepagoId = pedidoSobrepago.comprobantes[0].id;
-
-    const pedidoRechazo = await crearPedido(clienteId);
-    pedidoRechazoId = pedidoRechazo.id;
-    comprobanteRechazoId = pedidoRechazo.comprobantes[0].id;
   });
 
   afterAll(async () => {
@@ -168,7 +213,7 @@ describe('Módulo de comprobantes de pago', () => {
 
   it('POST sin token devuelve 401', async () => {
     const res = await request(app)
-      .post(`/api/pedidos/${pedidoId}/comprobantes`)
+      .post(`/api/pedidos/${pedidoDetalleId}/comprobantes`)
       .attach('comprobante', COMPROBANTE, {
         filename: 'comprobante.png',
         contentType: 'image/png',
@@ -176,61 +221,75 @@ describe('Módulo de comprobantes de pago', () => {
     expect(res.status).toBe(401);
   });
 
-  it('el detalle expone comprobantes, total pagado, saldo y cupo', async () => {
-    const res = await detalle(pedidoId);
+  it('el detalle expone comprobantes, total aprobado, saldo y cupo', async () => {
+    const res = await detalle(pedidoDetalleId);
 
     expect(res.status).toBe(200);
     expect(res.body.data.comprobantes).toHaveLength(1);
     expect(res.body.data.comprobantes[0]).toEqual(
       expect.objectContaining({
-        id: comprobanteInicialId,
+        id: comprobanteDetalleId,
         monto: null,
         estado: expect.objectContaining({ nombre: 'Pendiente' }),
       })
     );
     expect(res.body.data.totalPagado).toBe(0);
-    expect(res.body.data.saldo).toBe(total);
+    expect(res.body.data.saldo).toBe(totalDetalle);
     expect(res.body.data.puedeSubirComprobante).toBe(true);
   });
 
   it('un cliente ajeno no puede subir comprobantes (404)', async () => {
-    const res = await subirComprobante(pedidoId, tokenOtroCliente);
+    const res = await subirComprobante(pedidoDetalleId, tokenOtroCliente);
     expect(res.status).toBe(404);
   });
 
   it('el admin sube un comprobante y queda aprobado por el saldo', async () => {
-    const pedido = await crearPedido(clienteId);
-    const res = await subirComprobante(pedido.id, tokenAdmin);
+    const res = await subirComprobante(pedidoAdminId, tokenAdmin);
 
     expect(res.status).toBe(201);
     expect(res.body.data.saldo).toBe(0);
-    expect(res.body.data.totalPagado).toBe(pedido.total);
+    expect(res.body.data.totalPagado).toBe(totalAdmin);
     expect(res.body.data.puedeSubirComprobante).toBe(false);
 
     const comprobante = res.body.data.comprobantes.at(-1);
     expect(comprobante.estado.nombre).toBe('Aprobado');
-    expect(comprobante.monto).toBe(pedido.total);
+    expect(comprobante.monto).toBe(totalAdmin);
   });
 
   it('subir sin archivo devuelve 422', async () => {
-    const res = await subirComprobante(pedidoId, tokenCliente, false);
+    const res = await subirComprobante(pedidoDetalleId, tokenCliente, false);
     expect(res.status).toBe(422);
   });
 
-  it('permite hasta 3 comprobantes activos y después responde 409', async () => {
-    const primero = await subirComprobante(pedidoId);
+  it('el cupo cuenta solo pendientes: aprobar uno libera espacio', async () => {
+    const primero = await subirComprobante(pedidoCupoId);
     expect(primero.status).toBe(201);
     expect(primero.body.data.comprobantes).toHaveLength(2);
     subidoAId = primero.body.data.comprobantes.at(-1).id;
 
-    const segundo = await subirComprobante(pedidoId);
+    const segundo = await subirComprobante(pedidoCupoId);
     expect(segundo.status).toBe(201);
     expect(segundo.body.data.comprobantes).toHaveLength(3);
     expect(segundo.body.data.puedeSubirComprobante).toBe(false);
     subidoBId = segundo.body.data.comprobantes.at(-1).id;
 
-    const tercero = await subirComprobante(pedidoId);
+    const tercero = await subirComprobante(pedidoCupoId);
     expect(tercero.status).toBe(409);
+
+    const parcial = redondear2(totalCupo / 4);
+    const aprobado = await aprobar(comprobanteCupoId, parcial);
+    expect(aprobado.status).toBe(200);
+    expect(aprobado.body.data.pedido.totalPagado).toBe(parcial);
+    expect(aprobado.body.data.pedido.saldo).toBeCloseTo(totalCupo - parcial, 2);
+    expect(aprobado.body.data.pedido.puedeSubirComprobante).toBe(true);
+
+    const cuarto = await subirComprobante(pedidoCupoId);
+    expect(cuarto.status).toBe(201);
+    expect(cuarto.body.data.comprobantes).toHaveLength(4);
+    subidoCId = cuarto.body.data.comprobantes.at(-1).id;
+
+    const quinto = await subirComprobante(pedidoCupoId);
+    expect(quinto.status).toBe(409);
   });
 
   it('el cliente elimina sus comprobantes Pendientes', async () => {
@@ -240,237 +299,121 @@ describe('Módulo de comprobantes de pago', () => {
     );
 
     expect(res.status).toBe(200);
-    expect(res.body.data.comprobantes).toHaveLength(2);
     expect(res.body.data.comprobantes.map((c) => c.id)).not.toContain(subidoAId);
   });
 
-  it('un cliente no puede aprobar ni rechazar comprobantes (403)', async () => {
-    const aprobar = await auth(
+  it('un cliente no puede aprobar ni devolver comprobantes (403)', async () => {
+    const aprobarRes = await auth(
       request(app)
-        .patch(`/api/comprobantes/${comprobanteInicialId}/aprobar`)
+        .patch(`/api/comprobantes/${comprobanteDevolucionId}/aprobar`)
         .send({ monto: 1 }),
       tokenCliente
     );
-    expect(aprobar.status).toBe(403);
+    expect(aprobarRes.status).toBe(403);
 
-    const rechazar = await auth(
+    const devolverRes = await auth(
       request(app)
-        .patch(`/api/comprobantes/${comprobanteInicialId}/rechazar`)
-        .send({ motivo: 'Motivo inválido.', monto: 0 }),
+        .patch(`/api/comprobantes/${comprobanteDevolucionId}/devolver`)
+        .send({ motivo: 'Motivo inválido.' }),
       tokenCliente
     );
-    expect(rechazar.status).toBe(403);
+    expect(devolverRes.status).toBe(403);
   });
 
-  it('no permite aprobar un abono parcial', async () => {
-    const parcial = Math.round((total / 4) * 100) / 100;
-    const res = await auth(
-      request(app)
-        .patch(`/api/comprobantes/${comprobanteInicialId}/aprobar`)
-        .send({ monto: parcial })
+  it('devolver exige motivo, no cuenta para el total ni ocupa cupo', async () => {
+    const sinMotivo = await devolver(comprobanteDevolucionId, '');
+    expect(sinMotivo.status).toBe(422);
+
+    const res = await devolver(
+      comprobanteDevolucionId,
+      'La transferencia no coincide con el pedido.'
     );
-
-    expect(res.status).toBe(422);
-    expect(res.body.message).toMatch(/saldo pendiente/i);
-
-    const actual = await detalle(pedidoId);
-    expect(actual.body.data.totalPagado).toBe(0);
-    expect(actual.body.data.saldo).toBeCloseTo(total, 2);
-  });
-
-  it('rechazar con monto parcial reduce el saldo y conserva el motivo', async () => {
-    const parcial = Math.round((total / 4) * 100) / 100;
-    const res = await auth(
-      request(app)
-        .patch(`/api/comprobantes/${comprobanteInicialId}/rechazar`)
-        .send({
-          motivo: 'La transferencia no cubre el total del pedido.',
-          monto: parcial,
-        })
-    );
-
     expect(res.status).toBe(200);
-    expect(res.body.data.estado.nombre).toBe('Pendiente');
-    expect(res.body.data.totalPagado).toBe(parcial);
-    expect(res.body.data.saldo).toBeCloseTo(total - parcial, 2);
+    expect(res.body.data.totalPagado).toBe(0);
+    expect(res.body.data.saldo).toBe(totalDevolucion);
+    expect(res.body.data.puedeSubirComprobante).toBe(true);
 
     const comprobante = res.body.data.comprobantes.find(
-      (c) => c.id === comprobanteInicialId
+      (c) => c.id === comprobanteDevolucionId
     );
-    expect(comprobante.estado.nombre).toBe('Rechazado');
-    expect(comprobante.monto).toBe(parcial);
-    expect(comprobante.motivoRechazo).toBe(
-      'La transferencia no cubre el total del pedido.'
+    expect(comprobante.estado.nombre).toBe('Devuelto');
+    expect(comprobante.motivoDevolucion).toBe(
+      'La transferencia no coincide con el pedido.'
     );
+
+    const reabrir = await aprobar(comprobanteDevolucionId, 1);
+    expect(reabrir.status).toBe(409);
+
+    const nueva = await subirComprobante(pedidoDevolucionId);
+    expect(nueva.status).toBe(201);
+    expect(nueva.body.data.puedeSubirComprobante).toBe(true);
   });
 
-  it('no permite rechazar el monto que completa el saldo', async () => {
-    const actual = await detalle(pedidoId);
-    const restante = actual.body.data.saldo;
+  it('permite varios aprobados parciales y bloquea preparación hasta completar', async () => {
+    const porcion = redondear2(totalParcial / 5);
 
-    const igual = await auth(
-      request(app)
-        .patch(`/api/comprobantes/${subidoBId}/rechazar`)
-        .send({ motivo: 'No debe completarse con rechazo.', monto: restante })
+    const primero = await aprobar(comprobanteParcialId, porcion);
+    expect(primero.status).toBe(200);
+    expect(primero.body.data.pedido.totalPagado).toBe(porcion);
+    expect(primero.body.data.pedido.saldo).toBeCloseTo(
+      totalParcial - porcion,
+      2
     );
-    expect(igual.status).toBe(422);
-    expect(igual.body.message).toMatch(/usa aprobar/i);
 
-    const mayor = await auth(
+    const bloqueado = await auth(
       request(app)
-        .patch(`/api/comprobantes/${subidoBId}/rechazar`)
-        .send({
-          motivo: 'No debe superar el saldo.',
-          monto: restante + 1000,
-        })
-    );
-    expect(mayor.status).toBe(422);
-  });
-
-  it('con saldo pendiente no se puede pasar a En preparación (409)', async () => {
-    const res = await auth(
-      request(app)
-        .patch(`/api/pedidos/${pedidoId}/estado`)
+        .patch(`/api/pedidos/${pedidoParcialId}/estado`)
         .send({ estado: 'en_preparacion' })
     );
-    expect(res.status).toBe(409);
-  });
+    expect(bloqueado.status).toBe(409);
 
-  it('al completar el pago el paso a En preparación sigue siendo manual', async () => {
-    // Dejamos un comprobante pendiente adicional para comprobar que, con
-    // saldo cero, todavía se puede rechazar con valor 0.
-    const extra = await subirComprobante(pedidoId);
-    expect(extra.status).toBe(201);
-    subidoCId = extra.body.data.comprobantes.at(-1).id;
+    let pagado = porcion;
 
-    const actual = await detalle(pedidoId);
-    const restante = actual.body.data.saldo;
+    for (let indice = 0; indice < 3; indice += 1) {
+      const subida = await subirComprobante(pedidoParcialId);
+      expect(subida.status).toBe(201);
+      const comprobanteId = subida.body.data.comprobantes.at(-1).id;
 
-    const pago = await auth(
+      const aprobado = await aprobar(comprobanteId, porcion);
+      expect(aprobado.status).toBe(200);
+      pagado = redondear2(pagado + porcion);
+      expect(aprobado.body.data.pedido.totalPagado).toBe(pagado);
+    }
+
+    const restante = redondear2(totalParcial - pagado);
+    expect(restante).toBeGreaterThan(0);
+
+    const ultimaSubida = await subirComprobante(pedidoParcialId);
+    expect(ultimaSubida.status).toBe(201);
+    const ultimoComprobanteId = ultimaSubida.body.data.comprobantes.at(-1).id;
+
+    const completo = await aprobar(ultimoComprobanteId, restante);
+    expect(completo.status).toBe(200);
+    expect(completo.body.data.pedido.totalPagado).toBe(totalParcial);
+    expect(completo.body.data.pedido.saldo).toBe(0);
+    expect(completo.body.data.pedido.estado.nombre).toBe('Pendiente');
+
+    const sinSaldo = await subirComprobante(pedidoParcialId);
+    expect(sinSaldo.status).toBe(409);
+
+    const preparacion = await auth(
       request(app)
-        .patch(`/api/comprobantes/${subidoBId}/aprobar`)
-        .send({ monto: restante })
-    );
-    expect(pago.status).toBe(200);
-    expect(pago.body.data.pedido.saldo).toBe(0);
-    expect(pago.body.data.pedido.estado.nombre).toBe('Pendiente');
-
-    const rechazo = await auth(
-      request(app)
-        .patch(`/api/comprobantes/${subidoCId}/rechazar`)
-        .send({ motivo: 'Comprobante duplicado.', monto: 0 })
-    );
-    expect(rechazo.status).toBe(200);
-    expect(rechazo.body.data.totalPagado).toBe(total);
-    expect(rechazo.body.data.saldo).toBe(0);
-    expect(
-      rechazo.body.data.comprobantes.find((c) => c.id === subidoCId).estado.nombre
-    ).toBe('Rechazado');
-
-    const res = await auth(
-      request(app)
-        .patch(`/api/pedidos/${pedidoId}/estado`)
+        .patch(`/api/pedidos/${pedidoParcialId}/estado`)
         .send({ estado: 'en_preparacion' })
     );
-    expect(res.status).toBe(200);
-    expect(res.body.data.estado.nombre).toBe('En preparación');
-  });
+    expect(preparacion.status).toBe(200);
+    expect(preparacion.body.data.estado.nombre).toBe('En preparación');
 
-  it('ya no permite subir comprobantes cuando el pedido dejó de estar Pendiente', async () => {
-    const res = await subirComprobante(pedidoId);
-    expect(res.status).toBe(409);
+    const yaNoPendiente = await subirComprobante(pedidoParcialId);
+    expect(yaNoPendiente.status).toBe(409);
   });
 
   it('no permite aprobar un monto mayor al saldo', async () => {
-    const pedido = await detalle(pedidoSobrepagoId);
-    const res = await auth(
-      request(app)
-        .patch(`/api/comprobantes/${comprobanteSobrepagoId}/aprobar`)
-        .send({ monto: pedido.body.data.saldo + 1000 })
-    );
+    const res = await aprobar(comprobanteSobrepagoId, totalSobrepago + 1000);
 
     expect(res.status).toBe(422);
     const actual = await detalle(pedidoSobrepagoId);
     expect(actual.body.data.totalPagado).toBe(0);
-    expect(actual.body.data.saldo).toBeCloseTo(pedido.body.data.saldo, 2);
-  });
-
-  it('permite rechazar con valor 0 sin alterar el saldo', async () => {
-    const res = await auth(
-      request(app)
-        .patch(`/api/comprobantes/${comprobanteSobrepagoId}/rechazar`)
-        .send({ motivo: 'No se recibió dinero.', monto: 0 })
-    );
-
-    expect(res.status).toBe(200);
-    expect(res.body.data.totalPagado).toBe(0);
-    expect(res.body.data.saldo).toBeCloseTo(total, 2);
-    const comprobante = res.body.data.comprobantes.find(
-      (c) => c.id === comprobanteSobrepagoId
-    );
-    expect(comprobante.estado.nombre).toBe('Rechazado');
-    expect(comprobante.monto).toBe(0);
-  });
-
-  it('rechaza sin motivo o sin monto (422) y luego guarda motivo y monto', async () => {
-    const sinMotivo = await auth(
-      request(app).patch(`/api/comprobantes/${comprobanteRechazoId}/rechazar`).send({})
-    );
-    expect(sinMotivo.status).toBe(422);
-
-    const sinMonto = await auth(
-      request(app)
-        .patch(`/api/comprobantes/${comprobanteRechazoId}/rechazar`)
-        .send({ motivo: 'El monto no coincide con la transferencia.' })
-    );
-    expect(sinMonto.status).toBe(422);
-
-    const parcial = Math.round((total / 5) * 100) / 100;
-    const res = await auth(
-      request(app)
-        .patch(`/api/comprobantes/${comprobanteRechazoId}/rechazar`)
-        .send({
-          motivo: 'El monto no coincide con la transferencia.',
-          monto: parcial,
-        })
-    );
-
-    expect(res.status).toBe(200);
-    expect(res.body.data.estado.nombre).toBe('Pendiente');
-    expect(res.body.data.totalPagado).toBe(parcial);
-    expect(res.body.data.saldo).toBeCloseTo(total - parcial, 2);
-    const comprobante = res.body.data.comprobantes.find(
-      (c) => c.id === comprobanteRechazoId
-    );
-    expect(comprobante.estado.nombre).toBe('Rechazado');
-    expect(comprobante.monto).toBe(parcial);
-    expect(comprobante.motivoRechazo).toBe(
-      'El monto no coincide con la transferencia.'
-    );
-
-    const propio = await auth(
-      request(app).get(`/api/pedidos/mios/${pedidoRechazoId}`),
-      tokenCliente
-    );
-    const comprobantePropio = propio.body.data.comprobantes.find(
-      (c) => c.id === comprobanteRechazoId
-    );
-    expect(comprobantePropio.motivoRechazo).toBe(
-      'El monto no coincide con la transferencia.'
-    );
-    expect(comprobantePropio.monto).toBe(parcial);
-  });
-
-  it('un comprobante Rechazado no cuenta para el cupo ni se puede volver a aprobar', async () => {
-    const subida = await subirComprobante(pedidoRechazoId);
-    expect(subida.status).toBe(201);
-    expect(subida.body.data.puedeSubirComprobante).toBe(true);
-
-    const reabrir = await auth(
-      request(app)
-        .patch(`/api/comprobantes/${comprobanteRechazoId}/aprobar`)
-        .send({ monto: 1 })
-    );
-    expect(reabrir.status).toBe(409);
+    expect(actual.body.data.saldo).toBeCloseTo(totalSobrepago, 2);
   });
 });

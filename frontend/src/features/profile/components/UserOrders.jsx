@@ -24,7 +24,13 @@ const STATUS_STYLES = {
 const RECEIPT_STATUS_STYLES = {
   Pendiente: { bg: '#F59E0B1F', text: '#B45309' },
   Aprobado: { bg: '#E7F7EE', text: '#1B5E3F' },
-  Rechazado: { bg: '#DC26261F', text: '#B91C1C' },
+  Devuelto: { bg: '#FFF1F2', text: '#9F1239' },
+};
+
+const RECEIPT_STATUS_LABELS = {
+  Pendiente: 'Pendiente de revisión',
+  Aprobado: 'Aprobado',
+  Devuelto: 'Devuelto',
 };
 
 const MAX_IMAGEN_BYTES = 5 * 1024 * 1024;
@@ -453,7 +459,8 @@ const UserOrders = () => {
                         padding: '3px 9px',
                         borderRadius: '999px',
                       }}>
-                        {comprobante.estado}
+                        {RECEIPT_STATUS_LABELS[comprobante.estado] ??
+                          comprobante.estado}
                       </span>
                       <span style={{ fontSize: '11px', color: colors.textDate }}>
                         {formatFecha(comprobante.fecha)}
@@ -462,9 +469,9 @@ const UserOrders = () => {
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', fontSize: '13px' }}>
                       <span style={{ color: colors.textMuted }}>
-                        {comprobante.estado === 'Rechazado'
-                          ? 'Valor entregado'
-                          : 'Monto verificado'}
+                        {comprobante.estado === 'Aprobado'
+                          ? 'Monto aprobado'
+                          : 'Monto'}
                       </span>
                       <strong style={{ color: colors.textMain }}>
                         {comprobante.monto === null
@@ -473,15 +480,15 @@ const UserOrders = () => {
                       </strong>
                     </div>
 
-                    {comprobante.motivoRechazo && (
+                    {comprobante.motivoDevolucion && (
                       <div style={{
                         marginTop: '6px',
                         fontSize: '12px',
                         lineHeight: 1.4,
-                        color: '#B91C1C',
+                        color: '#9F1239',
                       }}>
-                        <strong>Motivo del rechazo:</strong>{' '}
-                        {comprobante.motivoRechazo}
+                        <strong>Motivo de la devolución:</strong>{' '}
+                        {comprobante.motivoDevolucion}
                       </div>
                     )}
 

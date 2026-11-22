@@ -1,0 +1,248 @@
+/* src/shared/components/AdminNavbar.css */
+
+.admin-navbar {
+  flex-shrink: 0;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 28px;
+  background: var(--blanco);
+  border-bottom: 1px solid var(--borde);
+  font-family: "Poppins", sans-serif;
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+/* ---------- Izquierda: título ---------- */
+.admin-navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.admin-navbar-menu-btn {
+  display: none;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: var(--secundario-3);
+  color: var(--texto);
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.admin-navbar-menu-btn:hover {
+  background: var(--primario);
+  border-color: var(--primario);
+  color: #ffffff;
+}
+
+.admin-navbar-title {
+  position: relative;
+  padding-left: 14px;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--texto);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Detalle sutil: barra de acento a la izquierda del título */
+.admin-navbar-title::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 4px;
+  height: 20px;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  background: var(--primario);
+}
+
+/* ---------- Derecha: perfil · cerrar sesión · modo ---------- */
+.admin-navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+/* Perfil (sin caja, limpio) */
+.admin-navbar-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.admin-navbar-avatar {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--secundario-2);
+  border: 1px solid var(--secundario-1);
+  color: var(--primario);
+  font-size: 24px;
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+.admin-navbar-profile-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+  min-width: 0;
+}
+
+.admin-navbar-name {
+  max-width: 200px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--texto);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-navbar-role {
+  max-width: 200px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--texto-muted);
+  text-transform: capitalize;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-navbar-divider {
+  width: 1px;
+  height: 28px;
+  flex-shrink: 0;
+  background: var(--borde);
+}
+
+/* Cerrar sesión */
+.admin-navbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 18px;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  background: var(--blanco);
+  color: var(--texto);
+  font-family: "Poppins", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.admin-navbar-btn i {
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+.admin-navbar-btn:hover {
+  background: var(--secundario-2);
+  border-color: var(--primario-claro);
+  color: var(--primario-oscuro);
+}
+
+/* Cambio de modo (botón circular) */
+.admin-navbar-theme-btn {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--borde);
+  border-radius: 50%;
+  background: var(--secundario-3);
+  color: var(--texto);
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.admin-navbar-theme-btn:hover {
+  background: var(--primario);
+  border-color: var(--primario);
+  color: #ffffff;
+}
+
+.admin-navbar-btn:focus-visible,
+.admin-navbar-theme-btn:focus-visible,
+.admin-navbar-menu-btn:focus-visible {
+  outline: 2px solid var(--primario-claro);
+  outline-offset: 2px;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 991px) {
+  .admin-navbar {
+    height: 64px;
+    gap: 10px;
+    padding: 0 16px;
+  }
+
+  .admin-navbar-menu-btn {
+    display: inline-flex;
+  }
+
+  .admin-navbar-title {
+    font-size: 15px;
+  }
+
+  .admin-navbar-right {
+    gap: 10px;
+  }
+
+  .admin-navbar-name,
+  .admin-navbar-role {
+    max-width: 140px;
+  }
+}
+
+@media (max-width: 767px) {
+  .admin-navbar-profile-text,
+  .admin-navbar-divider {
+    display: none;
+  }
+
+  .admin-navbar-avatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  /* Cerrar sesión pasa a botón circular solo con icono */
+  .admin-navbar-btn {
+    width: 40px;
+    padding: 0;
+  }
+
+  .admin-navbar-btn-label {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-navbar-title {
+    display: none;
+  }
+}

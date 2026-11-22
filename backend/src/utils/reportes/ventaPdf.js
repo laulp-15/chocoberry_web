@@ -298,7 +298,7 @@ export async function generarPdfVenta(venta) {
       'right'
     ),
     enlace('Ver comprobante', comprobante.url),
-    celda(comprobante.motivoRechazo || '—'),
+    celda(comprobante.motivoDevolucion || '—'),
   ]);
 
   const contenido = [
@@ -410,7 +410,7 @@ export async function generarPdfVenta(venta) {
     contenido.push(barraSeccion('Comprobantes de pago'));
     contenido.push(
       tablaCuadricula({
-        headers: ['#', 'Fecha', 'Estado', 'Monto', 'Archivo', 'Motivo de rechazo'],
+        headers: ['#', 'Fecha', 'Estado', 'Monto', 'Archivo', 'Motivo de devolución'],
         widths: ['auto', 'auto', 'auto', 'auto', '*', '*'],
         aligns: ['center', 'left', 'left', 'right', 'left', 'left'],
         rows: filasComprobantes,

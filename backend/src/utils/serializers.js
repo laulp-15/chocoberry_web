@@ -195,7 +195,7 @@ export function serializarComprobante(row) {
     monto:
       row.monto === null || row.monto === undefined ? null : Number(row.monto),
     fecha: row.fecha,
-    motivoRechazo: row.motivo_rechazo ?? null,
+    motivoDevolucion: row.motivo_devolucion ?? null,
     estado: { id: row.id_estado, nombre: row.estado_comprobante },
   };
 }
@@ -218,14 +218,12 @@ export function serializarPedido(row, lineas = [], comprobantes = []) {
 
   const totalPagado = redondear2(
     comprobantesSerializados
-      .filter((comprobante) =>
-        ['Aprobado', 'Rechazado'].includes(comprobante.estado.nombre)
-      )
+      .filter((comprobante) => comprobante.estado.nombre === 'Aprobado')
       .reduce((acumulado, comprobante) => acumulado + Number(comprobante.monto ?? 0), 0)
   );
-  const saldo = redondear2(total - totalPagado);
-  const comprobantesActivos = comprobantesSerializados.filter((comprobante) =>
-    ['Pendiente', 'Aprobado'].includes(comprobante.estado.nombre)
+  const saldo = Math.max(0, redondear2(total - totalPagado));
+  const comprobantesPendientes = comprobantesSerializados.filter(
+    (comprobante) => comprobante.estado.nombre === 'Pendiente'
   ).length;
 
   return {
@@ -264,6 +262,6 @@ export function serializarPedido(row, lineas = [], comprobantes = []) {
     totalPagado,
     saldo,
     puedeSubirComprobante:
-      row.estado === 'Pendiente' && saldo > 0 && comprobantesActivos < 3,
+      row.estado === 'Pendiente' && saldo > 0 && comprobantesPendientes < 3,
   };
 }
