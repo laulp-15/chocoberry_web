@@ -42,7 +42,7 @@ function mapComprobante(comprobante) {
         ? null
         : Number(comprobante.monto),
     fecha: comprobante.fecha,
-    motivoRechazo: comprobante.motivoRechazo ?? "",
+    motivoDevolucion: comprobante.motivoDevolucion ?? "",
     estadoId: comprobante.estado?.id ?? null,
     estado: comprobante.estado?.nombre ?? "",
   };

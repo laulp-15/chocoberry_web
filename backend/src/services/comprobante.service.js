@@ -1,6 +1,6 @@
 // src/services/comprobante.service.js
-// Reglas de negocio de los comprobantes de pago: cupo de 3 activos, saldo,
-// aprobación con monto verificado, rechazo con motivo y borrado de pendientes.
+// Reglas de negocio de los comprobantes de pago: cupo de 3 pendientes, saldo,
+// aprobación con monto verificado, devolución con motivo y borrado de pendientes.
 import { withTransaction } from '../config/db.js';
 import {
   AppError,
@@ -18,7 +18,7 @@ import { redondear2 } from '../utils/number.js';
 import * as emailService from './emailService.js';
 import * as pedidoService from './pedido.service.js';
 
-const MAX_COMPROBANTES_ACTIVOS = 3;
+const MAX_COMPROBANTES_PENDIENTES = 3;
 const ESTADO_PENDIENTE = 'Pendiente';
 const ROL_CLIENTE = 'Cliente';
 
@@ -38,7 +38,10 @@ async function resolverEstado(nombre) {
 }
 
 function calcularSaldo(resumen) {
-  return redondear2(Number(resumen?.total ?? 0) - Number(resumen?.pagado ?? 0));
+  return Math.max(
+    0,
+    redondear2(Number(resumen?.total ?? 0) - Number(resumen?.pagado ?? 0))
+  );
 }
 
 function formatearMonto(valor) {
@@ -50,7 +53,7 @@ function formatearMonto(valor) {
  * propios pedidos y queda Pendiente de aprobación; el admin/staff puede subirlo
  * a cualquier pedido y queda Aprobado automáticamente por el saldo pendiente.
  * En ambos casos el pedido debe seguir Pendiente, tener saldo y menos de 3
- * comprobantes activos (Pendientes + Aprobados; los rechazados no cuentan).
+ * comprobantes Pendientes de revisión (los aprobados y devueltos no ocupan cupo).
  */
 export async function agregar(idPedido, archivo, usuario) {
   if (!archivo) {
@@ -89,9 +92,9 @@ export async function agregar(idPedido, archivo, usuario) {
         throw new ConflictError('El pedido no tiene saldo pendiente por pagar.');
       }
 
-      if (Number(resumen?.activos ?? 0) >= MAX_COMPROBANTES_ACTIVOS) {
+      if (Number(resumen?.pendientes ?? 0) >= MAX_COMPROBANTES_PENDIENTES) {
         throw new ConflictError(
-          `Solo se permiten ${MAX_COMPROBANTES_ACTIVOS} comprobantes activos por pedido.`
+          `Solo se permiten ${MAX_COMPROBANTES_PENDIENTES} comprobantes pendientes de revisión por pedido.`
         );
       }
 
@@ -113,7 +116,7 @@ export async function agregar(idPedido, archivo, usuario) {
 
 /**
  * Elimina un comprobante Pendiente del propio cliente. Los aprobados y
- * rechazados se conservan como historial. También borra el archivo físico.
+ * devueltos se conservan como historial. También borra el archivo físico.
  */
 export async function eliminar(id, usuario) {
   const estadoPendiente = await resolverEstado(ESTADO_PENDIENTE);
@@ -153,7 +156,7 @@ export async function eliminar(id, usuario) {
 
 /**
  * Aprueba un comprobante Pendiente guardando el monto realmente transferido.
- * Solo se permite cuando el monto coincide exactamente con el saldo pendiente.
+ * El monto puede ser parcial, pero no puede superar el saldo pendiente.
  * El pedido NO cambia de estado: el paso a preparación es manual y se valida
  * en pedido.service.
  */
@@ -197,14 +200,14 @@ export async function aprobar(id, monto) {
       );
     }
 
-    if (montoVerificado !== saldoAntes) {
+    if (montoVerificado > saldoAntes) {
       const saldoFormateado = formatearMonto(saldoAntes);
       throw new UnprocessableEntityError(
-        `El monto debe coincidir exactamente con el saldo pendiente (${saldoFormateado}).`,
+        `El monto verificado no puede superar el saldo pendiente (${saldoFormateado}).`,
         [
           {
             campo: 'monto',
-            mensaje: `Saldo pendiente exacto: ${saldoFormateado}.`,
+            mensaje: `Saldo pendiente: ${saldoFormateado}.`,
           },
         ]
       );
@@ -230,42 +233,46 @@ export async function aprobar(id, monto) {
     return {
       idPedido: comprobante.id_pedido,
       advertencia: null,
+      monto: montoVerificado,
       saldo: calcularSaldo(resumenDespues),
     };
   });
 
   const pedido = await pedidoService.obtenerPedidoCompleto(resultado.idPedido);
-  void emailService.enviarComprobanteAprobado({ pedido });
+  void emailService.enviarComprobanteAprobado({
+    pedido,
+    monto: resultado.monto,
+    saldo: resultado.saldo,
+  });
 
   return resultado;
 }
 
 /**
- * Rechaza un comprobante Pendiente con un motivo y el valor realmente
- * entregado. Ese valor reduce el saldo, pero no puede completarlo: el pago
- * final debe aprobarse. Si el pedido ya no tiene saldo, solo se admite 0 para
- * poder descartar comprobantes duplicados.
+ * Devuelve un comprobante Pendiente con un motivo obligatorio. El comprobante
+ * queda en el historial, pero no cuenta para el total aprobado ni para el cupo.
  */
-export async function rechazar(id, motivo, monto) {
+export async function devolver(id, motivo) {
   const motivoLimpio = String(motivo ?? '').trim();
   if (!motivoLimpio) {
-    throw new UnprocessableEntityError('El motivo del rechazo es obligatorio.');
+    throw new UnprocessableEntityError('El motivo de la devolución es obligatorio.');
   }
 
-  if (monto === null || monto === undefined || monto === '') {
-    throw new UnprocessableEntityError('El valor entregado es obligatorio.');
-  }
-
-  const montoEntregado = redondear2(monto);
-  if (!Number.isFinite(montoEntregado) || montoEntregado < 0) {
+  if (motivoLimpio.length < 5) {
     throw new UnprocessableEntityError(
-      'El valor entregado debe ser un número mayor o igual a cero.'
+      'El motivo de la devolución debe tener al menos 5 caracteres.'
     );
   }
 
-  const [estadoPendiente, estadoRechazado] = await Promise.all([
+  if (motivoLimpio.length > 255) {
+    throw new UnprocessableEntityError(
+      'El motivo de la devolución no puede superar los 255 caracteres.'
+    );
+  }
+
+  const [estadoPendiente, estadoDevuelto] = await Promise.all([
     resolverEstado(ESTADO_PENDIENTE),
-    resolverEstado('Rechazado'),
+    resolverEstado('Devuelto'),
   ]);
 
   const resultado = await withTransaction(async (conexion) => {
@@ -279,57 +286,12 @@ export async function rechazar(id, motivo, monto) {
     }
 
     if (comprobante.estado_comprobante !== ESTADO_PENDIENTE) {
-      throw new ConflictError('Solo se pueden rechazar comprobantes Pendientes.');
+      throw new ConflictError('Solo se pueden devolver comprobantes Pendientes.');
     }
 
-    const resumen = await comprobantePagoModel.resumenPago(
-      comprobante.id_pedido,
-      conexion
-    );
-    const saldo = calcularSaldo(resumen);
-
-    if (saldo > 0) {
-      if (montoEntregado === saldo) {
-        throw new UnprocessableEntityError(
-          'El valor entregado completa el saldo pendiente. Usa Aprobar para confirmar el pago.',
-          [
-            {
-              campo: 'monto',
-              mensaje: 'Si el valor completa el saldo, debe aprobarse el comprobante.',
-            },
-          ]
-        );
-      }
-
-      if (montoEntregado > saldo) {
-        throw new UnprocessableEntityError(
-          `El valor entregado no puede superar el saldo pendiente (${formatearMonto(
-            saldo
-          )}).`,
-          [
-            {
-              campo: 'monto',
-              mensaje: `Saldo pendiente: ${formatearMonto(saldo)}.`,
-            },
-          ]
-        );
-      }
-    } else if (montoEntregado !== 0) {
-      throw new UnprocessableEntityError(
-        'El pedido no tiene saldo pendiente; el valor entregado debe ser 0.',
-        [
-          {
-            campo: 'monto',
-            mensaje: 'Con saldo cero, el valor entregado debe ser 0.',
-          },
-        ]
-      );
-    }
-
-    const afectadas = await comprobantePagoModel.rechazar(conexion, id, {
+    const afectadas = await comprobantePagoModel.devolver(conexion, id, {
       motivo: motivoLimpio,
-      monto: montoEntregado,
-      idEstado: estadoRechazado.id,
+      idEstado: estadoDevuelto.id,
       idEstadoPendiente: estadoPendiente.id,
     });
 
@@ -341,10 +303,9 @@ export async function rechazar(id, motivo, monto) {
   });
 
   const pedido = await pedidoService.obtenerPedidoCompleto(resultado.idPedido);
-  void emailService.enviarComprobanteRechazado({
+  void emailService.enviarComprobanteDevuelto({
     pedido,
     motivo: motivoLimpio,
-    monto: montoEntregado,
   });
 
   return resultado;

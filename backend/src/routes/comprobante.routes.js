@@ -9,7 +9,7 @@ import { validar } from '../middlewares/validate.js';
 import { idParamSchema } from '../validators/common.validator.js';
 import {
   aprobarComprobanteSchema,
-  rechazarComprobanteSchema,
+  devolverComprobanteSchema,
 } from '../validators/comprobante.validator.js';
 
 const router = Router();
@@ -35,11 +35,11 @@ router.patch(
 );
 
 router.patch(
-  '/:id/rechazar',
+  '/:id/devolver',
   checkPermiso('Pedidos', 'Cambiar estado'),
   validar(idParamSchema, 'params'),
-  validar(rechazarComprobanteSchema),
-  comprobanteController.rechazar
+  validar(devolverComprobanteSchema),
+  comprobanteController.devolver
 );
 
 export default router;

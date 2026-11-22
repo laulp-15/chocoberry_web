@@ -2,13 +2,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DataTable from "../../../../shared/components/DataTable";
-import OrderStatusBadge from "../../orders/components/OrderStatusBadge";
 import { usePermissions } from "../../../../shared/hooks/usePermissions";
 import useSales from "../hooks/useSales";
 import * as saleService from "../services/saleService";
+import SalesReportModal from "../components/SalesReportModal";
 import { formatDisplayDate } from "../../orders/utils/orderDisplay";
 import { formatPrice } from "../../../../shared/utils/formatPrice";
 import "../../../../shared/css/adminCrud.css";
+import "./SalesListPage.css";
 
 export default function SalesListPage() {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ export default function SalesListPage() {
   const { sales, loading, error, reload } = useSales();
   const [exportandoId, setExportandoId] = useState(null);
   const [exportError, setExportError] = useState("");
+  const [reportOpen, setReportOpen] = useState(false);
 
   const handleDownloadReceipt = async (row) => {
     setExportError("");
@@ -38,13 +40,6 @@ export default function SalesListPage() {
       render: (row) => row.clienteIdentificacion || "—",
     },
     { key: "cliente", label: "Cliente" },
-    {
-      key: "estado",
-      label: "Estado",
-      render: (row) => (
-        <OrderStatusBadge status={row.estado} title="Estado de la venta" />
-      ),
-    },
     {
       key: "fecha",
       label: "Fecha",
@@ -78,12 +73,24 @@ export default function SalesListPage() {
   ];
 
   return (
-    <div className="crud-page">
+    <div className="crud-page sales-list-page">
       <DataTable
         title="Ventas"
         description="Consulta las ventas confirmadas del negocio."
         columns={columns}
         data={sales}
+        leadingActions={
+          canExport ? (
+            <button
+              type="button"
+              className="btn-report-export"
+              onClick={() => setReportOpen(true)}
+            >
+              <i className="fa-solid fa-file-excel" />
+              Exportar reporte
+            </button>
+          ) : undefined
+        }
         searchPlaceholder="Buscar por cliente o N. identificación..."
         emptyMessage={
           loading
@@ -107,6 +114,13 @@ export default function SalesListPage() {
         <p className="crud-error-hint" role="alert">
           <i className="fa-solid fa-triangle-exclamation" /> {exportError}
         </p>
+      )}
+
+      {canExport && reportOpen && (
+        <SalesReportModal
+          open={reportOpen}
+          onClose={() => setReportOpen(false)}
+        />
       )}
     </div>
   );

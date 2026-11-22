@@ -34,3 +34,15 @@ export async function descargarComprobante(id) {
     fallbackName: `venta-${id}.pdf`,
   });
 }
+
+/** GET /ventas/reporte/preview?desde=YYYY-MM-DD&hasta=YYYY-MM-DD */
+export async function obtenerVistaPreviaReporte({ desde, hasta }) {
+  return api.get(`/ventas/reporte/preview${construirQuery({ desde, hasta })}`);
+}
+
+/** GET /ventas/reporte/excel?desde=YYYY-MM-DD&hasta=YYYY-MM-DD */
+export async function descargarReporteVentas({ desde, hasta }) {
+  return api.download(`/ventas/reporte/excel${construirQuery({ desde, hasta })}`, {
+    fallbackName: `reporte-ventas_${desde}_a_${hasta}.xlsx`,
+  });
+}

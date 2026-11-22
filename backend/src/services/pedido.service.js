@@ -490,7 +490,11 @@ export async function crear(datos, usuario, comprobante) {
     });
 
     creado = true;
-    return await obtenerPedidoCompleto(id);
+    const pedido = await obtenerPedidoCompleto(id);
+    if (esCliente) {
+      void emailService.enviarPedidoRecibido({ pedido });
+    }
+    return pedido;
   } catch (error) {
     if (!creado && comprobanteSubido) {
       await borrarImagenComprobante(comprobanteSubido.public_id);
@@ -606,7 +610,10 @@ export async function cambiarEstado(id, nombreEstado, observacionesEntrega) {
   // está completo. Los comprobantes aprobados definen el saldo.
   if (destino === 'En preparación') {
     const resumen = await comprobantePagoModel.resumenPago(id);
-    const saldo = redondear2(Number(resumen?.total ?? 0) - Number(resumen?.pagado ?? 0));
+    const saldo = Math.max(
+      0,
+      redondear2(Number(resumen?.total ?? 0) - Number(resumen?.pagado ?? 0))
+    );
 
     if (saldo > 0) {
       const monto = saldo.toLocaleString('es-CO', { maximumFractionDigits: 2 });

@@ -70,7 +70,7 @@ La migración solo cambia el default de `resena.estado`; no modifica el estado d
 las reseñas existentes. Las bases nuevas ya incluyen este comportamiento.
 
 Los pedidos ahora pueden tener varios comprobantes de pago, cada uno con su
-propio estado (`Pendiente`, `Aprobado` o `Rechazado`) y su monto registrado. Si
+propio estado (`Pendiente`, `Aprobado` o `Devuelto`) y su monto registrado. Si
 tu base ya estaba creada, ejecuta:
 
 ```bash
@@ -104,6 +104,15 @@ La migración es repetible: agrega `public_id` a `imagenProducto` y
 `comprobantePago`, y `evidencia_public_id` a `pedido`, y amplía las columnas de
 URL a `VARCHAR(500)`. Las bases nuevas creadas desde `chocoberry_bd.sql` ya
 incluyen estos cambios.
+
+El estado de comprobante `Rechazado` se renombró a `Devuelto` y la columna
+`motivo_rechazo` a `motivo_devolucion`. Para actualizar una base existente:
+
+```bash
+mysql -u TU_USUARIO -p chocoberry < ../database/migrations/012_comprobante_devuelto.sql
+```
+
+La migración 012 es repetible y no modifica el rechazo de pedidos.
 
 Después de configurar Cloudinary, migra los archivos históricos de
 `backend/uploads` con:
@@ -491,38 +500,35 @@ Respuesta:
 | Método | Ruta | Descripción | Permiso |
 | --- | --- | --- | --- |
 | DELETE | `/comprobantes/:id` | Elimina un comprobante Pendiente propio | Pedidos · Ver |
-| PATCH | `/comprobantes/:id/aprobar` | Aprueba con `{ monto }` (debe igualar el saldo) | Pedidos · Cambiar estado |
-| PATCH | `/comprobantes/:id/rechazar` | Rechaza con `{ motivo, monto }` (valor entregado) | Pedidos · Cambiar estado |
+| PATCH | `/comprobantes/:id/aprobar` | Aprueba con `{ monto }` (`> 0` y `<= saldo`) | Pedidos · Cambiar estado |
+| PATCH | `/comprobantes/:id/devolver` | Devuelve con `{ motivo }` (5–255 caracteres) | Pedidos · Cambiar estado |
 
 > **Varios comprobantes por pedido:** el cliente debe enviar uno inicial en
 > estado `Pendiente` al crear; admin/staff puede omitirlo. Cualquier usuario con
-> `Pedidos · Crear` puede subir hasta **3 comprobantes activos**
-> (`Pendiente` + `Aprobado`) con `POST /pedidos/:id/comprobantes` (campo
-> `comprobante`, PNG/JPG/WEBP, máx. 5 MB). El cliente solo opera sobre sus
+> `Pedidos · Crear` puede subir hasta **3 comprobantes `Pendiente`** con
+> `POST /pedidos/:id/comprobantes` (campo `comprobante`, PNG/JPG/WEBP, máx.
+> 5 MB). Los comprobantes `Aprobado` y `Devuelto` no ocupan cupo. El pedido debe
+> seguir `Pendiente` y tener saldo pendiente. El cliente solo opera sobre sus
 > pedidos y el comprobante queda `Pendiente`; admin/staff puede hacerlo sobre
 > cualquier pedido y queda `Aprobado` automáticamente por el saldo pendiente. El
 > cliente puede eliminar los suyos mientras sigan `Pendiente`. Un comprobante
-> `Rechazado` no cuenta para el límite y queda como historial. Las imágenes se
-> guardan como `authenticated` en `chocoberry/comprobantes`; la API devuelve una
-> URL firmada temporal en `url` y nunca expone el `public_id`.
+> `Devuelto` no cuenta para el total aprobado ni para el cupo y queda como
+> historial. Las imágenes se guardan como `authenticated` en
+> `chocoberry/comprobantes`; la API devuelve una URL firmada temporal en `url` y
+> nunca expone el `public_id`.
 
-> **Aprobación y saldo:** aprobar exige que el **monto verificado** coincida
-> exactamente con el saldo pendiente; no se permiten abonos parciales ni
-> sobrepagos. Aprobar **no** cambia el estado del pedido. El paso manual
-> `Pendiente → En preparación` solo se permite cuando `saldo <= 0`; si hay saldo
-> pendiente responde `409`.
+> **Aprobación y saldo:** aprobar exige un **monto verificado** mayor que cero y
+> menor o igual al saldo pendiente; se permiten **abonos parciales** y se
+> rechazan los sobrepagos. El total aprobado es la suma de los comprobantes
+> `Aprobado`; el saldo se calcula como `max(total - total aprobado, 0)`. Aprobar
+> **no** cambia el estado del pedido. El paso manual
+> `Pendiente → En preparación` solo se permite cuando el saldo es cero; si queda
+> saldo pendiente responde `409`.
 >
-> **Rechazo con valor entregado:** rechazar exige `motivo` (5–255 caracteres) y
-> `monto` (`>= 0`). El monto de un comprobante rechazado **sí reduce el saldo**.
-> Para evitar que un pedido quede pagado solo con rechazos:
->
-> - Con saldo pendiente, el monto debe cumplir `0 <= monto < saldo`.
-> - Si `monto === saldo`, debe usarse `aprobar` (`422`).
-> - Si `monto > saldo`, responde `422`.
-> - Si el saldo ya es `0`, solo se admite `monto = 0` para descartar
->   comprobantes duplicados.
->
-> Un rechazo no cambia el estado del pedido.
+> **Devolución:** devolver exige `motivo` (5–255 caracteres) y no recibe monto.
+> El comprobante queda `Devuelto`, conserva el motivo en `motivoDevolucion`, deja
+> de contar para el total aprobado y no ocupa cupo. Una devolución no cambia el
+> estado del pedido.
 
 ### Ventas (`/api/ventas`)
 

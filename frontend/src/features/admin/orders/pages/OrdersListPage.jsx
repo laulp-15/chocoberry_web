@@ -1,12 +1,13 @@
 // src/features/admin/orders/pages/OrdersListPage.jsx
 import { useState } from "react";
 import DataTable from "../../../../shared/components/DataTable";
-import FormSelect from "../../../../shared/components/FormSelect";
+import OrderStatusChips from "../components/OrderStatusChips";
 import OrderStatusSelector from "../components/OrderStatusSelector";
 import OrderFormModal from "../components/OrderFormModal";
 import OrderDetailModal from "../components/OrderDetailModal";
+import OrderPaymentsModal from "../components/OrderPaymentsModal";
 import ApprovePaymentModal from "../components/ApprovePaymentModal";
-import RejectPaymentModal from "../components/RejectPaymentModal";
+import DevolverPaymentModal from "../components/DevolverPaymentModal";
 import UploadPaymentModal from "../components/UploadPaymentModal";
 import RejectReasonModal from "../components/RejectReasonModal";
 import CancelReasonModal from "../components/CancelReasonModal";
@@ -14,20 +15,32 @@ import OrderNotification from "../components/OrderNotification";
 import { usePermissions } from "../../../../shared/hooks/usePermissions";
 import useOrders from "../hooks/useOrders";
 import useOrderFormOptions from "../hooks/useOrderFormOptions";
-import {
-  ORDER_STATUSES,
-  getStatusMeta,
-  isFinalStatus,
-} from "../data/orderStatus";
+import { getStatusMeta, isFinalStatus } from "../data/orderStatus";
 import { formatDisplayDate } from "../utils/orderDisplay";
+import { sortOrdersByStatus } from "../utils/orderSorting";
 import { formatPrice } from "../../../../shared/utils/formatPrice";
 import "../../../../shared/css/adminCrud.css";
 
 // Las seis columnas de datos comparten el mismo ancho; Acciones se reserva
 // aparte para que el encabezado y los iconos queden juntos a la derecha.
 const EQUAL_COLUMN_STYLE = {
-  width: "calc((100% - 112px) / 6)",
+  width: "calc((100% - 144px) / 6)",
   boxSizing: "border-box",
+};
+
+const COUNTED_STATUSES = ["pendiente", "en_preparacion", "despachado"];
+const INITIAL_STATUS_COUNTS = Object.fromEntries(
+  COUNTED_STATUSES.map((status) => [status, 0])
+);
+
+const EMPTY_STATUS_MESSAGES = {
+  todos: "No hay pedidos para mostrar.",
+  pendiente: "No hay pedidos pendientes.",
+  en_preparacion: "No hay pedidos en preparación.",
+  despachado: "No hay pedidos despachados.",
+  entregado: "No hay pedidos entregados.",
+  rechazado: "No hay pedidos rechazados.",
+  cancelado: "No hay pedidos cancelados.",
 };
 
 export default function OrdersListPage() {
@@ -53,11 +66,13 @@ export default function OrdersListPage() {
     rejectOrder,
     uploadPayment,
     approvePayment,
-    rejectPayment,
+    devolverComprobante,
     reprogramOrder,
   } = useOrders();
 
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("pendiente");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [tableKey, setTableKey] = useState(0);
   const [formOpen, setFormOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState(null);
   const [detailOrder, setDetailOrder] = useState(null);
@@ -70,9 +85,10 @@ export default function OrdersListPage() {
   const [cancelingOrder, setCancelingOrder] = useState(null);
   const [cancelError, setCancelError] = useState("");
 
+  const [paymentsOrder, setPaymentsOrder] = useState(null);
   const [approvingPayment, setApprovingPayment] = useState(null); // { order, comprobante }
   const [paymentError, setPaymentError] = useState("");
-  const [rejectingPayment, setRejectingPayment] = useState(null); // { order, comprobante }
+  const [returningPayment, setReturningPayment] = useState(null); // { order, comprobante }
   const [uploadingPaymentOrder, setUploadingPaymentOrder] = useState(null);
   const [uploadPaymentError, setUploadPaymentError] = useState("");
 
@@ -91,9 +107,34 @@ export default function OrdersListPage() {
     reload: reloadOptions,
   } = useOrderFormOptions();
 
-  const filtered = orders.filter(
-    (order) => !statusFilter || order.estado === statusFilter
-  );
+  const isSearching = searchTerm.trim() !== "";
+  const effectiveStatus = isSearching ? "todos" : statusFilter;
+  const filtered =
+    effectiveStatus === "todos"
+      ? orders
+      : orders.filter((order) => order.estado === effectiveStatus);
+  const sortedOrders = sortOrdersByStatus(filtered, effectiveStatus);
+
+  // Los contadores reflejan el total del negocio, no el resultado del filtro.
+  const statusCounts = orders.reduce((counts, order) => {
+    if (COUNTED_STATUSES.includes(order.estado)) {
+      counts[order.estado] += 1;
+    }
+    return counts;
+  }, { ...INITIAL_STATUS_COUNTS });
+
+  const emptyMessage = loading
+    ? "Cargando pedidos..."
+    : isSearching
+      ? "No hay pedidos que coincidan con la búsqueda."
+      : EMPTY_STATUS_MESSAGES[effectiveStatus] ??
+        "No hay pedidos para mostrar.";
+
+  const handleStatusFilterChange = (value) => {
+    setStatusFilter(value);
+    setSearchTerm("");
+    setTableKey((key) => key + 1);
+  };
 
   // El estado final bloquea el selector; la edición solo está permitida
   // mientras el pedido siga pendiente (todavía no es una venta).
@@ -152,7 +193,7 @@ export default function OrdersListPage() {
     try {
       await changeStatus(order.id, newStatus);
       setNotification({
-        message: `El pedido pasó a "${getStatusMeta(newStatus).label}".`,
+        message: `Pedido movido a ${getStatusMeta(newStatus).label}.`,
       });
     } catch (err) {
       setNotification({
@@ -207,10 +248,19 @@ export default function OrdersListPage() {
     }
   };
 
-  const tieneComprobantesPendientes = (pedido) =>
-    (pedido?.comprobantes ?? []).some(
-      (comprobante) => comprobante.estado === "Pendiente"
+  const actualizarPedidoEnVistas = (pedido) => {
+    setPaymentsOrder((prev) =>
+      prev && String(prev.id) === String(pedido.id) ? pedido : prev
     );
+    setDetailOrder((prev) =>
+      prev && String(prev.id) === String(pedido.id) ? pedido : prev
+    );
+  };
+
+  const handleOpenPayments = (order) => {
+    setPaymentError("");
+    setPaymentsOrder(order);
+  };
 
   const handleOpenApprovePayment = (order, comprobante) => {
     setPaymentError("");
@@ -227,40 +277,38 @@ export default function OrdersListPage() {
         monto
       );
       setApprovingPayment(null);
-      // Si ya no quedan comprobantes pendientes, el detalle se cierra solo.
-      setDetailOrder(tieneComprobantesPendientes(pedido) ? pedido : null);
+      actualizarPedidoEnVistas(pedido);
       setNotification({
         message:
-          advertencia ||
-          "Comprobante aprobado. Recuerda que el pedido sigue Pendiente.",
+          advertencia || "Comprobante aprobado. El total aprobado fue actualizado.",
       });
     } catch (err) {
       setPaymentError(err?.message || "No se pudo aprobar el comprobante.");
     }
   };
 
-  const handleOpenRejectPayment = (order, comprobante) => {
+  const handleOpenReturnPayment = (order, comprobante) => {
     setPaymentError("");
-    setRejectingPayment({ order, comprobante });
+    setReturningPayment({ order, comprobante });
   };
 
-  const handleSubmitRejectPayment = async ({ motivo, monto }) => {
-    if (!rejectingPayment) return;
+  const handleSubmitReturnPayment = async (motivo) => {
+    if (!returningPayment) return;
 
     setPaymentError("");
     try {
-      const pedido = await rejectPayment(
-        rejectingPayment.comprobante.id,
-        motivo,
-        monto
+      const pedido = await devolverComprobante(
+        returningPayment.comprobante.id,
+        motivo
       );
-      setDetailOrder(pedido);
-      setRejectingPayment(null);
+      actualizarPedidoEnVistas(pedido);
+      setReturningPayment(null);
       setNotification({
-        message: "Comprobante de pago rechazado. El saldo fue actualizado.",
+        message:
+          "Comprobante devuelto. No cuenta para el total aprobado y puedes subir otro si hay cupo y saldo.",
       });
     } catch (err) {
-      setPaymentError(err?.message || "No se pudo rechazar el comprobante.");
+      setPaymentError(err?.message || "No se pudo devolver el comprobante.");
     }
   };
 
@@ -275,7 +323,7 @@ export default function OrdersListPage() {
     setUploadPaymentError("");
     try {
       const pedido = await uploadPayment(uploadingPaymentOrder.id, file);
-      setDetailOrder(pedido);
+      actualizarPedidoEnVistas(pedido);
       setUploadingPaymentOrder(null);
       setNotification({ message: "Comprobante subido correctamente." });
     } catch (err) {
@@ -342,7 +390,7 @@ export default function OrdersListPage() {
       key: "actions",
       label: "Acciones",
       style: {
-        width: "112px",
+        width: "144px",
         boxSizing: "border-box",
         textAlign: "right",
         paddingRight: "2rem",
@@ -380,6 +428,14 @@ export default function OrdersListPage() {
                 <i className="fa-solid fa-pen" />
               </button>
             )}
+            <button
+              type="button"
+              className="table-action-btn"
+              title="Ver y gestionar comprobantes"
+              onClick={() => handleOpenPayments(row)}
+            >
+              <i className="fa-solid fa-receipt" />
+            </button>
             {canChangeStatus && (
               <button
                 type="button"
@@ -405,40 +461,24 @@ export default function OrdersListPage() {
   return (
     <div className="crud-page">
       <DataTable
+        key={tableKey}
         title="Pedidos"
         description="Consulta y administra los pedidos reales del negocio."
         createLabel={canCreate ? "Crear pedido" : undefined}
         onCreate={canCreate ? handleCreate : undefined}
         columns={columns}
-        data={filtered}
+        data={sortedOrders}
         tableLayout="fixed"
         searchPlaceholder="Buscar por cliente..."
-        emptyMessage={
-          loading ? "Cargando pedidos..." : "No hay pedidos para mostrar."
-        }
-        extraFilter={
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              minWidth: "200px",
-            }}
-          >
-            <i
-              className="fa-solid fa-filter"
-              style={{ color: "var(--texto-muted, #888)" }}
-              title="Filtrar"
-            />
-            <div style={{ flex: 1 }}>
-              <FormSelect
-                value={statusFilter}
-                onChange={setStatusFilter}
-                placeholder="Todos los estados"
-                options={ORDER_STATUSES}
-              />
-            </div>
-          </div>
+        searchValue={searchTerm}
+        onSearchChange={setSearchTerm}
+        emptyMessage={emptyMessage}
+        beforeTable={
+          <OrderStatusChips
+            activeStatus={effectiveStatus}
+            onChange={handleStatusFilterChange}
+            counts={statusCounts}
+          />
         }
       />
 
@@ -480,19 +520,30 @@ export default function OrdersListPage() {
             handleReprogram(detailOrder, fechaEntrega)
           }
           reprogramming={String(reprogrammingId) === String(detailOrder.id)}
-          onApprovePayment={(comprobante) =>
-            handleOpenApprovePayment(detailOrder, comprobante)
-          }
-          onRejectPayment={(comprobante) =>
-            handleOpenRejectPayment(detailOrder, comprobante)
-          }
-          onUploadPayment={() => handleOpenUploadPayment(detailOrder)}
+        />
+      )}
+
+      {paymentsOrder && (
+        <OrderPaymentsModal
+          open
+          onClose={() => {
+            setPaymentsOrder(null);
+            setPaymentError("");
+          }}
+          order={paymentsOrder}
           canManagePayments={canChangeStatus}
           canUploadPayments={canCreate}
           paymentSavingId={paymentSavingId}
           uploadingPayment={
-            String(paymentUploadingId) === String(detailOrder.id)
+            String(paymentUploadingId) === String(paymentsOrder.id)
           }
+          onApprovePayment={(comprobante) =>
+            handleOpenApprovePayment(paymentsOrder, comprobante)
+          }
+          onReturnPayment={(comprobante) =>
+            handleOpenReturnPayment(paymentsOrder, comprobante)
+          }
+          onUploadPayment={() => handleOpenUploadPayment(paymentsOrder)}
         />
       )}
 
@@ -539,18 +590,19 @@ export default function OrdersListPage() {
         />
       )}
 
-      {rejectingPayment && (
-        <RejectPaymentModal
-          key={rejectingPayment.comprobante.id}
+      {returningPayment && (
+        <DevolverPaymentModal
+          key={returningPayment.comprobante.id}
           open
           onClose={() => {
-            setRejectingPayment(null);
+            setReturningPayment(null);
             setPaymentError("");
           }}
-          onSubmit={handleSubmitRejectPayment}
-          submitting={String(paymentSavingId) === String(rejectingPayment.comprobante.id)}
+          onSubmit={handleSubmitReturnPayment}
+          submitting={
+            String(paymentSavingId) === String(returningPayment.comprobante.id)
+          }
           formError={paymentError}
-          saldo={rejectingPayment.order.saldo}
         />
       )}
 

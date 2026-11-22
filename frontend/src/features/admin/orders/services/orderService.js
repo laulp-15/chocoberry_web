@@ -91,12 +91,9 @@ export async function aprobarComprobante(id, monto) {
   };
 }
 
-/** PATCH /comprobantes/:id/rechazar */
-export async function rechazarComprobante(id, motivo, monto) {
-  const pedido = await api.patch(`/comprobantes/${id}/rechazar`, {
-    motivo,
-    monto,
-  });
+/** PATCH /comprobantes/:id/devolver */
+export async function devolverComprobante(id, motivo) {
+  const pedido = await api.patch(`/comprobantes/${id}/devolver`, { motivo });
   return mapPedidoAdmin(pedido);
 }
 

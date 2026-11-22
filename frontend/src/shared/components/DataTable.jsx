@@ -22,16 +22,21 @@ export default function DataTable({
   description,
   createLabel,
   onCreate,
+  leadingActions,
   extraFilter,
+  beforeTable,
   columns,
   data,
   searchPlaceholder = "Buscar...",
+  searchValue,
+  onSearchChange,
   pageSize = 8,
   emptyMessage = "No hay registros para mostrar.",
   tableLayout = "auto",
 }) {
-  const [query, setQuery] = useState("");
+  const [internalQuery, setInternalQuery] = useState("");
   const [page, setPage] = useState(1);
+  const query = searchValue !== undefined ? searchValue : internalQuery;
 
   const filtered = useMemo(() => {
     if (!query.trim()) return data;
@@ -47,7 +52,8 @@ export default function DataTable({
   const pageNumbers = getPageNumbers(currentPage, totalPages);
 
   const handleSearchChange = (value) => {
-    setQuery(value);
+    if (searchValue === undefined) setInternalQuery(value);
+    onSearchChange?.(value);
     setPage(1);
   };
 
@@ -68,6 +74,8 @@ export default function DataTable({
           </button>
         )}
 
+        {leadingActions}
+
         <div className="data-table-search">
           <OutlinedInput
             className="data-table-search-input"
@@ -80,6 +88,8 @@ export default function DataTable({
 
         {extraFilter}
       </div>
+
+      {beforeTable && <div className="data-table-before">{beforeTable}</div>}
 
       {/* Tarjeta con variables de color para modo claro y oscuro */}
       <div 

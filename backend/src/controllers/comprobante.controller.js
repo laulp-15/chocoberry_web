@@ -40,12 +40,11 @@ export const aprobar = asyncHandler(async (req, res) => {
   );
 });
 
-export const rechazar = asyncHandler(async (req, res) => {
-  const resultado = await comprobanteService.rechazar(
+export const devolver = asyncHandler(async (req, res) => {
+  const resultado = await comprobanteService.devolver(
     req.validado.params.id,
-    req.validado.body.motivo,
-    req.validado.body.monto
+    req.validado.body.motivo
   );
   const pedido = await pedidoService.obtener(resultado.idPedido, req.usuario);
-  return sendSuccess(res, pedido, 'Comprobante de pago rechazado exitosamente.');
+  return sendSuccess(res, pedido, 'Comprobante de pago devuelto exitosamente.');
 });

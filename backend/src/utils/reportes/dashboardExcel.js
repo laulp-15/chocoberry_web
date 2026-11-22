@@ -18,11 +18,11 @@ const COLOR_SECUNDARIO_2 = 'FFFCE8EF';
 const COLOR_SECUNDARIO_3 = 'FFFEF7F9';
 const COLOR_TEXTO = 'FF2A231D';
 const COLOR_TEXTO_MUTED = 'FF675A51';
-const COLOR_TEXTO_SUAVE = 'FFA4968B';
+export const COLOR_TEXTO_SUAVE = 'FFA4968B';
 const COLOR_BORDE = 'FFE9D9DE';
 const COLOR_BLANCO = 'FFFFFFFF';
 
-const FUENTE = 'Calibri';
+export const FUENTE = 'Calibri';
 const FILA_ENCABEZADO = 4;
 
 const BORDE_FINO = { style: 'thin', color: { argb: COLOR_BORDE } };
@@ -50,7 +50,7 @@ function formatoDe(tipo) {
  *  fila 3: espacio
  *  fila 4: encabezado de la tabla (si conTabla)
  */
-function crearHoja(workbook, { nombre, titulo, periodo, columnas, conTabla = true }) {
+export function crearHoja(workbook, { nombre, titulo, periodo, columnas, conTabla = true }) {
   const hoja = workbook.addWorksheet(nombre, {
     properties: { tabColor: { argb: COLOR_PRIMARIO } },
     views: [
@@ -117,7 +117,7 @@ function crearHoja(workbook, { nombre, titulo, periodo, columnas, conTabla = tru
   return hoja;
 }
 
-function estiloFilaDatos(row, columnas, indice) {
+export function estiloFilaDatos(row, columnas, indice) {
   const fondo = indice % 2 === 0 ? COLOR_BLANCO : COLOR_SECUNDARIO_3;
   columnas.forEach((columna, i) => {
     const cell = row.getCell(i + 1);
@@ -135,7 +135,7 @@ function estiloFilaDatos(row, columnas, indice) {
   row.height = 20;
 }
 
-function estiloFilaTotal(row, columnas) {
+export function estiloFilaTotal(row, columnas) {
   columnas.forEach((columna, i) => {
     const cell = row.getCell(i + 1);
     cell.font = { name: FUENTE, bold: true, size: 11, color: { argb: COLOR_TEXTO } };
@@ -163,6 +163,58 @@ function agregarFilaVacia(hoja, columnas, mensaje) {
   cell.alignment = { vertical: 'middle', horizontal: 'center' };
   cell.border = BORDES;
   fila.height = 28;
+}
+
+/**
+ * Sección de la hoja Resumen: encabezado de color + filas concepto/valor.
+ * Compartida por el reporte del Dashboard y el de Ventas.
+ *
+ * @param {ExcelJS.Worksheet} hoja
+ * @param {number} filaInicio fila donde empieza la sección
+ * @param {string} titulo título de la sección
+ * @param {Array<[string, string|number, 'texto'|'moneda'|'entero']>} filas
+ * @returns {number} siguiente fila libre (ya incluye el espacio entre secciones)
+ */
+export function agregarSeccionResumen(hoja, filaInicio, titulo, filas) {
+  let fila = filaInicio;
+
+  // Encabezado de sección
+  hoja.mergeCells(fila, 1, fila, 2);
+  const cabecera = hoja.getCell(fila, 1);
+  cabecera.value = titulo;
+  cabecera.font = { name: FUENTE, bold: true, color: { argb: COLOR_BLANCO } };
+  cabecera.fill = relleno(COLOR_PRIMARIO_OSCURO);
+  cabecera.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+  hoja.getRow(fila).height = 24;
+  fila += 1;
+
+  filas.forEach(([concepto, valor, tipo], indice) => {
+    const actual = hoja.getRow(fila);
+    const fondo = indice % 2 === 0 ? COLOR_BLANCO : COLOR_SECUNDARIO_3;
+
+    const celdaConcepto = actual.getCell(1);
+    celdaConcepto.value = concepto;
+    celdaConcepto.font = { name: FUENTE, bold: true, color: { argb: COLOR_TEXTO_MUTED } };
+    celdaConcepto.fill = relleno(fondo);
+    celdaConcepto.border = BORDES;
+    celdaConcepto.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+
+    const celdaValor = actual.getCell(2);
+    celdaValor.value = valor;
+    celdaValor.font = { name: FUENTE, bold: true, color: { argb: COLOR_TEXTO } };
+    celdaValor.fill = relleno(fondo);
+    celdaValor.border = BORDES;
+    celdaValor.alignment = { vertical: 'middle', horizontal: 'right', indent: 1 };
+    const formato = formatoDe(tipo);
+    if (formato) celdaValor.numFmt = formato;
+
+    actual.height = 22;
+    fila += 1;
+  });
+
+  // Espacio entre secciones
+  hoja.getRow(fila).height = 10;
+  return fila + 1;
 }
 
 /* ------------------------------ Resumen ------------------------------ */
@@ -203,43 +255,7 @@ function agregarResumen(workbook, datos) {
 
   let fila = 4;
   for (const seccion of secciones) {
-    // Encabezado de sección
-    hoja.mergeCells(fila, 1, fila, 2);
-    const cabecera = hoja.getCell(fila, 1);
-    cabecera.value = seccion.titulo;
-    cabecera.font = { name: FUENTE, bold: true, color: { argb: COLOR_BLANCO } };
-    cabecera.fill = relleno(COLOR_PRIMARIO_OSCURO);
-    cabecera.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
-    hoja.getRow(fila).height = 24;
-    fila += 1;
-
-    seccion.filas.forEach(([concepto, valor, tipo], indice) => {
-      const actual = hoja.getRow(fila);
-      const fondo = indice % 2 === 0 ? COLOR_BLANCO : COLOR_SECUNDARIO_3;
-
-      const celdaConcepto = actual.getCell(1);
-      celdaConcepto.value = concepto;
-      celdaConcepto.font = { name: FUENTE, bold: true, color: { argb: COLOR_TEXTO_MUTED } };
-      celdaConcepto.fill = relleno(fondo);
-      celdaConcepto.border = BORDES;
-      celdaConcepto.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
-
-      const celdaValor = actual.getCell(2);
-      celdaValor.value = valor;
-      celdaValor.font = { name: FUENTE, bold: true, color: { argb: COLOR_TEXTO } };
-      celdaValor.fill = relleno(fondo);
-      celdaValor.border = BORDES;
-      celdaValor.alignment = { vertical: 'middle', horizontal: 'right', indent: 1 };
-      const formato = formatoDe(tipo);
-      if (formato) celdaValor.numFmt = formato;
-
-      actual.height = 22;
-      fila += 1;
-    });
-
-    // Espacio entre secciones
-    hoja.getRow(fila).height = 10;
-    fila += 1;
+    fila = agregarSeccionResumen(hoja, fila, seccion.titulo, seccion.filas);
   }
 }
 

@@ -7,6 +7,7 @@ import env from '../config/env.js';
 
 const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
 const BREVO_TIMEOUT_MS = 10_000;
+const LOGO_RUTA = '/img/Logo/chocoberry_blanco.png';
 
 let transporter = null;
 
@@ -72,16 +73,21 @@ function parsearRemitente(valor) {
 }
 
 function plantilla({ titulo, saludo, mensaje, boton, enlace, nota }) {
+  const logoUrl = urlFrontend(LOGO_RUTA);
   const contenidoBoton = boton
-    ? `<p style="margin:28px 0;">
-         <a href="${escaparHtml(enlace)}"
-            style="display:inline-block;padding:13px 22px;border-radius:999px;background:#7b2d26;color:#ffffff;text-decoration:none;font-weight:700;">
-           ${escaparHtml(boton)}
-         </a>
-       </p>
-       <p style="font-size:13px;color:#6b5a57;word-break:break-all;">
+    ? `<table role="presentation" cellspacing="0" cellpadding="0" style="margin:30px 0 8px;">
+         <tr>
+           <td align="center" bgcolor="#7b2d26" style="border-radius:999px;background-color:#7b2d26;background-image:linear-gradient(135deg,#7b2d26,#a3394a);box-shadow:0 6px 16px rgba(123,45,38,.28);">
+             <a href="${escaparHtml(enlace)}"
+                style="display:inline-block;padding:15px 34px;border-radius:999px;color:#ffffff;text-decoration:none;font-size:15px;font-weight:700;letter-spacing:.3px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;">
+               ${escaparHtml(boton)}
+             </a>
+           </td>
+         </tr>
+       </table>
+       <p style="margin:18px 0 0;font-size:12.5px;line-height:1.6;color:#8a7772;word-break:break-all;">
          Si el botón no funciona, copia este enlace en tu navegador:<br />
-         <a href="${escaparHtml(enlace)}" style="color:#7b2d26;">${escaparHtml(enlace)}</a>
+         <a href="${escaparHtml(enlace)}" style="color:#7b2d26;text-decoration:underline;">${escaparHtml(enlace)}</a>
        </p>`
     : '';
 
@@ -92,28 +98,31 @@ function plantilla({ titulo, saludo, mensaje, boton, enlace, nota }) {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>${escaparHtml(titulo)}</title>
   </head>
-  <body style="margin:0;padding:0;background:#f7efec;font-family:Arial,Helvetica,sans-serif;color:#3d2b28;">
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f7efec;padding:28px 12px;">
+  <body style="margin:0;padding:0;background:#f6ece8;font-family:'Segoe UI',Arial,Helvetica,sans-serif;color:#3d2b28;-webkit-text-size-adjust:100%;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f6ece8;padding:32px 12px;">
       <tr>
         <td align="center">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#ffffff;border-radius:18px;overflow:hidden;border:1px solid #ead9d3;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:580px;background:#ffffff;border-radius:22px;overflow:hidden;border:1px solid #ecd8d1;box-shadow:0 10px 30px rgba(123,45,38,.10);">
             <tr>
-              <td style="background:#7b2d26;padding:22px 28px;color:#ffffff;">
-                <div style="font-size:22px;font-weight:800;letter-spacing:.3px;">ChocoBerry</div>
-                <div style="font-size:12px;opacity:.85;margin-top:4px;">Fresas cubiertas de chocolate</div>
+              <td align="center" bgcolor="#fff8f5" style="background-color:#fff8f5;padding:28px 32px 22px;text-align:center;">
+                <img src="${escaparHtml(logoUrl)}" alt="ChocoBerry" width="180"
+                     style="display:block;margin:0 auto;width:180px;max-width:60%;height:auto;border:0;outline:none;text-decoration:none;" />
               </td>
             </tr>
             <tr>
-              <td style="padding:30px 28px 12px;">
-                <h1 style="margin:0 0 14px;font-size:22px;line-height:1.3;color:#3d2b28;">${escaparHtml(titulo)}</h1>
-                <p style="margin:0 0 12px;font-size:15px;line-height:1.6;">${escaparHtml(saludo)}</p>
-                <div style="font-size:15px;line-height:1.6;">${mensaje}</div>
+              <td style="height:5px;line-height:5px;font-size:0;background:#e8b4a8;background-image:linear-gradient(90deg,#7b2d26,#d9788a,#7b2d26);">&nbsp;</td>
+            </tr>
+            <tr>
+              <td style="padding:36px 34px 16px;">
+                <h1 style="margin:0 0 18px;font-size:24px;line-height:1.3;font-weight:800;color:#5a1d18;">${escaparHtml(titulo)}</h1>
+                <p style="margin:0 0 14px;font-size:16px;line-height:1.6;color:#3d2b28;font-weight:600;">${escaparHtml(saludo)}</p>
+                <div style="font-size:15px;line-height:1.7;color:#4a3733;">${mensaje}</div>
                 ${contenidoBoton}
-                ${nota ? `<p style="margin:22px 0 0;font-size:13px;line-height:1.5;color:#6b5a57;">${nota}</p>` : ''}
+                ${nota ? `<div style="margin:26px 0 0;padding:14px 16px;background:#fbf3f0;border-radius:12px;font-size:13px;line-height:1.6;color:#6b5a57;">${nota}</div>` : ''}
               </td>
             </tr>
             <tr>
-              <td style="padding:18px 28px 26px;font-size:12px;line-height:1.5;color:#8a7772;border-top:1px solid #f0e3df;">
+              <td style="padding:22px 34px 28px;font-size:12px;line-height:1.6;color:#8a7772;text-align:center;border-top:1px solid #f0e3df;background:#fffaf8;">
                 Este correo se envió automáticamente. Si no reconoces esta actividad, ignóralo o contacta a ChocoBerry.
               </td>
             </tr>
@@ -251,7 +260,7 @@ function datosPedido(pedido) {
 export async function enviarRecuperacionContrasena({ correo, nombre, token }) {
   const enlace = enlaceRecuperacion(token);
   const titulo = 'Recupera tu contraseña';
-  const mensaje = `<p style="margin:0;">Recibimos una solicitud para restablecer la contraseña de tu cuenta. El enlace estará disponible durante <strong>1 hora</strong>.</p>`;
+  const mensaje = `<p style="margin:0;font-size:15px;line-height:1.7;color:#4a3733;">Recibimos una solicitud para restablecer la contraseña de tu cuenta. El enlace estará disponible durante <strong style="color:#7b2d26;">1 hora</strong>.</p>`;
 
   return enviar({
     to: correo,
@@ -277,7 +286,7 @@ export async function enviarRecuperacionContrasena({ correo, nombre, token }) {
 export async function enviarActivacionCuenta({ correo, nombre, token }) {
   const enlace = enlaceActivacion(token);
   const titulo = 'Establece tu contraseña';
-  const mensaje = `<p style="margin:0;">Tu cuenta de ChocoBerry ya fue creada. Para empezar a usarla, establece tu contraseña desde el siguiente enlace. El enlace estará disponible durante <strong>48 horas</strong>.</p>`;
+  const mensaje = `<p style="margin:0;font-size:15px;line-height:1.7;color:#4a3733;">Tu cuenta de ChocoBerry ya fue creada. Para empezar a usarla, establece tu contraseña desde el siguiente enlace. El enlace estará disponible durante <strong style="color:#7b2d26;">48 horas</strong>.</p>`;
 
   return enviar({
     to: correo,
@@ -299,54 +308,114 @@ export async function enviarActivacionCuenta({ correo, nombre, token }) {
   });
 }
 
-export async function enviarComprobanteAprobado({ pedido }) {
+export async function enviarPedidoRecibido({ pedido }) {
   if (!pedido) return { omitido: true };
   const datos = datosPedido(pedido);
-  const titulo = 'Comprobante aprobado';
-  const mensaje = `<p style="margin:0;">Verificamos el comprobante de pago de tu pedido <strong>#${escaparHtml(datos.id)}</strong> por <strong>${escaparHtml(datos.total)}</strong>. El pedido continuará con el proceso de preparación.</p>`;
+  const titulo = 'Pedido recibido';
+  const mensaje = `<p style="margin:0;font-size:15px;line-height:1.7;color:#4a3733;">Hemos recibido tu pedido <strong style="color:#7b2d26;">#${escaparHtml(datos.id)}</strong> correctamente. Revisaremos tu comprobante de pago para continuar con el proceso.</p>`;
 
   return enviar({
     to: correoCliente(pedido),
-    subject: `Comprobante aprobado - Pedido #${datos.id}`,
+    subject: `Recibimos tu pedido - Pedido #${datos.id}`,
     html: plantilla({
       titulo,
       saludo: `Hola, ${nombreCliente(pedido)}.`,
       mensaje,
-      nota: 'Puedes consultar el estado de tu pedido desde “Mis pedidos”.',
+      boton: 'Ver mi pedido',
+      enlace: urlFrontend('/users/orders'),
+      nota: 'Te avisaremos por correo cuando verifiquemos tu comprobante. También puedes consultar el estado en “Mis pedidos”.',
     }),
     text: textoPlano([
       titulo,
       `Hola, ${nombreCliente(pedido)}.`,
-      `Verificamos el comprobante de pago de tu pedido #${datos.id} por ${datos.total}.`,
+      `Hemos recibido tu pedido #${datos.id} correctamente. Revisaremos tu comprobante de pago para continuar con el proceso.`,
+      urlFrontend('/users/orders'),
     ]),
   });
 }
 
-export async function enviarComprobanteRechazado({ pedido, motivo, monto }) {
+export async function enviarComprobanteAprobado({ pedido, monto, saldo }) {
   if (!pedido) return { omitido: true };
   const datos = datosPedido(pedido);
-  const titulo = 'Comprobante rechazado';
-  const motivoSeguro = motivo || 'No especificado';
-  const montoTexto = monto === null || monto === undefined ? '' : ` por ${formatearMoneda(monto)}`;
-  const mensaje = `<p style="margin:0;">El comprobante${escaparHtml(montoTexto)} de tu pedido <strong>#${escaparHtml(datos.id)}</strong> fue rechazado.</p>
-    <p style="margin:14px 0 0;"><strong>Motivo:</strong> ${escaparHtml(motivoSeguro)}</p>
-    <p style="margin:14px 0 0;">Puedes adjuntar un nuevo comprobante desde “Mis pedidos”.</p>`;
+  const saldoPendiente = Number(saldo ?? 0);
+
+  if (!(saldoPendiente > 0)) {
+    const titulo = 'Tu pago está completo';
+    const mensaje = '<p style="margin:0;font-size:15px;line-height:1.7;color:#4a3733;">Tu pago está completo. Pronto empezaremos con la preparación de tu pedido.</p>';
+
+    return enviar({
+      to: correoCliente(pedido),
+      subject: `Pago completo - Pedido #${datos.id}`,
+      html: plantilla({
+        titulo,
+        saludo: `Hola, ${nombreCliente(pedido)}.`,
+        mensaje,
+        boton: 'Ver mi pedido',
+        enlace: urlFrontend('/users/orders'),
+        nota: 'Te avisaremos por correo cuando tu pedido esté en camino.',
+      }),
+      text: textoPlano([
+        titulo,
+        `Hola, ${nombreCliente(pedido)}.`,
+        'Tu pago está completo. Pronto empezaremos con la preparación de tu pedido.',
+        urlFrontend('/users/orders'),
+      ]),
+    });
+  }
+
+  const titulo = 'Recibimos tu pago';
+  const montoPagado = formatearMoneda(monto);
+  const saldoFormateado = formatearMoneda(saldoPendiente);
+  const mensaje = `<p style="margin:0;font-size:15px;line-height:1.7;color:#4a3733;">Recibimos tu pago de <strong style="color:#7b2d26;">${escaparHtml(montoPagado)}</strong> para tu pedido <strong style="color:#7b2d26;">#${escaparHtml(datos.id)}</strong>. Falta <strong style="color:#7b2d26;">${escaparHtml(saldoFormateado)}</strong> para completar tu pedido.</p>
+    <p style="margin:16px 0 0;font-size:15px;line-height:1.7;color:#4a3733;">Sube el comprobante del saldo restante lo antes posible, antes de la fecha de entrega.</p>`;
 
   return enviar({
     to: correoCliente(pedido),
-    subject: `Comprobante rechazado - Pedido #${datos.id}`,
+    subject: `Recibimos tu pago - Pedido #${datos.id}`,
     html: plantilla({
       titulo,
       saludo: `Hola, ${nombreCliente(pedido)}.`,
       mensaje,
-      nota: 'Si tienes dudas, responde a este correo o contacta a ChocoBerry.',
+      boton: 'Subir comprobante del saldo',
+      enlace: urlFrontend('/users/orders'),
+      nota: 'Puedes subir el comprobante del saldo restante desde “Mis pedidos”.',
     }),
     text: textoPlano([
       titulo,
       `Hola, ${nombreCliente(pedido)}.`,
-      `El comprobante de tu pedido #${datos.id} fue rechazado.`,
+      `Recibimos tu pago de ${montoPagado} para tu pedido #${datos.id}. Falta ${saldoFormateado} para completar tu pedido.`,
+      'Sube el comprobante del saldo restante lo antes posible, antes de la fecha de entrega.',
+      urlFrontend('/users/orders'),
+    ]),
+  });
+}
+
+export async function enviarComprobanteDevuelto({ pedido, motivo }) {
+  if (!pedido) return { omitido: true };
+  const datos = datosPedido(pedido);
+  const titulo = 'No pudimos verificar tu comprobante';
+  const motivoSeguro = motivo || 'No especificado';
+  const mensaje = `<p style="margin:0;font-size:15px;line-height:1.7;color:#4a3733;">No pudimos verificar tu comprobante del pedido <strong style="color:#7b2d26;">#${escaparHtml(datos.id)}</strong>.</p>
+    <div style="margin:18px 0 0;padding:14px 16px;background:#fbf1ee;border-left:4px solid #7b2d26;border-radius:8px;font-size:14px;line-height:1.6;color:#4a3733;"><strong style="color:#7b2d26;">Motivo:</strong> ${escaparHtml(motivoSeguro)}</div>`;
+
+  return enviar({
+    to: correoCliente(pedido),
+    subject: `Comprobante devuelto - Pedido #${datos.id}`,
+    html: plantilla({
+      titulo,
+      saludo: `Hola, ${nombreCliente(pedido)}.`,
+      mensaje,
+      boton: 'Subir un nuevo comprobante',
+      enlace: urlFrontend('/users/orders'),
+      nota: 'Puedes adjuntar un nuevo comprobante desde “Mis pedidos”. Si tienes dudas, responde a este correo.',
+    }),
+    text: textoPlano([
+      titulo,
+      `Hola, ${nombreCliente(pedido)}.`,
+      `No pudimos verificar tu comprobante del pedido #${datos.id}.`,
       `Motivo: ${motivoSeguro}`,
       'Puedes adjuntar un nuevo comprobante desde Mis pedidos.',
+      urlFrontend('/users/orders'),
     ]),
   });
 }
@@ -355,8 +424,8 @@ export async function enviarPedidoEnPreparacion({ pedido }) {
   if (!pedido) return { omitido: true };
   const datos = datosPedido(pedido);
   const titulo = 'Tu pedido está en preparación';
-  const mensaje = `<p style="margin:0;">Tu pedido <strong>#${escaparHtml(datos.id)}</strong> por <strong>${escaparHtml(datos.total)}</strong> ya está en preparación.</p>
-    <p style="margin:14px 0 0;">Fecha de entrega estimada: <strong>${escaparHtml(datos.fechaEntrega)}</strong>.</p>`;
+  const mensaje = `<p style="margin:0;font-size:15px;line-height:1.7;color:#4a3733;">Tu pedido <strong style="color:#7b2d26;">#${escaparHtml(datos.id)}</strong> por <strong style="color:#7b2d26;">${escaparHtml(datos.total)}</strong> ya está en preparación.</p>
+    <div style="margin:18px 0 0;padding:14px 16px;background:#fbf1ee;border-left:4px solid #7b2d26;border-radius:8px;font-size:14px;line-height:1.6;color:#4a3733;">Fecha de entrega estimada: <strong style="color:#7b2d26;">${escaparHtml(datos.fechaEntrega)}</strong>.</div>`;
 
   return enviar({
     to: correoCliente(pedido),
@@ -381,8 +450,8 @@ export async function enviarPedidoRechazado({ pedido, motivo }) {
   const datos = datosPedido(pedido);
   const titulo = 'Tu pedido fue rechazado';
   const motivoSeguro = motivo || 'No especificado';
-  const mensaje = `<p style="margin:0;">Tu pedido <strong>#${escaparHtml(datos.id)}</strong> fue rechazado.</p>
-    <p style="margin:14px 0 0;"><strong>Motivo:</strong> ${escaparHtml(motivoSeguro)}</p>`;
+  const mensaje = `<p style="margin:0;font-size:15px;line-height:1.7;color:#4a3733;">Tu pedido <strong style="color:#7b2d26;">#${escaparHtml(datos.id)}</strong> fue rechazado.</p>
+    <div style="margin:18px 0 0;padding:14px 16px;background:#fbf1ee;border-left:4px solid #7b2d26;border-radius:8px;font-size:14px;line-height:1.6;color:#4a3733;"><strong style="color:#7b2d26;">Motivo:</strong> ${escaparHtml(motivoSeguro)}</div>`;
 
   return enviar({
     to: correoCliente(pedido),
@@ -407,8 +476,8 @@ export async function enviarPedidoCancelado({ pedido, motivo }) {
   const datos = datosPedido(pedido);
   const titulo = 'Tu pedido fue cancelado';
   const motivoSeguro = motivo || 'Sin motivo registrado';
-  const mensaje = `<p style="margin:0;">Tu pedido <strong>#${escaparHtml(datos.id)}</strong> fue cancelado.</p>
-    <p style="margin:14px 0 0;"><strong>Motivo:</strong> ${escaparHtml(motivoSeguro)}</p>`;
+  const mensaje = `<p style="margin:0;font-size:15px;line-height:1.7;color:#4a3733;">Tu pedido <strong style="color:#7b2d26;">#${escaparHtml(datos.id)}</strong> fue cancelado.</p>
+    <div style="margin:18px 0 0;padding:14px 16px;background:#fbf1ee;border-left:4px solid #7b2d26;border-radius:8px;font-size:14px;line-height:1.6;color:#4a3733;"><strong style="color:#7b2d26;">Motivo:</strong> ${escaparHtml(motivoSeguro)}</div>`;
 
   return enviar({
     to: correoCliente(pedido),

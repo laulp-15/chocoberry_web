@@ -6,6 +6,12 @@ import OrderStatusBadge from "../../orders/components/OrderStatusBadge";
 import ImageLightbox from "../../../../shared/components/ImageLightbox";
 import "./SaleReceipt.css";
 
+const RECEIPT_STATUS_LABELS = {
+  Pendiente: "Pendiente de revisión",
+  Aprobado: "Aprobado",
+  Devuelto: "Devuelto",
+};
+
 function getInitials(name) {
   return name
     .split(" ")
@@ -193,7 +199,8 @@ export default function SaleReceipt({ sale }) {
                     <div className="sale-proof-info">
                       <div className="sale-proof-head">
                         <span className={`sale-proof-status sale-proof-status--${estadoClass}`}>
-                          {comprobante.estado}
+                          {RECEIPT_STATUS_LABELS[comprobante.estado] ??
+                            comprobante.estado}
                         </span>
                         <span className="sale-proof-date">
                           {formatDisplayDate(comprobante.fecha)}
@@ -201,9 +208,9 @@ export default function SaleReceipt({ sale }) {
                       </div>
                       <div className="sale-proof-amount">
                         <span>
-                          {comprobante.estado === "Rechazado"
-                            ? "Valor entregado"
-                            : "Monto verificado"}
+                          {comprobante.estado === "Aprobado"
+                            ? "Monto aprobado"
+                            : "Monto"}
                         </span>
                         <strong>
                           {comprobante.monto === null
@@ -211,9 +218,10 @@ export default function SaleReceipt({ sale }) {
                             : formatPrice(comprobante.monto)}
                         </strong>
                       </div>
-                      {comprobante.motivoRechazo && (
+                      {comprobante.motivoDevolucion && (
                         <div className="sale-proof-reason">
-                          <strong>Motivo del rechazo:</strong> {comprobante.motivoRechazo}
+                          <strong>Motivo de la devolución:</strong>{" "}
+                          {comprobante.motivoDevolucion}
                         </div>
                       )}
                     </div>

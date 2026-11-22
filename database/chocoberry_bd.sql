@@ -202,7 +202,7 @@ CREATE TABLE comprobantePago (
     public_id VARCHAR(255) NULL,
     monto DECIMAL(10,2),
     fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    motivo_rechazo VARCHAR(255),
+    motivo_devolucion VARCHAR(255),
     id_pedido INT NOT NULL,
     id_estado INT NOT NULL,
     CONSTRAINT fk_comprobantePago_pedido

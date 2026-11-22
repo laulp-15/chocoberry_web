@@ -33,7 +33,7 @@ INSERT INTO estadosPedido (id, nombre) VALUES
 INSERT INTO estadosComprobante (id, nombre) VALUES
     (1, 'Pendiente'),
     (2, 'Aprobado'),
-    (3, 'Rechazado');
+    (3, 'Devuelto');
 
 -- -----------------------------------------------------------------------------
 -- MÓDULOS (mismas claves que el catálogo del front: Permissions.js)

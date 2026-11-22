@@ -3,10 +3,26 @@
 // para evitar que las conversiones de zona horaria muevan un día o un mes.
 const MS_DIA = 24 * 60 * 60 * 1000;
 
+const FORMATO_FECHA_COLOMBIA = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/Bogota',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
 /** Fecha de hoy según el calendario local, representada como UTC a medianoche. */
 export function fechaActualLocal() {
   const ahora = new Date();
   return new Date(Date.UTC(ahora.getFullYear(), ahora.getMonth(), ahora.getDate()));
+}
+
+/** Fecha de hoy en Colombia (`YYYY-MM-DD`), independiente de la zona del servidor. */
+export function fechaHoyColombia() {
+  const partes = FORMATO_FECHA_COLOMBIA.formatToParts(new Date());
+  const valores = Object.fromEntries(
+    partes.filter((parte) => parte.type !== 'literal').map((parte) => [parte.type, parte.value])
+  );
+  return `${valores.year}-${valores.month}-${valores.day}`;
 }
 
 /** Convierte `YYYY-MM-DD` a Date UTC; devuelve null si no es una fecha real. */
@@ -63,6 +79,14 @@ export function sumarDias(fecha, dias) {
 /** Primer día del mes de `fecha`, desplazado `meses` meses. */
 export function sumarMeses(fecha, meses) {
   return new Date(Date.UTC(fecha.getUTCFullYear(), fecha.getUTCMonth() + meses, 1));
+}
+
+/** Suma meses conservando el día (se recorta al último día del mes destino). */
+export function sumarMesesConservandoDia(fecha, meses) {
+  const anio = fecha.getUTCFullYear();
+  const mes = fecha.getUTCMonth() + meses;
+  const ultimoDia = new Date(Date.UTC(anio, mes + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(anio, mes, Math.min(fecha.getUTCDate(), ultimoDia)));
 }
 
 /** Lunes de la semana que contiene `fecha`. */

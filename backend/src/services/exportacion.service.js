@@ -5,6 +5,7 @@ import { NotFoundError } from '../errors/index.js';
 import { fechaActualLocal, formatearFecha } from '../utils/dates.js';
 import { generarExcelDashboard } from '../utils/reportes/dashboardExcel.js';
 import { generarPdfDashboard } from '../utils/reportes/dashboardPdf.js';
+import { generarExcelReporteVentas } from '../utils/reportes/ventasExcel.js';
 import { generarPdfVenta } from '../utils/reportes/ventaPdf.js';
 import * as dashboardService from './dashboard.service.js';
 import * as ventaService from './venta.service.js';
@@ -40,6 +41,20 @@ export async function generarReporteDashboard({ formato, filtros = {} }) {
     buffer,
     filename: `reporte-ventas-${fechaArchivo()}.${tipo.extension}`,
     contentType: tipo.contentType,
+  };
+}
+
+export async function generarReporteVentasExcel({ filtros = {} } = {}) {
+  const datos = await ventaService.obtenerReporte(filtros);
+
+  if (datos.resumen.ventas === 0) {
+    throw new NotFoundError('No hay ventas en este rango.');
+  }
+
+  return {
+    buffer: await generarExcelReporteVentas(datos),
+    filename: `reporte-ventas_${datos.desde}_a_${datos.hasta}.xlsx`,
+    contentType: TIPOS.excel.contentType,
   };
 }
 

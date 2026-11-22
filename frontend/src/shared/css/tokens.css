@@ -24,6 +24,7 @@
   /* --- Fondos generales --- */
   --bg-main: #FDFBFB;
   --bg-card: #FFFFFF;
+  --bg-admin: #FEFCFC;
 
   /* --- Paleta extendida (Guía de estilo ChocoBerry) --- */
   --carmesi-100: #E63946;
@@ -92,6 +93,7 @@
   /* --- Fondos generales adaptados a la captura oscura --- */
   --bg-main: #121016;     /* Fondo general de tu captura */
   --bg-card: #1C1721;     /* Fondo de tarjetas y tablas */
+  --bg-admin: #2A1F26;    /* Fondo de las vistas del panel */
 
   /* --- Navbar --- */
 --navbar-height: 60px;
