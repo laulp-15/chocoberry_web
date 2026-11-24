@@ -280,6 +280,40 @@ describe('Módulo de reseñas', () => {
     );
   });
 
+  it('GET /api/resenas?page=1&limit=2 devuelve data y meta', async () => {
+    const res = await auth(
+      request(app).get('/api/resenas').query({ page: 1, limit: 2 })
+    );
+
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body.data.data)).toBe(true);
+    expect(res.body.data.data.length).toBeLessThanOrEqual(2);
+    expect(res.body.data.meta).toEqual(
+      expect.objectContaining({
+        page: 1,
+        limit: 2,
+        total: expect.any(Number),
+        totalPages: expect.any(Number),
+      })
+    );
+  });
+
+  it('GET /api/resenas?buscar=... busca por cliente o comentario', async () => {
+    const res = await auth(
+      request(app).get('/api/resenas').query({ buscar: s })
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.map((resena) => resena.id)).toEqual(
+      expect.arrayContaining([resenaActivaId, resenaInactivaId, resenaToggleId])
+    );
+  });
+
+  it('GET /api/resenas?limit=51 devuelve 422', async () => {
+    const res = await auth(request(app).get('/api/resenas').query({ limit: 51 }));
+    expect(res.status).toBe(422);
+  });
+
   it('rechaza un filtro de estado inválido (422)', async () => {
     const res = await auth(request(app).get('/api/resenas').query({ estado: 'otro' }));
     expect(res.status).toBe(422);

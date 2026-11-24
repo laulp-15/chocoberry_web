@@ -2,6 +2,7 @@
 // Esquemas de validación del módulo de glaseados (nombre y color hexadecimal).
 import { z } from 'zod';
 import { booleanoFlexible } from './common.validator.js';
+import { limiteField, paginaField } from './paginacion.validator.js';
 
 const vacioAUndefined = (valor) => (valor === '' || valor === null ? undefined : valor);
 
@@ -26,6 +27,8 @@ const hexField = z.preprocess(
 export const filtrosColorGlaseadoSchema = z.object({
   nombre: z.string().trim().optional(),
   estado: booleanoFlexible.optional(),
+  page: paginaField,
+  limit: limiteField,
 });
 
 export const crearColorGlaseadoSchema = z

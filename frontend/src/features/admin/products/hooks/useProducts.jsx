@@ -8,8 +8,11 @@
 
 import { useEffect, useState } from "react";
 
+import useDebouncedValue from "../../../../shared/hooks/useDebouncedValue";
 import * as categoryService from "../../categories/services/categoryService";
 import * as productService from "../services/productService";
+
+const PAGE_SIZE = 10;
 
 export const useProducts = ({ autoLoad = true } = {}) => {
   const [productos, setProductos] = useState([]);
@@ -22,6 +25,15 @@ export const useProducts = ({ autoLoad = true } = {}) => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState({
+    total: 0,
+    page: 1,
+    limit: PAGE_SIZE,
+    totalPages: 1,
+  });
+
+  const debouncedSearch = useDebouncedValue(searchTerm, 300);
 
   // Modales
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -31,18 +43,28 @@ export const useProducts = ({ autoLoad = true } = {}) => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [productToEdit, setProductToEdit] = useState(null);
 
-  // Carga inicial (productos + categorías para el select del formulario).
+  // Carga los productos de la página actual + categorías del formulario.
   useEffect(() => {
     if (!autoLoad && reloadToken === 0) return undefined;
 
     let activo = true;
+    const nombre = debouncedSearch.trim() || undefined;
+    const estado = statusFilter === "todos" ? undefined : statusFilter;
 
-    Promise.all([productService.listar(), categoryService.listar()])
-      .then(([lista, listaCategorias]) => {
+    Promise.all([
+      productService.listar({ page, limit: PAGE_SIZE, nombre, estado }),
+      categoryService.listar(),
+    ])
+      .then(([respuesta, listaCategorias]) => {
         if (!activo) return;
-        setProductos(lista);
+        setProductos(respuesta.data);
+        setMeta(respuesta.meta);
         setCategorias(listaCategorias);
         setError("");
+
+        if (page > respuesta.meta.totalPages) {
+          setPage(respuesta.meta.totalPages);
+        }
       })
       .catch((err) => {
         if (!activo) return;
@@ -55,7 +77,7 @@ export const useProducts = ({ autoLoad = true } = {}) => {
     return () => {
       activo = false;
     };
-  }, [autoLoad, reloadToken]);
+  }, [autoLoad, reloadToken, page, debouncedSearch, statusFilter]);
 
   function reload() {
     setLoading(true);
@@ -63,39 +85,27 @@ export const useProducts = ({ autoLoad = true } = {}) => {
     setReloadToken((valor) => valor + 1);
   }
 
-  // Filtrado local (la búsqueda de texto y el estado viven en la página).
-  const query = searchTerm.trim().toLowerCase();
-  const currentProducts = productos.filter((producto) => {
-    const matchesSearch =
-      !query ||
-      producto.nombre.toLowerCase().includes(query) ||
-      producto.descripcion.toLowerCase().includes(query) ||
-      producto.categoriaNombre.toLowerCase().includes(query);
+  const currentProducts = productos;
 
-    const matchesStatus =
-      statusFilter === "todos" ||
-      producto.estado.toLowerCase() === statusFilter.toLowerCase();
+  const handleSearchChange = (value) => {
+    setSearchTerm(value);
+    setPage(1);
+  };
 
-    return matchesSearch && matchesStatus;
-  });
+  const handleStatusFilterChange = (value) => {
+    setStatusFilter(value);
+    setPage(1);
+  };
 
-  const handleSearchChange = (value) => setSearchTerm(value);
-  const handleStatusFilterChange = (value) => setStatusFilter(value);
-
-  /** Activa/desactiva un producto contra el API y refleja la respuesta. */
+  /** Activa/desactiva un producto contra el API y recarga el listado. */
   async function handleToggleStatus(id) {
     const actual = productos.find((producto) => producto.id === id);
     if (!actual) return;
 
     try {
-      const actualizado = await productService.cambiarEstado(
-        id,
-        actual.estado !== "Activo"
-      );
-      setProductos((prev) =>
-        prev.map((producto) => (producto.id === id ? actualizado : producto))
-      );
+      await productService.cambiarEstado(id, actual.estado !== "Activo");
       setError("");
+      reload();
     } catch (err) {
       setError(err?.message || "No se pudo cambiar el estado del producto.");
     }
@@ -113,17 +123,14 @@ export const useProducts = ({ autoLoad = true } = {}) => {
           productToEdit.id,
           datos
         );
-        setProductos((prev) =>
-          prev.map((producto) =>
-            producto.id === actualizado.id ? actualizado : producto
-          )
-        );
         setProductToEdit(null);
+        reload();
         return actualizado;
       }
 
       const creado = await productService.crear(datos);
-      setProductos((prev) => [creado, ...prev]);
+      setPage(1);
+      reload();
       return creado;
     } finally {
       setSubmitting(false);
@@ -136,9 +143,7 @@ export const useProducts = ({ autoLoad = true } = {}) => {
 
     try {
       await productService.eliminar(selectedProduct.id);
-      setProductos((prev) =>
-        prev.filter((producto) => producto.id !== selectedProduct.id)
-      );
+      reload();
     } finally {
       setIsDeleteOpen(false);
       setSelectedProduct(null);
@@ -182,7 +187,10 @@ export const useProducts = ({ autoLoad = true } = {}) => {
     selectedProduct,
     productToEdit,
     currentProducts,
-    totalProductsCount: currentProducts.length,
+    totalProductsCount: meta.total,
+    page,
+    setPage,
+    meta,
 
     categorias,
     loading,

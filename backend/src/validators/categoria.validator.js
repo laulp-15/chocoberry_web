@@ -2,6 +2,7 @@
 // Esquemas de validación del módulo de categorías.
 import { z } from 'zod';
 import { booleanoFlexible } from './common.validator.js';
+import { limiteField, paginaField } from './paginacion.validator.js';
 
 const nombreField = z
   .string({ required_error: 'El nombre de la categoría es obligatorio.' })
@@ -12,6 +13,8 @@ const nombreField = z
 export const filtrosCategoriaSchema = z.object({
   nombre: z.string().trim().optional(),
   estado: booleanoFlexible.optional(),
+  page: paginaField,
+  limit: limiteField,
 });
 
 export const crearCategoriaSchema = z.object({

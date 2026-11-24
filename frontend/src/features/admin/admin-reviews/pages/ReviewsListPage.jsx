@@ -12,8 +12,13 @@ export default function ReviewsListPage() {
   const { can } = usePermissions();
   const canChangeStatus = can('Reseñas', 'Cambiar estado');
   const {
+    searchTerm,
+    handleSearchChange,
     statusFilter,
     handleStatusFilterChange,
+    page,
+    setPage,
+    meta,
     isDetailOpen,
     setIsDetailOpen,
     selectedReview,
@@ -124,6 +129,13 @@ export default function ReviewsListPage() {
         columns={columns}
         data={reviews}
         searchPlaceholder="Buscar por cliente o comentario..."
+        searchValue={searchTerm}
+        onSearchChange={handleSearchChange}
+        serverPagination
+        page={page}
+        totalPages={meta?.totalPages ?? 1}
+        totalRows={meta?.total ?? 0}
+        onPageChange={setPage}
         emptyMessage={
           loading
             ? "Cargando reseñas..."

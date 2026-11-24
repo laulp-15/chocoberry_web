@@ -532,6 +532,67 @@ describe('Módulo de pedidos', () => {
       expect(res.body.data.map((p) => p.id)).toContain(pedidoPrincipalId);
     });
 
+    it('pagina el listado y devuelve meta con total y conteos globales', async () => {
+      const pendientes = await auth(
+        request(app).get('/api/pedidos').query({ estado: 'pendiente' })
+      );
+      const res = await auth(
+        request(app).get('/api/pedidos').query({ page: 1, limit: 2 })
+      );
+
+      expect(res.status).toBe(200);
+      const { data, meta } = res.body.data;
+      expect(Array.isArray(data)).toBe(true);
+      expect(data).toHaveLength(Math.min(2, meta.total));
+      expect(meta).toMatchObject({ page: 1, limit: 2 });
+      expect(meta.total).toBeGreaterThanOrEqual(pendientes.body.data.length);
+      expect(meta.totalPages).toBe(Math.max(1, Math.ceil(meta.total / 2)));
+      expect(meta.estados.pendiente).toBe(pendientes.body.data.length);
+    });
+
+    it('respeta el orden de creación al paginar', async () => {
+      const completo = await auth(request(app).get('/api/pedidos'));
+      const res = await auth(
+        request(app).get('/api/pedidos').query({ page: 1, limit: 3, orden: 'creacion' })
+      );
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.data.map((p) => p.id)).toEqual(
+        completo.body.data.slice(0, 3).map((p) => p.id)
+      );
+    });
+
+    it('devuelve una página vacía con metadata si se supera el total', async () => {
+      const res = await auth(
+        request(app).get('/api/pedidos').query({ page: 999, limit: 2 })
+      );
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.data).toEqual([]);
+      expect(res.body.data.meta.page).toBe(999);
+      expect(res.body.data.meta.total).toBeGreaterThan(0);
+    });
+
+    it('rechaza un límite mayor a 50', async () => {
+      const res = await auth(
+        request(app).get('/api/pedidos').query({ page: 1, limit: 51 })
+      );
+
+      expect(res.status).toBe(422);
+      expect(res.body.errors?.[0]?.campo).toBe('limit');
+    });
+
+    it('GET /api/pedidos/mios no pagina aunque reciba page y limit', async () => {
+      const res = await auth(
+        request(app).get('/api/pedidos/mios').query({ page: 1, limit: 1 }),
+        tokenCliente
+      );
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body.data)).toBe(true);
+      expect(res.body.data.length).toBeGreaterThan(1);
+    });
+
     it('PATCH /estado con una transición inválida devuelve 409', async () => {
       const res = await cambiarEstado(pedidoPrincipalId, 'entregado');
       expect(res.status).toBe(409);

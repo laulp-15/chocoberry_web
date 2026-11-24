@@ -2,6 +2,7 @@
 // Esquemas de validación del módulo de presentaciones (cantidad de fresas y precio).
 import { z } from 'zod';
 import { booleanoFlexible } from './common.validator.js';
+import { limiteField, paginaField } from './paginacion.validator.js';
 
 // La cadena vacía (campo de formulario sin diligenciar) se trata como "no enviado".
 const vacioAUndefined = (valor) => (valor === '' || valor === null ? undefined : valor);
@@ -26,6 +27,9 @@ const precioField = z.coerce
 export const filtrosPresentacionSchema = z.object({
   cantidadFresas: z.preprocess(vacioAUndefined, cantidadFresasField.optional()),
   estado: booleanoFlexible.optional(),
+  buscar: z.string().trim().optional(),
+  page: paginaField,
+  limit: limiteField,
 });
 
 export const crearPresentacionSchema = z.object({

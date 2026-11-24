@@ -16,6 +16,11 @@ export default function RolesListPage() {
   const {
     roles,
     permissions,
+    searchTerm,
+    handleSearchChange,
+    page,
+    setPage,
+    meta,
     loading,
     error,
     reload,
@@ -169,6 +174,13 @@ export default function RolesListPage() {
         columns={columns}
         data={roles}
         searchPlaceholder="Buscar rol por nombre..."
+        searchValue={searchTerm}
+        onSearchChange={handleSearchChange}
+        serverPagination
+        page={page}
+        totalPages={meta?.totalPages ?? 1}
+        totalRows={meta?.total ?? 0}
+        onPageChange={setPage}
         emptyMessage="No se encontraron roles."
       />
 

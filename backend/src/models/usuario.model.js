@@ -17,9 +17,11 @@ const CAMPOS_ACTUALIZABLES = [
   'id_rol',
 ];
 
-const SELECT_BASE = `SELECT u.*, r.nombre_rol
-                       FROM usuario u
+const FROM_BASE = `FROM usuario u
                        JOIN rol r ON r.id = u.id_rol`;
+
+const SELECT_BASE = `SELECT u.*, r.nombre_rol
+                       ${FROM_BASE}`;
 
 /** Busca por correo (incluye la contraseña hasheada, para el login). */
 export async function buscarPorCorreo(correo) {
@@ -49,8 +51,8 @@ export async function buscarPorNumeroDocumento(numeroDocumento, excluirId = null
   return rows[0] ?? null;
 }
 
-/** Lista usuarios con filtros opcionales: nombre, correo, rol/id_rol y estado. */
-export async function listar({ nombre, correo, rol, idRol, estado } = {}) {
+/** Construye el WHERE compartido por listados y conteos. */
+function construirFiltros({ nombre, correo, buscar, rol, idRol, estado } = {}) {
   const where = [];
   const params = [];
 
@@ -67,6 +69,14 @@ export async function listar({ nombre, correo, rol, idRol, estado } = {}) {
     params.push(`%${correo}%`);
   }
 
+  if (buscar) {
+    const like = `%${buscar}%`;
+    where.push(
+      "(u.nombres LIKE ? OR u.apellidos LIKE ? OR CONCAT(u.nombres, ' ', u.apellidos) LIKE ? OR u.correo LIKE ?)"
+    );
+    params.push(like, like, like, like);
+  }
+
   if (idRol) {
     where.push('u.id_rol = ?');
     params.push(idRol);
@@ -80,8 +90,41 @@ export async function listar({ nombre, correo, rol, idRol, estado } = {}) {
     params.push(estado ? 1 : 0);
   }
 
-  const sql = `${SELECT_BASE}${where.length ? ` WHERE ${where.join(' AND ')}` : ''} ORDER BY u.id DESC`;
-  return query(sql, params);
+  return {
+    whereSql: where.length ? ` WHERE ${where.join(' AND ')}` : '',
+    params,
+  };
+}
+
+/**
+ * Lista usuarios con filtros opcionales. Agrega LIMIT/OFFSET solo cuando se
+ * reciben `page` y `limit`.
+ */
+export async function listar(filtros = {}) {
+  const { page, limit, ...resto } = filtros;
+  const { whereSql, params } = construirFiltros(resto);
+  const paginado = Number.isInteger(page) && Number.isInteger(limit);
+
+  let sql = `${SELECT_BASE}${whereSql} ORDER BY u.id DESC`;
+  const paramsSql = [...params];
+
+  if (paginado) {
+    sql += ' LIMIT ? OFFSET ?';
+    paramsSql.push(limit, (page - 1) * limit);
+  }
+
+  return query(sql, paramsSql);
+}
+
+/** Cuenta usuarios usando exactamente los mismos filtros del listado. */
+export async function contar(filtros = {}) {
+  const { page, limit, ...resto } = filtros;
+  const { whereSql, params } = construirFiltros(resto);
+  const filas = await query(
+    `SELECT COUNT(*) AS total ${FROM_BASE}${whereSql}`,
+    params
+  );
+  return Number(filas[0]?.total ?? 0);
 }
 
 /** Inserta un usuario y devuelve su id. */

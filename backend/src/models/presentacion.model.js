@@ -5,10 +5,12 @@ import { query } from '../config/db.js';
 // Columnas que se pueden actualizar (lista blanca para evitar inyección).
 const CAMPOS_ACTUALIZABLES = ['cantidad_fresas', 'precio', 'estado'];
 
+const FROM_BASE = 'FROM presentacion';
+
 const SELECT_BASE = 'SELECT id, cantidad_fresas, precio, estado FROM presentacion';
 
-/** Lista presentaciones con filtros opcionales: cantidad de fresas y estado. */
-export async function listar({ cantidadFresas, estado } = {}) {
+/** Construye el WHERE compartido por listados y conteos. */
+function construirFiltros({ cantidadFresas, estado, buscar } = {}) {
   const where = [];
   const params = [];
 
@@ -17,13 +19,54 @@ export async function listar({ cantidadFresas, estado } = {}) {
     params.push(cantidadFresas);
   }
 
+  if (buscar) {
+    const like = `%${buscar}%`;
+    where.push(
+      `(CAST(cantidad_fresas AS CHAR) LIKE ? OR CAST(precio AS CHAR) LIKE ? OR IF(estado = 1, 'activo', 'inactivo') LIKE ?)`
+    );
+    params.push(like, like, like);
+  }
+
   if (estado !== undefined) {
     where.push('estado = ?');
     params.push(estado ? 1 : 0);
   }
 
-  const sql = `${SELECT_BASE}${where.length ? ` WHERE ${where.join(' AND ')}` : ''} ORDER BY cantidad_fresas ASC`;
-  return query(sql, params);
+  return {
+    whereSql: where.length ? ` WHERE ${where.join(' AND ')}` : '',
+    params,
+  };
+}
+
+/**
+ * Lista presentaciones con filtros opcionales. Agrega LIMIT/OFFSET solo cuando
+ * se reciben `page` y `limit`.
+ */
+export async function listar(filtros = {}) {
+  const { page, limit, ...resto } = filtros;
+  const { whereSql, params } = construirFiltros(resto);
+  const paginado = Number.isInteger(page) && Number.isInteger(limit);
+
+  let sql = `${SELECT_BASE}${whereSql} ORDER BY cantidad_fresas ASC`;
+  const paramsSql = [...params];
+
+  if (paginado) {
+    sql += ' LIMIT ? OFFSET ?';
+    paramsSql.push(limit, (page - 1) * limit);
+  }
+
+  return query(sql, paramsSql);
+}
+
+/** Cuenta presentaciones usando exactamente los mismos filtros del listado. */
+export async function contar(filtros = {}) {
+  const { page, limit, ...resto } = filtros;
+  const { whereSql, params } = construirFiltros(resto);
+  const filas = await query(
+    `SELECT COUNT(*) AS total ${FROM_BASE}${whereSql}`,
+    params
+  );
+  return Number(filas[0]?.total ?? 0);
 }
 
 export async function buscarPorId(id) {

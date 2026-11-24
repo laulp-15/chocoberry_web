@@ -24,16 +24,30 @@ const CAMPOS_ENTREGA = [
   'evidencia_public_id',
 ];
 
-const SELECT_BASE = `SELECT p.*, e.nombre AS estado, m.nombre AS municipio,
-                            u.nombres, u.apellidos, u.correo, u.telefono,
-                            u.tipo_documento, u.numero_documento
-                       FROM pedido p
+const FROM_BASE = `FROM pedido p
                        JOIN estadosPedido e ON e.id = p.id_estado
                        JOIN municipio m ON m.id = p.id_municipio
                        JOIN usuario u ON u.id = p.id_usuario`;
 
-/** Lista pedidos con filtros opcionales (todos aplicados con parámetros). */
-export async function listar({
+const SELECT_BASE = `SELECT p.*, e.nombre AS estado, m.nombre AS municipio,
+                            u.nombres, u.apellidos, u.correo, u.telefono,
+                            u.tipo_documento, u.numero_documento
+                       ${FROM_BASE}`;
+
+const ORDENES = {
+  creacion: 'p.fecha DESC, p.id DESC',
+  entrega: 'p.fecha_entrega IS NULL, p.fecha_entrega DESC, p.fecha DESC, p.id DESC',
+  cancelacion:
+    'p.fecha_cancelacion IS NULL, p.fecha_cancelacion DESC, p.fecha DESC, p.id DESC',
+  entrega_activa: `p.fecha_entrega IS NULL,
+                   (p.fecha_entrega < CURDATE()) DESC,
+                   CASE WHEN p.fecha_entrega < CURDATE() THEN p.fecha_entrega END DESC,
+                   CASE WHEN p.fecha_entrega >= CURDATE() THEN p.fecha_entrega END ASC,
+                   p.fecha DESC, p.id DESC`,
+};
+
+/** Construye el WHERE compartido por listados y conteos. */
+function construirFiltros({
   estado,
   estados,
   idEstado,
@@ -93,11 +107,59 @@ export async function listar({
     params.push(`${fechaHasta} 23:59:59`);
   }
 
-  // Orden de llegada: fecha de creación (no fecha_entrega). El id desempata
-  // los pedidos creados dentro del mismo segundo.
-  const sql = `${SELECT_BASE}${where.length ? ` WHERE ${where.join(' AND ')}` : ''}
-               ORDER BY p.fecha DESC, p.id DESC`;
-  return query(sql, params);
+  return {
+    whereSql: where.length ? ` WHERE ${where.join(' AND ')}` : '',
+    params,
+  };
+}
+
+/**
+ * Lista pedidos con filtros opcionales. Agrega LIMIT/OFFSET solo cuando se
+ * reciben `page` y `limit`.
+ */
+export async function listar(filtros = {}) {
+  const { page, limit, orden, ...resto } = filtros;
+  const { whereSql, params } = construirFiltros(resto);
+  const ordenSql = ORDENES[orden] ?? ORDENES.creacion;
+  const paginado = Number.isInteger(page) && Number.isInteger(limit);
+
+  let sql = `${SELECT_BASE}${whereSql} ORDER BY ${ordenSql}`;
+  const paramsSql = [...params];
+
+  if (paginado) {
+    sql += ' LIMIT ? OFFSET ?';
+    paramsSql.push(limit, (page - 1) * limit);
+  }
+
+  return query(sql, paramsSql);
+}
+
+/** Cuenta pedidos usando exactamente los mismos filtros del listado. */
+export async function contar(filtros = {}) {
+  const { page, limit, orden, ...resto } = filtros;
+  const { whereSql, params } = construirFiltros(resto);
+  const filas = await query(
+    `SELECT COUNT(*) AS total ${FROM_BASE}${whereSql}`,
+    params
+  );
+  return Number(filas[0]?.total ?? 0);
+}
+
+/** Cuenta pedidos por estado con los filtros recibidos. */
+export async function contarPorEstado(filtros = {}) {
+  const { page, limit, orden, ...resto } = filtros;
+  const { whereSql, params } = construirFiltros(resto);
+  const filas = await query(
+    `SELECT e.nombre AS estado, COUNT(*) AS total
+       ${FROM_BASE}${whereSql}
+      GROUP BY e.id, e.nombre`,
+    params
+  );
+
+  return filas.reduce((conteos, fila) => {
+    conteos[fila.estado] = Number(fila.total);
+    return conteos;
+  }, {});
 }
 
 export async function buscarPorId(id) {

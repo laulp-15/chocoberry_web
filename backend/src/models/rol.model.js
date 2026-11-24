@@ -38,25 +38,56 @@ export async function buscarPorNombreOSlug(valor) {
 // Gestión de roles (módulo de configuración)
 // ---------------------------------------------------------------------------
 
-const SELECT_CON_CONTEO = `SELECT r.id, r.nombre_rol,
-         COUNT(DISTINCT u.id) AS total_usuarios,
-         COUNT(DISTINCT rp.id_permiso) AS total_permisos
-    FROM rol r
+const FROM_CON_CONTEO = `FROM rol r
     LEFT JOIN usuario u ON u.id_rol = r.id
     LEFT JOIN rolPermiso rp ON rp.id_rol = r.id`;
 
-/** Lista roles con el conteo de permisos y de usuarios asignados. */
-export async function listarConConteo({ nombre } = {}) {
+const SELECT_CON_CONTEO = `SELECT r.id, r.nombre_rol,
+         COUNT(DISTINCT u.id) AS total_usuarios,
+         COUNT(DISTINCT rp.id_permiso) AS total_permisos
+    ${FROM_CON_CONTEO}`;
+
+/** Construye el WHERE compartido por listados y conteos. */
+function construirFiltros({ nombre } = {}) {
+  const where = [];
+  const params = [];
+
   if (nombre) {
-    return query(
-      `${SELECT_CON_CONTEO}
-        WHERE LOWER(r.nombre_rol) LIKE LOWER(?)
-        GROUP BY r.id, r.nombre_rol
-        ORDER BY r.id`,
-      [`%${nombre}%`]
-    );
+    where.push('LOWER(r.nombre_rol) LIKE LOWER(?)');
+    params.push(`%${nombre}%`);
   }
-  return query(`${SELECT_CON_CONTEO} GROUP BY r.id, r.nombre_rol ORDER BY r.id`);
+
+  return {
+    whereSql: where.length ? ` WHERE ${where.join(' AND ')}` : '',
+    params,
+  };
+}
+
+/**
+ * Lista roles con el conteo de permisos y de usuarios asignados. Agrega
+ * LIMIT/OFFSET solo cuando se reciben `page` y `limit`.
+ */
+export async function listarConConteo(filtros = {}) {
+  const { page, limit, ...resto } = filtros;
+  const { whereSql, params } = construirFiltros(resto);
+  const paginado = Number.isInteger(page) && Number.isInteger(limit);
+
+  let sql = `${SELECT_CON_CONTEO}${whereSql} GROUP BY r.id, r.nombre_rol ORDER BY r.id`;
+  const paramsSql = [...params];
+
+  if (paginado) {
+    sql += ' LIMIT ? OFFSET ?';
+    paramsSql.push(limit, (page - 1) * limit);
+  }
+
+  return query(sql, paramsSql);
+}
+
+/** Cuenta roles usando exactamente el mismo filtro del listado. */
+export async function contar(filtros = {}) {
+  const { whereSql, params } = construirFiltros(filtros);
+  const filas = await query(`SELECT COUNT(*) AS total FROM rol r${whereSql}`, params);
+  return Number(filas[0]?.total ?? 0);
 }
 
 export async function buscarPorIdConConteo(id) {

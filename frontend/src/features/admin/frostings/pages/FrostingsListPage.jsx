@@ -18,8 +18,13 @@ export default function FrostingsListPage() {
   const canChangeStatus = can('Productos', 'Cambiar estado');
   const [notification, setNotification] = useState(null);
   const {
+    searchTerm,
+    handleSearchChange,
     statusFilter,
-    setStatusFilter,
+    handleStatusFilterChange,
+    page,
+    setPage,
+    meta,
     isModalOpen,
     setIsModalOpen,
     isDetailOpen,
@@ -28,7 +33,7 @@ export default function FrostingsListPage() {
     setIsDeleteOpen,
     selectedFrosting,
     frostingToEdit,
-    filteredFrostings,
+    currentFrostings,
     loading,
     submitting,
     error,
@@ -149,15 +154,22 @@ export default function FrostingsListPage() {
         createLabel={canCreate ? 'Crear glaseado' : undefined}
         onCreate={canCreate ? handleOpenCreate : undefined}
         columns={columns}
-        data={filteredFrostings}
+        data={currentFrostings}
         searchPlaceholder="Buscar glaseado..."
+        searchValue={searchTerm}
+        onSearchChange={handleSearchChange}
+        serverPagination
+        page={page}
+        totalPages={meta.totalPages}
+        totalRows={meta.total}
+        onPageChange={setPage}
         emptyMessage={
           loading ? 'Cargando glaseados...' : 'No hay glaseados para mostrar.'
         }
         extraFilter={
           <FormSelect
             value={statusFilter}
-            onChange={setStatusFilter}
+            onChange={handleStatusFilterChange}
             options={[
               { value: 'todos', label: 'Todos los estados' },
               { value: 'activo', label: 'Activo' },

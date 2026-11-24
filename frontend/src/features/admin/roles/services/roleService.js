@@ -8,9 +8,23 @@ import {
   toRolPayload,
 } from "./roleMappers";
 
-export async function listarRoles() {
-  const roles = await api.get("/roles");
-  return roles.map((rol) => mapRolFromApi(rol));
+export async function listarRoles(filtros = {}) {
+  const params = new URLSearchParams();
+  Object.entries(filtros).forEach(([clave, valor]) => {
+    if (valor !== undefined && valor !== null && valor !== "") {
+      params.set(clave, String(valor));
+    }
+  });
+
+  const query = params.toString();
+  const respuesta = await api.get(`/roles${query ? `?${query}` : ""}`);
+
+  if (Array.isArray(respuesta)) return respuesta.map((rol) => mapRolFromApi(rol));
+
+  return {
+    data: (respuesta?.data ?? []).map((rol) => mapRolFromApi(rol)),
+    meta: respuesta?.meta ?? null,
+  };
 }
 
 export async function listarPermisos() {

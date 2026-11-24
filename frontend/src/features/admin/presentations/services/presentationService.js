@@ -12,10 +12,32 @@ import {
   toCrearPresentacionPayload,
 } from './presentationMappers';
 
-/** GET /presentaciones -> lista traducida al shape del panel. */
-export async function listar() {
-  const presentaciones = await api.get('/presentaciones');
-  return mapPresentacionesAdmin(presentaciones);
+function construirQuery(filtros = {}) {
+  const params = new URLSearchParams();
+  Object.entries(filtros).forEach(([clave, valor]) => {
+    if (valor !== undefined && valor !== null && valor !== '') {
+      params.set(clave, String(valor));
+    }
+  });
+  const query = params.toString();
+  return query ? `?${query}` : '';
+}
+
+/**
+ * GET /presentaciones -> lista traducida al shape del panel. Con `page`/`limit`
+ * el backend responde `{ data, meta }`; sin ellos conserva el array completo.
+ */
+export async function listar(filtros = {}) {
+  const respuesta = await api.get(`/presentaciones${construirQuery(filtros)}`);
+
+  if (Array.isArray(respuesta)) {
+    return mapPresentacionesAdmin(respuesta);
+  }
+
+  return {
+    data: mapPresentacionesAdmin(respuesta?.data ?? []),
+    meta: respuesta?.meta ?? null,
+  };
 }
 
 /** GET /presentaciones/:id */

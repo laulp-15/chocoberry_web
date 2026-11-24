@@ -13,6 +13,7 @@ export const listar = asyncHandler(async (req, res) => {
 export const listarMios = asyncHandler(async (req, res) => {
   const pedidos = await pedidoService.listar(req.validado.query, req.usuario, {
     soloPropios: true,
+    paginar: false,
   });
   return sendSuccess(res, pedidos, 'Tus pedidos fueron obtenidos exitosamente.');
 });

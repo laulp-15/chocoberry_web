@@ -3,6 +3,7 @@
 // comentario; el usuario, la fecha y el estado se resuelven en el servidor.
 import { z } from 'zod';
 import { booleanoFlexible } from './common.validator.js';
+import { limiteField, paginaField } from './paginacion.validator.js';
 
 const vacioAUndefined = (valor) => (valor === '' || valor === null ? undefined : valor);
 
@@ -35,8 +36,11 @@ export const filtrosResenaPublicaSchema = z.object({
 
 export const filtrosResenaSchema = z.object({
   cliente: z.string().trim().optional(),
+  buscar: z.string().trim().optional(),
   calificacion: calificacionFiltro,
   estado: z.preprocess(vacioAUndefined, booleanoFlexible.optional()),
+  page: paginaField,
+  limit: limiteField,
 });
 
 export const cambiarEstadoResenaSchema = z.object({

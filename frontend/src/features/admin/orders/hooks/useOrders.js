@@ -7,8 +7,25 @@ import { useEffect, useState } from "react";
 
 import * as orderService from "../services/orderService";
 
-export default function useOrders({ autoLoad = true } = {}) {
+const META_INICIAL = {
+  total: 0,
+  page: 1,
+  limit: 10,
+  totalPages: 1,
+  estados: {},
+};
+
+export default function useOrders({
+  autoLoad = true,
+  page = 1,
+  limit = 10,
+  estado,
+  cliente,
+  orden,
+  onPageOutOfRange,
+} = {}) {
   const [orders, setOrders] = useState([]);
+  const [meta, setMeta] = useState(META_INICIAL);
   const [loading, setLoading] = useState(autoLoad);
   const [error, setError] = useState("");
   const [reloadToken, setReloadToken] = useState(0);
@@ -26,11 +43,16 @@ export default function useOrders({ autoLoad = true } = {}) {
     let activo = true;
 
     orderService
-      .listar()
-      .then((lista) => {
+      .listar({ page, limit, estado, cliente, orden })
+      .then(({ data, meta: nuevaMeta }) => {
         if (!activo) return;
-        setOrders(lista);
+        const metaFinal = nuevaMeta ?? { ...META_INICIAL, page, limit };
+        setOrders(data);
+        setMeta(metaFinal);
         setError("");
+        if (page > metaFinal.totalPages) {
+          onPageOutOfRange?.(metaFinal.totalPages);
+        }
       })
       .catch((err) => {
         if (!activo) return;
@@ -43,7 +65,16 @@ export default function useOrders({ autoLoad = true } = {}) {
     return () => {
       activo = false;
     };
-  }, [autoLoad, reloadToken]);
+  }, [
+    autoLoad,
+    reloadToken,
+    page,
+    limit,
+    estado,
+    cliente,
+    orden,
+    onPageOutOfRange,
+  ]);
 
   function reload() {
     setLoading(true);
@@ -51,20 +82,10 @@ export default function useOrders({ autoLoad = true } = {}) {
     setReloadToken((valor) => valor + 1);
   }
 
-  function reemplazar(actualizado) {
-    setOrders((prev) =>
-      prev.map((pedido) =>
-        String(pedido.id) === String(actualizado.id) ? actualizado : pedido
-      )
-    );
-  }
-
   async function createOrder(datos) {
     setSubmitting(true);
     try {
-      const creado = await orderService.crear(datos);
-      setOrders((prev) => [creado, ...prev]);
-      return creado;
+      return await orderService.crear(datos);
     } finally {
       setSubmitting(false);
     }
@@ -74,7 +95,7 @@ export default function useOrders({ autoLoad = true } = {}) {
     setSubmitting(true);
     try {
       const actualizado = await orderService.actualizar(id, datos);
-      reemplazar(actualizado);
+      reload();
       return actualizado;
     } finally {
       setSubmitting(false);
@@ -89,7 +110,7 @@ export default function useOrders({ autoLoad = true } = {}) {
         estado,
         observacionesEntrega
       );
-      reemplazar(actualizado);
+      reload();
       return actualizado;
     } finally {
       setStatusSavingId(null);
@@ -100,7 +121,7 @@ export default function useOrders({ autoLoad = true } = {}) {
     setRejectSubmitting(true);
     try {
       const actualizado = await orderService.rechazar(id, motivo);
-      reemplazar(actualizado);
+      reload();
       return actualizado;
     } finally {
       setRejectSubmitting(false);
@@ -111,7 +132,7 @@ export default function useOrders({ autoLoad = true } = {}) {
     setPaymentUploadingId(id);
     try {
       const actualizado = await orderService.subirComprobante(id, archivo);
-      reemplazar(actualizado);
+      reload();
       return actualizado;
     } finally {
       setPaymentUploadingId(null);
@@ -125,7 +146,7 @@ export default function useOrders({ autoLoad = true } = {}) {
         id,
         monto
       );
-      reemplazar(pedido);
+      reload();
       return { pedido, advertencia };
     } finally {
       setPaymentSavingId(null);
@@ -136,7 +157,7 @@ export default function useOrders({ autoLoad = true } = {}) {
     setPaymentSavingId(id);
     try {
       const pedido = await orderService.devolverComprobante(id, motivo);
-      reemplazar(pedido);
+      reload();
       return pedido;
     } finally {
       setPaymentSavingId(null);
@@ -147,7 +168,7 @@ export default function useOrders({ autoLoad = true } = {}) {
     setReprogrammingId(id);
     try {
       const actualizado = await orderService.reprogramar(id, fechaEntrega);
-      reemplazar(actualizado);
+      reload();
       return actualizado;
     } finally {
       setReprogrammingId(null);
@@ -156,6 +177,7 @@ export default function useOrders({ autoLoad = true } = {}) {
 
   return {
     orders,
+    meta,
     loading,
     error,
     reload,

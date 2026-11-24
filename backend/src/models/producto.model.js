@@ -6,19 +6,22 @@ import * as imagenProductoModel from './imagenProducto.model.js';
 // Columnas que se pueden actualizar (lista blanca para evitar inyección).
 const CAMPOS_ACTUALIZABLES = ['nombre', 'descripcion', 'estado', 'id_categoria'];
 
-const SELECT_BASE = `SELECT p.id, p.nombre, p.descripcion, p.estado,
-                            p.id_categoria, c.nombre AS categoria
-                       FROM producto p
+const FROM_BASE = `FROM producto p
                        JOIN categoria c ON c.id = p.id_categoria`;
 
-/** Lista productos con filtros opcionales: nombre, categoría (id o nombre) y estado. */
-export async function listar({ nombre, idCategoria, categoria, estado } = {}) {
+const SELECT_BASE = `SELECT p.id, p.nombre, p.descripcion, p.estado,
+                            p.id_categoria, c.nombre AS categoria
+                       ${FROM_BASE}`;
+
+/** Construye el WHERE compartido por listados y conteos. */
+function construirFiltros({ nombre, idCategoria, categoria, estado } = {}) {
   const where = [];
   const params = [];
 
   if (nombre) {
-    where.push('p.nombre LIKE ?');
-    params.push(`%${nombre}%`);
+    const like = `%${nombre}%`;
+    where.push('(p.nombre LIKE ? OR p.descripcion LIKE ? OR c.nombre LIKE ?)');
+    params.push(like, like, like);
   }
 
   if (idCategoria) {
@@ -34,8 +37,41 @@ export async function listar({ nombre, idCategoria, categoria, estado } = {}) {
     params.push(estado ? 1 : 0);
   }
 
-  const sql = `${SELECT_BASE}${where.length ? ` WHERE ${where.join(' AND ')}` : ''} ORDER BY p.id DESC`;
-  return query(sql, params);
+  return {
+    whereSql: where.length ? ` WHERE ${where.join(' AND ')}` : '',
+    params,
+  };
+}
+
+/**
+ * Lista productos con filtros opcionales. Agrega LIMIT/OFFSET solo cuando se
+ * reciben `page` y `limit`.
+ */
+export async function listar(filtros = {}) {
+  const { page, limit, ...resto } = filtros;
+  const { whereSql, params } = construirFiltros(resto);
+  const paginado = Number.isInteger(page) && Number.isInteger(limit);
+
+  let sql = `${SELECT_BASE}${whereSql} ORDER BY p.id DESC`;
+  const paramsSql = [...params];
+
+  if (paginado) {
+    sql += ' LIMIT ? OFFSET ?';
+    paramsSql.push(limit, (page - 1) * limit);
+  }
+
+  return query(sql, paramsSql);
+}
+
+/** Cuenta productos usando exactamente los mismos filtros del listado. */
+export async function contar(filtros = {}) {
+  const { page, limit, ...resto } = filtros;
+  const { whereSql, params } = construirFiltros(resto);
+  const filas = await query(
+    `SELECT COUNT(*) AS total ${FROM_BASE}${whereSql}`,
+    params
+  );
+  return Number(filas[0]?.total ?? 0);
 }
 
 export async function buscarPorId(id) {

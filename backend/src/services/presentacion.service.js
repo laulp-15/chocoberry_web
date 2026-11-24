@@ -2,14 +2,45 @@
 // Reglas de negocio de las presentaciones. Solo esta capa habla con los modelos.
 import { ConflictError, NotFoundError } from '../errors/index.js';
 import * as presentacionModel from '../models/presentacion.model.js';
+import { construirMeta, leerPaginacion } from '../utils/paginacion.js';
 import { serializarPresentacion } from '../utils/serializers.js';
 
 export async function listar(filtros = {}) {
-  const filas = await presentacionModel.listar({
+  const paginacion = leerPaginacion(filtros);
+  const filtrosBase = {
     cantidadFresas: filtros.cantidadFresas ?? filtros.cantidad_fresas,
     estado: filtros.estado,
-  });
-  return filas.map(serializarPresentacion);
+    buscar: filtros.buscar,
+  };
+
+  let filas;
+  let total = null;
+
+  if (paginacion.paginado) {
+    [filas, total] = await Promise.all([
+      presentacionModel.listar({
+        ...filtrosBase,
+        page: paginacion.page,
+        limit: paginacion.limit,
+      }),
+      presentacionModel.contar(filtrosBase),
+    ]);
+  } else {
+    filas = await presentacionModel.listar(filtrosBase);
+  }
+
+  const data = filas.map(serializarPresentacion);
+
+  if (!paginacion.paginado) return data;
+
+  return {
+    data,
+    meta: construirMeta({
+      total,
+      page: paginacion.page,
+      limit: paginacion.limit,
+    }),
+  };
 }
 
 export async function obtener(id) {

@@ -78,6 +78,43 @@ describe('Módulo de catálogo (categorías, productos y presentaciones)', () =>
       expect(res.status).toBe(200);
       expect(res.body.data.map((c) => c.id)).toContain(categoriaId);
     });
+
+    it('GET /api/categorias sin page ni limit conserva el array completo', async () => {
+      const res = await auth(request(app).get('/api/categorias')).query({ nombre: nombreCategoria });
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body.data)).toBe(true);
+      expect(res.body.meta).toBeUndefined();
+    });
+
+    it('GET /api/categorias pagina con page y limit', async () => {
+      const res = await auth(request(app).get('/api/categorias')).query({
+        nombre: nombreCategoria,
+        page: 1,
+        limit: 1,
+      });
+
+      expect(res.status).toBe(200);
+      const { data, meta } = res.body.data;
+      expect(data).toHaveLength(1);
+      expect(data[0].id).toBe(categoriaId);
+      expect(meta).toMatchObject({
+        total: 1,
+        page: 1,
+        limit: 1,
+        totalPages: 1,
+      });
+    });
+
+    it('GET /api/categorias rechaza un límite mayor a 50', async () => {
+      const res = await auth(request(app).get('/api/categorias')).query({
+        page: 1,
+        limit: 51,
+      });
+
+      expect(res.status).toBe(422);
+      expect(res.body.errors?.[0]?.campo).toBe('limit');
+    });
   });
 
   describe('Productos', () => {
@@ -286,6 +323,43 @@ describe('Módulo de catálogo (categorías, productos y presentaciones)', () =>
       expect(res.body.data[0].id).toBe(productoId);
     });
 
+    it('GET /api/productos sin page ni limit conserva el array completo', async () => {
+      const res = await auth(request(app).get('/api/productos')).query({ nombre: nombreProducto });
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body.data)).toBe(true);
+      expect(res.body.meta).toBeUndefined();
+    });
+
+    it('GET /api/productos pagina con page y limit', async () => {
+      const res = await auth(request(app).get('/api/productos')).query({
+        nombre: nombreProducto,
+        page: 1,
+        limit: 1,
+      });
+
+      expect(res.status).toBe(200);
+      const { data, meta } = res.body.data;
+      expect(data).toHaveLength(1);
+      expect(data[0].id).toBe(productoId);
+      expect(meta).toMatchObject({
+        total: 1,
+        page: 1,
+        limit: 1,
+        totalPages: 1,
+      });
+    });
+
+    it('GET /api/productos rechaza un límite mayor a 50', async () => {
+      const res = await auth(request(app).get('/api/productos')).query({
+        page: 1,
+        limit: 51,
+      });
+
+      expect(res.status).toBe(422);
+      expect(res.body.errors?.[0]?.campo).toBe('limit');
+    });
+
     it('al eliminar el producto se eliminan sus imágenes', async () => {
       const creado = await auth(request(app).post('/api/productos')).send({
         nombre: `Cascada ${s}`,
@@ -382,6 +456,56 @@ describe('Módulo de catálogo (categorías, productos y presentaciones)', () =>
       expect(res.status).toBe(200);
       expect(res.body.data.precio).toBe(30000);
       expect(res.body.data.estado).toBe(false);
+    });
+
+    it('GET /api/presentaciones sin page ni limit conserva el array completo', async () => {
+      const res = await auth(request(app).get('/api/presentaciones')).query({
+        cantidadFresas: cantidad,
+      });
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body.data)).toBe(true);
+      expect(res.body.meta).toBeUndefined();
+    });
+
+    it('GET /api/presentaciones pagina con page y limit', async () => {
+      const res = await auth(request(app).get('/api/presentaciones')).query({
+        cantidadFresas: cantidad,
+        page: 1,
+        limit: 1,
+      });
+
+      expect(res.status).toBe(200);
+      const { data, meta } = res.body.data;
+      expect(data).toHaveLength(1);
+      expect(data[0].id).toBe(presentacionId);
+      expect(meta).toMatchObject({
+        total: 1,
+        page: 1,
+        limit: 1,
+        totalPages: 1,
+      });
+    });
+
+    it('GET /api/presentaciones busca por cantidad o precio al paginar', async () => {
+      const res = await auth(request(app).get('/api/presentaciones')).query({
+        buscar: String(cantidad),
+        page: 1,
+        limit: 50,
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.data.map((p) => p.id)).toContain(presentacionId);
+    });
+
+    it('GET /api/presentaciones rechaza un límite mayor a 50', async () => {
+      const res = await auth(request(app).get('/api/presentaciones')).query({
+        page: 1,
+        limit: 51,
+      });
+
+      expect(res.status).toBe(422);
+      expect(res.body.errors?.[0]?.campo).toBe('limit');
     });
   });
 

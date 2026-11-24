@@ -81,15 +81,15 @@
   width: 100%;
   margin-bottom: 16px;
   padding: 10px 16px;
-  background: rgba(230, 57, 80, 0.08);
-  border: 1px solid rgba(230, 57, 80, 0.25);
+  background: var(--secundario-2);
+  border: 1px solid var(--secundario-1);
   border-radius: 12px;
 }
 
 .cart-reminder-icon {
   flex-shrink: 0;
   font-size: 14px;
-  color: var(--primario, #E63950);
+  color: var(--chocolate-100);
 }
 
 .cart-reminder-text {
@@ -101,7 +101,7 @@
 }
 
 .cart-reminder-text strong {
-  color: var(--primario, #E63950);
+  color: var(--chocolate-100);
   font-weight: 700;
 }
 

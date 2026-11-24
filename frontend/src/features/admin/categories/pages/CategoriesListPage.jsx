@@ -18,9 +18,12 @@ export default function CategoriesListPage() {
   const [notification, setNotification] = useState(null);
   const {
     searchTerm,
-    setSearchTerm,
+    handleSearchChange,
     statusFilter,
-    setStatusFilter,
+    handleStatusFilterChange,
+    page,
+    setPage,
+    meta,
     isModalOpen,
     setIsModalOpen,
     isDetailOpen,
@@ -29,7 +32,7 @@ export default function CategoriesListPage() {
     setIsDeleteOpen,
     selectedCategory,
     categoryToEdit,
-    filteredCategorias,
+    currentCategories,
     loading,
     submitting,
     error,
@@ -152,15 +155,20 @@ export default function CategoriesListPage() {
         createLabel={canCreate ? 'Crear categoría' : undefined}
         onCreate={canCreate ? handleOpenCreate : undefined}
         columns={columns}
-        data={filteredCategorias}
+        data={currentCategories}
         searchPlaceholder="Buscar por categoría..."
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
+        searchValue={searchTerm}
+        onSearchChange={handleSearchChange}
+        serverPagination
+        page={page}
+        totalPages={meta.totalPages}
+        totalRows={meta.total}
+        onPageChange={setPage}
         emptyMessage={loading ? 'Cargando categorías...' : 'No hay categorías para mostrar.'}
         extraFilter={
           <FormSelect
             value={statusFilter}
-            onChange={setStatusFilter}
+            onChange={handleStatusFilterChange}
             options={[
               { value: 'todos', label: 'Todos los estados' },
               { value: 'activo', label: 'Activo' },

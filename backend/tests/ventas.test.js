@@ -278,6 +278,41 @@ describe('Módulo de ventas', () => {
     expect(res.body.data.every((venta) => venta.estado.nombre === 'Cancelado')).toBe(true);
   });
 
+  it('pagina el listado de ventas y devuelve meta', async () => {
+    const completo = await auth(request(app).get('/api/ventas'));
+    const res = await auth(
+      request(app).get('/api/ventas').query({ page: 1, limit: 2 })
+    );
+
+    expect(res.status).toBe(200);
+    const { data, meta } = res.body.data;
+    expect(Array.isArray(data)).toBe(true);
+    expect(data).toHaveLength(Math.min(2, meta.total));
+    expect(meta).toMatchObject({ page: 1, limit: 2 });
+    expect(meta.total).toBe(completo.body.data.length);
+    expect(meta.totalPages).toBe(Math.max(1, Math.ceil(meta.total / 2)));
+  });
+
+  it('mantiene el filtro de estado al paginar ventas', async () => {
+    const canceladas = await auth(
+      request(app).get('/api/ventas').query({ estado: 'cancelado' })
+    );
+    const res = await auth(
+      request(app)
+        .get('/api/ventas')
+        .query({ estado: 'cancelado', page: 1, limit: 1 })
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.meta.total).toBe(canceladas.body.data.length);
+    expect(res.body.data.data).toHaveLength(
+      Math.min(1, canceladas.body.data.length)
+    );
+    expect(
+      res.body.data.data.every((venta) => venta.estado.nombre === 'Cancelado')
+    ).toBe(true);
+  });
+
   it('rechaza un filtro por estado que no es venta (422)', async () => {
     const res = await auth(request(app).get('/api/ventas').query({ estado: 'pendiente' }));
 

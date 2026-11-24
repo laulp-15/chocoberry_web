@@ -12,10 +12,32 @@ import {
   toCrearProductoPayload,
 } from "./productMappers";
 
-/** GET /productos -> lista traducida al shape del panel. */
-export async function listar() {
-  const productos = await api.get("/productos");
-  return mapProductosAdmin(productos);
+function construirQuery(filtros = {}) {
+  const params = new URLSearchParams();
+  Object.entries(filtros).forEach(([clave, valor]) => {
+    if (valor !== undefined && valor !== null && valor !== "") {
+      params.set(clave, String(valor));
+    }
+  });
+  const query = params.toString();
+  return query ? `?${query}` : "";
+}
+
+/**
+ * GET /productos -> lista traducida al shape del panel. Con `page`/`limit`
+ * el backend responde `{ data, meta }`; sin ellos conserva el array completo.
+ */
+export async function listar(filtros = {}) {
+  const respuesta = await api.get(`/productos${construirQuery(filtros)}`);
+
+  if (Array.isArray(respuesta)) {
+    return mapProductosAdmin(respuesta);
+  }
+
+  return {
+    data: mapProductosAdmin(respuesta?.data ?? []),
+    meta: respuesta?.meta ?? null,
+  };
 }
 
 /** GET /productos/:id */

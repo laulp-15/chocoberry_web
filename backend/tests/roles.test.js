@@ -46,6 +46,27 @@ describe('Módulo de roles y permisos', () => {
     expect(res.body.data.every((rol) => /repartidor/i.test(rol.nombre))).toBe(true);
   });
 
+  it('GET /api/roles?page=1&limit=2 devuelve data y meta', async () => {
+    const res = await auth(request(app).get('/api/roles?page=1&limit=2'));
+
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body.data.data)).toBe(true);
+    expect(res.body.data.data.length).toBeLessThanOrEqual(2);
+    expect(res.body.data.meta).toEqual(
+      expect.objectContaining({
+        page: 1,
+        limit: 2,
+        total: expect.any(Number),
+        totalPages: expect.any(Number),
+      })
+    );
+  });
+
+  it('GET /api/roles?limit=51 devuelve 422', async () => {
+    const res = await auth(request(app).get('/api/roles?limit=51'));
+    expect(res.status).toBe(422);
+  });
+
   it('GET /api/roles/opciones devuelve el catálogo mínimo de roles', async () => {
     const res = await auth(request(app).get('/api/roles/opciones'));
 

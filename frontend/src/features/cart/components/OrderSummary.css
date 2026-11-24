@@ -85,7 +85,7 @@
   flex-shrink: 0;
   font-size: 13px;
   font-weight: 700;
-  color: var(--primario);
+  color: var(--chocolate-100);
 }
 
 .order-summary-divider {
@@ -105,7 +105,7 @@
 .order-summary-total {
   font-size: 19px;
   font-weight: 700;
-  color: var(--primario);
+  color: var(--chocolate-100);
   margin-bottom: 20px;
 }
 

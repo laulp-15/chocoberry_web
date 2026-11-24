@@ -1,9 +1,12 @@
 // src/validators/rol.validator.js
 // Esquemas de validación del módulo de roles.
 import { z } from 'zod';
+import { limiteField, paginaField } from './paginacion.validator.js';
 
 export const filtrosRolSchema = z.object({
   nombre: z.string().trim().optional(),
+  page: paginaField,
+  limit: limiteField,
 });
 
 const nombreRolField = z

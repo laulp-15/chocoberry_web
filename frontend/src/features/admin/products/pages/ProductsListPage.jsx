@@ -31,6 +31,9 @@ export default function ProductsListPage() {
     selectedProduct,
     productToEdit,
     currentProducts,
+    page,
+    setPage,
+    meta,
     categorias,
     loading,
     submitting,
@@ -181,8 +184,13 @@ export default function ProductsListPage() {
         columns={columns}
         data={currentProducts}
         searchPlaceholder="Buscar producto, descripción o categoría..."
-        searchTerm={searchTerm}
+        searchValue={searchTerm}
         onSearchChange={handleSearchChange}
+        serverPagination
+        page={page}
+        totalPages={meta.totalPages}
+        totalRows={meta.total}
+        onPageChange={setPage}
         emptyMessage={loading ? 'Cargando productos...' : 'No hay productos para mostrar.'}
         extraFilter={
           <FormSelect

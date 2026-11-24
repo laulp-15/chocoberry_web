@@ -1,14 +1,20 @@
 // src/features/admin/admin-reviews/hooks/useReviews.js
 //
-// Listado de reseñas del panel contra /api/resenas. La búsqueda y la
-// paginación las maneja DataTable; aquí solo se filtra por estado y se
-// sincroniza el switch con el API.
+// Listado de reseñas del panel contra /api/resenas. La búsqueda, el filtro de
+// estado y la paginación se resuelven en el servidor; DataTable solo controla
+// la UI.
 
 import { useEffect, useState } from "react";
+import useDebouncedValue from "../../../../shared/hooks/useDebouncedValue";
 import * as reviewService from "../services/reviewService";
 
+const PAGE_SIZE = 10;
+
 export const useReviews = () => {
+  const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState(null);
 
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedReview, setSelectedReview] = useState(null);
@@ -18,14 +24,26 @@ export const useReviews = () => {
   const [reloadToken, setReloadToken] = useState(0);
   const [togglingId, setTogglingId] = useState(null);
 
+  const debouncedSearch = useDebouncedValue(searchTerm, 300);
+
   useEffect(() => {
     let activo = true;
 
     reviewService
-      .listar()
-      .then((data) => {
+      .listar({
+        page,
+        limit: PAGE_SIZE,
+        buscar: debouncedSearch.trim() || undefined,
+        estado:
+          statusFilter === "activo" ? true : statusFilter === "inactivo" ? false : undefined,
+      })
+      .then((respuesta) => {
         if (!activo) return;
-        setReviews(data);
+        setReviews(respuesta.data);
+        setMeta(respuesta.meta);
+        if (respuesta.meta && page > respuesta.meta.totalPages) {
+          setPage(respuesta.meta.totalPages);
+        }
         setError("");
       })
       .catch((err) => {
@@ -39,15 +57,16 @@ export const useReviews = () => {
     return () => {
       activo = false;
     };
-  }, [reloadToken]);
+  }, [page, debouncedSearch, statusFilter, reloadToken]);
 
-  const filteredReviews = reviews.filter((review) => {
-    if (statusFilter === "todos") return true;
-    return statusFilter === "activo" ? review.activo : !review.activo;
-  });
+  const handleSearchChange = (value) => {
+    setSearchTerm(value);
+    setPage(1);
+  };
 
   const handleStatusFilterChange = (value) => {
     setStatusFilter(value);
+    setPage(1);
   };
 
   const handleToggleStatus = async (review) => {
@@ -55,11 +74,9 @@ export const useReviews = () => {
 
     try {
       const actualizada = await reviewService.cambiarEstado(review.id, !review.activo);
-      setReviews((prev) =>
-        prev.map((item) => (item.id === review.id ? actualizada : item))
-      );
       setSelectedReview((prev) => (prev?.id === actualizada.id ? actualizada : prev));
       setError("");
+      reload();
     } catch (err) {
       setError(err?.message || "No se pudo actualizar el estado de la reseña.");
     } finally {
@@ -79,12 +96,17 @@ export const useReviews = () => {
   };
 
   return {
+    searchTerm,
+    handleSearchChange,
     statusFilter,
     handleStatusFilterChange,
+    page,
+    setPage,
+    meta,
     isDetailOpen,
     setIsDetailOpen,
     selectedReview,
-    reviews: filteredReviews,
+    reviews,
     loading,
     error,
     reload,

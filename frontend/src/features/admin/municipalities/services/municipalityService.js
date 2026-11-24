@@ -12,10 +12,32 @@ import {
   toCrearMunicipioPayload,
 } from './municipalityMappers';
 
-/** GET /municipios -> lista traducida al shape del panel. */
-export async function listar() {
-  const municipios = await api.get('/municipios');
-  return mapMunicipiosAdmin(municipios);
+function construirQuery(filtros = {}) {
+  const params = new URLSearchParams();
+  Object.entries(filtros).forEach(([clave, valor]) => {
+    if (valor !== undefined && valor !== null && valor !== '') {
+      params.set(clave, String(valor));
+    }
+  });
+  const query = params.toString();
+  return query ? `?${query}` : '';
+}
+
+/**
+ * GET /municipios -> lista traducida al shape del panel. Con `page`/`limit`
+ * el backend responde `{ data, meta }`; sin ellos conserva el array completo.
+ */
+export async function listar(filtros = {}) {
+  const respuesta = await api.get(`/municipios${construirQuery(filtros)}`);
+
+  if (Array.isArray(respuesta)) {
+    return mapMunicipiosAdmin(respuesta);
+  }
+
+  return {
+    data: mapMunicipiosAdmin(respuesta?.data ?? []),
+    meta: respuesta?.meta ?? null,
+  };
 }
 
 /** GET /municipios/:id */

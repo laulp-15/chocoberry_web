@@ -10,6 +10,7 @@ import {
 } from '../errors/index.js';
 import * as rolModel from '../models/rol.model.js';
 import * as usuarioModel from '../models/usuario.model.js';
+import { construirMeta, leerPaginacion } from '../utils/paginacion.js';
 import { serializarUsuario } from '../utils/serializers.js';
 import * as emailService from './emailService.js';
 import * as tokenService from './tokenContrasena.service.js';
@@ -59,14 +60,51 @@ function mapearCampos(datos, permitidos = Object.keys(CAMPOS)) {
 }
 
 export async function listar(filtros = {}) {
-  const filas = await usuarioModel.listar({
+  const paginacion = leerPaginacion(filtros);
+
+  let idRol = filtros.id_rol;
+  if (!idRol && filtros.rol) {
+    // El panel filtra con el slug del rol; el modelo compara por id.
+    const rol = await rolModel.buscarPorNombreOSlug(filtros.rol);
+    idRol = rol?.id ?? -1;
+  }
+
+  const filtrosBase = {
     nombre: filtros.nombre,
     correo: filtros.correo,
-    rol: filtros.rol,
-    idRol: filtros.id_rol,
+    buscar: filtros.buscar,
+    idRol,
     estado: filtros.estado,
-  });
-  return filas.map(serializarUsuario);
+  };
+
+  let filas;
+  let total = null;
+
+  if (paginacion.paginado) {
+    [filas, total] = await Promise.all([
+      usuarioModel.listar({
+        ...filtrosBase,
+        page: paginacion.page,
+        limit: paginacion.limit,
+      }),
+      usuarioModel.contar(filtrosBase),
+    ]);
+  } else {
+    filas = await usuarioModel.listar(filtrosBase);
+  }
+
+  const data = filas.map(serializarUsuario);
+
+  if (!paginacion.paginado) return data;
+
+  return {
+    data,
+    meta: construirMeta({
+      total,
+      page: paginacion.page,
+      limit: paginacion.limit,
+    }),
+  };
 }
 
 export async function obtener(id) {
