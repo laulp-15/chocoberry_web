@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DataTable from "../../../../shared/components/DataTable";
 import { usePermissions } from "../../../../shared/hooks/usePermissions";
+import useDebouncedValue from "../../../../shared/hooks/useDebouncedValue";
 import useSales from "../hooks/useSales";
 import * as saleService from "../services/saleService";
 import SalesReportModal from "../components/SalesReportModal";
@@ -11,14 +12,35 @@ import { formatPrice } from "../../../../shared/utils/formatPrice";
 import "../../../../shared/css/adminCrud.css";
 import "./SalesListPage.css";
 
+const PAGE_SIZE = 10;
+
 export default function SalesListPage() {
   const navigate = useNavigate();
   const { can } = usePermissions();
   const canExport = can("Ventas", "Exportar reporte");
-  const { sales, loading, error, reload } = useSales();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(1);
+  const debouncedSearch = useDebouncedValue(searchTerm, 300);
+
+  const isSearching = searchTerm.trim() !== "";
+  const clienteBusqueda = isSearching
+    ? debouncedSearch.trim() || undefined
+    : undefined;
+
+  const { sales, meta, loading, error, reload } = useSales({
+    page,
+    limit: PAGE_SIZE,
+    cliente: clienteBusqueda,
+    onPageOutOfRange: setPage,
+  });
   const [exportandoId, setExportandoId] = useState(null);
   const [exportError, setExportError] = useState("");
   const [reportOpen, setReportOpen] = useState(false);
+
+  const handleSearchChange = (value) => {
+    setSearchTerm(value);
+    setPage(1);
+  };
 
   const handleDownloadReceipt = async (row) => {
     setExportError("");
@@ -79,6 +101,13 @@ export default function SalesListPage() {
         description="Consulta las ventas confirmadas del negocio."
         columns={columns}
         data={sales}
+        serverPagination
+        page={page}
+        totalPages={meta.totalPages}
+        totalRows={meta.total}
+        onPageChange={setPage}
+        searchValue={searchTerm}
+        onSearchChange={handleSearchChange}
         leadingActions={
           canExport ? (
             <button

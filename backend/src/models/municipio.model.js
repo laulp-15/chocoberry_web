@@ -5,10 +5,12 @@ import { query } from '../config/db.js';
 // Columnas que se pueden actualizar (lista blanca para evitar inyección).
 const CAMPOS_ACTUALIZABLES = ['nombre', 'precio_domicilio', 'estado'];
 
+const FROM_BASE = 'FROM municipio';
+
 const SELECT_BASE = 'SELECT id, nombre, precio_domicilio, estado FROM municipio';
 
-/** Lista municipios con filtros opcionales: nombre (parcial) y estado. */
-export async function listar({ nombre, estado } = {}) {
+/** Construye el WHERE compartido por listados y conteos. */
+function construirFiltros({ nombre, estado } = {}) {
   const where = [];
   const params = [];
 
@@ -22,8 +24,41 @@ export async function listar({ nombre, estado } = {}) {
     params.push(estado ? 1 : 0);
   }
 
-  const sql = `${SELECT_BASE}${where.length ? ` WHERE ${where.join(' AND ')}` : ''} ORDER BY nombre ASC`;
-  return query(sql, params);
+  return {
+    whereSql: where.length ? ` WHERE ${where.join(' AND ')}` : '',
+    params,
+  };
+}
+
+/**
+ * Lista municipios con filtros opcionales. Agrega LIMIT/OFFSET solo cuando se
+ * reciben `page` y `limit`.
+ */
+export async function listar(filtros = {}) {
+  const { page, limit, ...resto } = filtros;
+  const { whereSql, params } = construirFiltros(resto);
+  const paginado = Number.isInteger(page) && Number.isInteger(limit);
+
+  let sql = `${SELECT_BASE}${whereSql} ORDER BY nombre ASC`;
+  const paramsSql = [...params];
+
+  if (paginado) {
+    sql += ' LIMIT ? OFFSET ?';
+    paramsSql.push(limit, (page - 1) * limit);
+  }
+
+  return query(sql, paramsSql);
+}
+
+/** Cuenta municipios usando exactamente los mismos filtros del listado. */
+export async function contar(filtros = {}) {
+  const { page, limit, ...resto } = filtros;
+  const { whereSql, params } = construirFiltros(resto);
+  const filas = await query(
+    `SELECT COUNT(*) AS total ${FROM_BASE}${whereSql}`,
+    params
+  );
+  return Number(filas[0]?.total ?? 0);
 }
 
 export async function buscarPorId(id) {

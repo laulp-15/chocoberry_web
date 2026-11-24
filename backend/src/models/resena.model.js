@@ -3,16 +3,15 @@
 // producto ni a un pedido) y pertenece al usuario que la publicó.
 import { query } from '../config/db.js';
 
-const SELECT_BASE = `SELECT r.id, r.calificacion, r.comentario, r.fecha, r.estado,
-                            r.id_usuario, u.nombres, u.apellidos
-                       FROM resena r
+const FROM_BASE = `FROM resena r
                        JOIN usuario u ON u.id = r.id_usuario`;
 
-/**
- * Lista reseñas con filtros opcionales.
- * `estado` se usa para la vista pública (true) o para el panel (true/false).
- */
-export async function listar({ estado, calificacion, cliente } = {}) {
+const SELECT_BASE = `SELECT r.id, r.calificacion, r.comentario, r.fecha, r.estado,
+                            r.id_usuario, u.nombres, u.apellidos
+                       ${FROM_BASE}`;
+
+/** Construye el WHERE compartido por listados y conteos. */
+function construirFiltros({ estado, calificacion, cliente, buscar } = {}) {
   const where = [];
   const params = [];
 
@@ -35,10 +34,51 @@ export async function listar({ estado, calificacion, cliente } = {}) {
     params.push(like, like, like);
   }
 
-  const sql = `${SELECT_BASE}${where.length ? ` WHERE ${where.join(' AND ')}` : ''}
-               ORDER BY r.fecha DESC, r.id DESC`;
+  if (buscar) {
+    const like = `%${buscar}%`;
+    where.push(
+      `(u.nombres LIKE ? OR u.apellidos LIKE ?
+        OR CONCAT(u.nombres, ' ', u.apellidos) LIKE ? OR r.comentario LIKE ?)`
+    );
+    params.push(like, like, like, like);
+  }
 
-  return query(sql, params);
+  return {
+    whereSql: where.length ? ` WHERE ${where.join(' AND ')}` : '',
+    params,
+  };
+}
+
+/**
+ * Lista reseñas con filtros opcionales. Agrega LIMIT/OFFSET solo cuando se
+ * reciben `page` y `limit`.
+ * `estado` se usa para la vista pública (true) o para el panel (true/false).
+ */
+export async function listar(filtros = {}) {
+  const { page, limit, ...resto } = filtros;
+  const { whereSql, params } = construirFiltros(resto);
+  const paginado = Number.isInteger(page) && Number.isInteger(limit);
+
+  let sql = `${SELECT_BASE}${whereSql} ORDER BY r.fecha DESC, r.id DESC`;
+  const paramsSql = [...params];
+
+  if (paginado) {
+    sql += ' LIMIT ? OFFSET ?';
+    paramsSql.push(limit, (page - 1) * limit);
+  }
+
+  return query(sql, paramsSql);
+}
+
+/** Cuenta reseñas usando exactamente los mismos filtros del listado. */
+export async function contar(filtros = {}) {
+  const { page, limit, ...resto } = filtros;
+  const { whereSql, params } = construirFiltros(resto);
+  const filas = await query(
+    `SELECT COUNT(*) AS total ${FROM_BASE}${whereSql}`,
+    params
+  );
+  return Number(filas[0]?.total ?? 0);
 }
 
 export async function buscarPorId(id) {

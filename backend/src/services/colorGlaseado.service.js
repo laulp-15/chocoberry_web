@@ -3,6 +3,7 @@
 // resolución del color activo al crear un pedido.
 import { BadRequestError, ConflictError, NotFoundError } from '../errors/index.js';
 import * as colorGlaseadoModel from '../models/colorGlaseado.model.js';
+import { construirMeta, leerPaginacion } from '../utils/paginacion.js';
 import { serializarColorGlaseado } from '../utils/serializers.js';
 
 /** El panel envía `hex`; la API acepta también los nombres del recurso. */
@@ -11,11 +12,40 @@ function resolverCodigoHex(datos) {
 }
 
 export async function listar(filtros = {}) {
-  const filas = await colorGlaseadoModel.listar({
+  const paginacion = leerPaginacion(filtros);
+  const filtrosBase = {
     nombre: filtros.nombre,
     estado: filtros.estado,
-  });
-  return filas.map(serializarColorGlaseado);
+  };
+
+  let filas;
+  let total = null;
+
+  if (paginacion.paginado) {
+    [filas, total] = await Promise.all([
+      colorGlaseadoModel.listar({
+        ...filtrosBase,
+        page: paginacion.page,
+        limit: paginacion.limit,
+      }),
+      colorGlaseadoModel.contar(filtrosBase),
+    ]);
+  } else {
+    filas = await colorGlaseadoModel.listar(filtrosBase);
+  }
+
+  const data = filas.map(serializarColorGlaseado);
+
+  if (!paginacion.paginado) return data;
+
+  return {
+    data,
+    meta: construirMeta({
+      total,
+      page: paginacion.page,
+      limit: paginacion.limit,
+    }),
+  };
 }
 
 export async function obtener(id) {

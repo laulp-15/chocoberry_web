@@ -98,10 +98,10 @@
   gap: 10px;
   margin-bottom: 18px;
   padding: 12px 16px;
-  border: 1px solid #f5c2c7;
+  border: 1px solid var(--error-100);
   border-radius: 8px;
-  background: #fdecee;
-  color: #842029;
+  background: var(--error-20);
+  color: var(--error-100);
   font-size: 14px;
 }
 
@@ -109,7 +109,7 @@
   margin-left: auto;
   border: none;
   background: none;
-  color: #842029;
+  color: var(--error-100);
   font-weight: 700;
   text-decoration: underline;
   cursor: pointer;

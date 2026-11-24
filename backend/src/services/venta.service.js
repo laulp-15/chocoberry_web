@@ -11,6 +11,7 @@ import * as pedidoModel from '../models/pedido.model.js';
 import * as productoPedidoModel from '../models/productoPedido.model.js';
 import * as ventaModel from '../models/venta.model.js';
 import { redondear2 } from '../utils/number.js';
+import { construirMeta, leerPaginacion } from '../utils/paginacion.js';
 import { construirFilasPeriodo, determinarAgrupacion } from '../utils/reportes/ventasReporte.js';
 import { serializarPedido } from '../utils/serializers.js';
 import * as pedidoService from './pedido.service.js';
@@ -67,7 +68,8 @@ export async function listar(filtros = {}) {
     }
   }
 
-  const filas = await pedidoModel.listar({
+  const paginacion = leerPaginacion(filtros);
+  const filtrosBase = {
     estado,
     estados: ESTADOS_VENTA,
     idMunicipio: filtros.idMunicipio,
@@ -75,24 +77,54 @@ export async function listar(filtros = {}) {
     cliente: filtros.cliente,
     fechaDesde: filtros.fechaDesde,
     fechaHasta: filtros.fechaHasta,
-  });
+  };
 
-  if (filas.length === 0) return [];
+  let filas;
+  let total = null;
 
-  const ids = filas.map((fila) => fila.id);
-  const [lineas, comprobantes] = await Promise.all([
-    productoPedidoModel.listarPorPedidos(ids),
-    comprobantePagoModel.listarPorPedidos(ids),
-  ]);
-  const mapaLineas = agruparPorPedido(lineas);
-  const mapaComprobantes = agruparPorPedido(comprobantes);
-  return filas.map((fila) =>
-    serializarPedido(
-      fila,
-      mapaLineas.get(fila.id) ?? [],
-      mapaComprobantes.get(fila.id) ?? []
-    )
-  );
+  if (paginacion.paginado) {
+    [filas, total] = await Promise.all([
+      pedidoModel.listar({
+        ...filtrosBase,
+        page: paginacion.page,
+        limit: paginacion.limit,
+        orden: filtros.orden,
+      }),
+      pedidoModel.contar(filtrosBase),
+    ]);
+  } else {
+    filas = await pedidoModel.listar(filtrosBase);
+  }
+
+  let data = [];
+
+  if (filas.length > 0) {
+    const ids = filas.map((fila) => fila.id);
+    const [lineas, comprobantes] = await Promise.all([
+      productoPedidoModel.listarPorPedidos(ids),
+      comprobantePagoModel.listarPorPedidos(ids),
+    ]);
+    const mapaLineas = agruparPorPedido(lineas);
+    const mapaComprobantes = agruparPorPedido(comprobantes);
+    data = filas.map((fila) =>
+      serializarPedido(
+        fila,
+        mapaLineas.get(fila.id) ?? [],
+        mapaComprobantes.get(fila.id) ?? []
+      )
+    );
+  }
+
+  if (!paginacion.paginado) return data;
+
+  return {
+    data,
+    meta: construirMeta({
+      total,
+      page: paginacion.page,
+      limit: paginacion.limit,
+    }),
+  };
 }
 
 /** Detalle de una venta. Devuelve 404 si el pedido existe pero no es venta. */

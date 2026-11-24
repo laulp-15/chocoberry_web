@@ -2,14 +2,44 @@
 // Reglas de negocio del módulo de categorías. Solo esta capa habla con los modelos.
 import { ConflictError, NotFoundError } from '../errors/index.js';
 import * as categoriaModel from '../models/categoria.model.js';
+import { construirMeta, leerPaginacion } from '../utils/paginacion.js';
 import { serializarCategoria } from '../utils/serializers.js';
 
 export async function listar(filtros = {}) {
-  const filas = await categoriaModel.listar({
+  const paginacion = leerPaginacion(filtros);
+  const filtrosBase = {
     nombre: filtros.nombre,
     estado: filtros.estado,
-  });
-  return filas.map(serializarCategoria);
+  };
+
+  let filas;
+  let total = null;
+
+  if (paginacion.paginado) {
+    [filas, total] = await Promise.all([
+      categoriaModel.listar({
+        ...filtrosBase,
+        page: paginacion.page,
+        limit: paginacion.limit,
+      }),
+      categoriaModel.contar(filtrosBase),
+    ]);
+  } else {
+    filas = await categoriaModel.listar(filtrosBase);
+  }
+
+  const data = filas.map(serializarCategoria);
+
+  if (!paginacion.paginado) return data;
+
+  return {
+    data,
+    meta: construirMeta({
+      total,
+      page: paginacion.page,
+      limit: paginacion.limit,
+    }),
+  };
 }
 
 export async function obtener(id) {

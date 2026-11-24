@@ -15,7 +15,9 @@ import {
 
 /**
  * GET /usuarios -> lista de usuarios (ya traducida al shape del panel).
- * Acepta filtros opcionales del backend: { nombre, correo, rol, id_rol, estado }.
+ * Acepta filtros opcionales del backend:
+ * { nombre, correo, buscar, rol, id_rol, estado, page, limit }.
+ * Sin page/limit devuelve un array; con paginación devuelve { data, meta }.
  */
 export async function listar(filtros = {}) {
   const params = new URLSearchParams();
@@ -26,8 +28,14 @@ export async function listar(filtros = {}) {
   });
 
   const query = params.toString();
-  const usuarios = await api.get(`/usuarios${query ? `?${query}` : ""}`);
-  return mapUsuariosAdmin(usuarios);
+  const respuesta = await api.get(`/usuarios${query ? `?${query}` : ""}`);
+
+  if (Array.isArray(respuesta)) return mapUsuariosAdmin(respuesta);
+
+  return {
+    data: mapUsuariosAdmin(respuesta?.data),
+    meta: respuesta?.meta ?? null,
+  };
 }
 
 /**

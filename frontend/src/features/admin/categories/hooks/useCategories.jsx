@@ -5,7 +5,10 @@
 
 import { useEffect, useState } from 'react';
 
+import useDebouncedValue from '../../../../shared/hooks/useDebouncedValue';
 import * as categoryService from '../services/categoryService';
+
+const PAGE_SIZE = 10;
 
 export const useCategories = ({ autoLoad = true } = {}) => {
   const [categorias, setCategorias] = useState([]);
@@ -17,6 +20,15 @@ export const useCategories = ({ autoLoad = true } = {}) => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState({
+    total: 0,
+    page: 1,
+    limit: PAGE_SIZE,
+    totalPages: 1,
+  });
+
+  const debouncedSearch = useDebouncedValue(searchTerm, 300);
 
   // Modales y estados de selección
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -30,13 +42,20 @@ export const useCategories = ({ autoLoad = true } = {}) => {
     if (!autoLoad && reloadToken === 0) return undefined;
 
     let activo = true;
+    const nombre = debouncedSearch.trim() || undefined;
+    const estado = statusFilter === 'todos' ? undefined : statusFilter;
 
     categoryService
-      .listar()
-      .then((lista) => {
+      .listar({ page, limit: PAGE_SIZE, nombre, estado })
+      .then((respuesta) => {
         if (!activo) return;
-        setCategorias(lista);
+        setCategorias(respuesta.data);
+        setMeta(respuesta.meta);
         setError('');
+
+        if (page > respuesta.meta.totalPages) {
+          setPage(respuesta.meta.totalPages);
+        }
       })
       .catch((err) => {
         if (!activo) return;
@@ -49,7 +68,7 @@ export const useCategories = ({ autoLoad = true } = {}) => {
     return () => {
       activo = false;
     };
-  }, [autoLoad, reloadToken]);
+  }, [autoLoad, reloadToken, page, debouncedSearch, statusFilter]);
 
   function reload() {
     setLoading(true);
@@ -57,33 +76,27 @@ export const useCategories = ({ autoLoad = true } = {}) => {
     setReloadToken((valor) => valor + 1);
   }
 
-  // Filtrado local (búsqueda por nombre + estado).
-  const query = searchTerm.trim().toLowerCase();
-  const filteredCategorias = categorias.filter((categoria) => {
-    const matchesSearch =
-      !query || categoria.nombre.toLowerCase().includes(query);
-    const matchesStatus =
-      statusFilter === 'todos' ||
-      categoria.estado.toLowerCase() === statusFilter.toLowerCase();
-    return matchesSearch && matchesStatus;
-  });
+  const currentCategories = categorias;
 
-  /** Activa/desactiva una categoría contra el API y refleja la respuesta. */
+  const handleSearchChange = (value) => {
+    setSearchTerm(value);
+    setPage(1);
+  };
+
+  const handleStatusFilterChange = (value) => {
+    setStatusFilter(value);
+    setPage(1);
+  };
+
+  /** Activa/desactiva una categoría contra el API y recarga el listado. */
   async function handleToggleStatus(id) {
     const actual = categorias.find((categoria) => categoria.id === id);
     if (!actual) return;
 
     try {
-      const actualizada = await categoryService.cambiarEstado(
-        id,
-        actual.estado !== 'Activo'
-      );
-      setCategorias((prev) =>
-        prev.map((categoria) =>
-          categoria.id === id ? actualizada : categoria
-        )
-      );
+      await categoryService.cambiarEstado(id, actual.estado !== 'Activo');
       setError('');
+      reload();
     } catch (err) {
       setError(err?.message || 'No se pudo cambiar el estado de la categoría.');
     }
@@ -101,17 +114,14 @@ export const useCategories = ({ autoLoad = true } = {}) => {
           categoryToEdit.id,
           datos
         );
-        setCategorias((prev) =>
-          prev.map((categoria) =>
-            categoria.id === actualizada.id ? actualizada : categoria
-          )
-        );
         setCategoryToEdit(null);
+        reload();
         return actualizada;
       }
 
       const creada = await categoryService.crear(datos);
-      setCategorias((prev) => [creada, ...prev]);
+      setPage(1);
+      reload();
       return creada;
     } finally {
       setSubmitting(false);
@@ -124,9 +134,7 @@ export const useCategories = ({ autoLoad = true } = {}) => {
 
     try {
       await categoryService.eliminar(selectedCategory.id);
-      setCategorias((prev) =>
-        prev.filter((categoria) => categoria.id !== selectedCategory.id)
-      );
+      reload();
     } finally {
       setIsDeleteOpen(false);
       setSelectedCategory(null);
@@ -156,9 +164,12 @@ export const useCategories = ({ autoLoad = true } = {}) => {
 
   return {
     searchTerm,
-    setSearchTerm,
+    handleSearchChange,
     statusFilter,
-    setStatusFilter,
+    handleStatusFilterChange,
+    page,
+    setPage,
+    meta,
 
     isModalOpen,
     setIsModalOpen,
@@ -169,7 +180,7 @@ export const useCategories = ({ autoLoad = true } = {}) => {
 
     selectedCategory,
     categoryToEdit,
-    filteredCategorias,
+    currentCategories,
 
     loading,
     submitting,

@@ -23,10 +23,21 @@ function construirQuery(filtros = {}) {
   return query ? `?${query}` : "";
 }
 
-/** GET /pedidos -> todos los pedidos (el admin ve el alcance completo). */
+/**
+ * GET /pedidos -> pedidos del alcance del usuario. Con `page`/`limit` el
+ * backend responde `{ data, meta }`; sin ellos conserva el array completo.
+ */
 export async function listar(filtros = {}) {
-  const pedidos = await api.get(`/pedidos${construirQuery(filtros)}`);
-  return mapPedidosAdmin(pedidos);
+  const respuesta = await api.get(`/pedidos${construirQuery(filtros)}`);
+
+  if (Array.isArray(respuesta)) {
+    return { data: mapPedidosAdmin(respuesta), meta: null };
+  }
+
+  return {
+    data: mapPedidosAdmin(respuesta?.data ?? []),
+    meta: respuesta?.meta ?? null,
+  };
 }
 
 /** GET /pedidos/:id */

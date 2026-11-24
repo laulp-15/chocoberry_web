@@ -4,6 +4,7 @@ import { BadRequestError, ConflictError, NotFoundError } from '../errors/index.j
 import * as permisoModel from '../models/permiso.model.js';
 import * as rolModel from '../models/rol.model.js';
 import * as rolPermisoModel from '../models/rolPermiso.model.js';
+import { construirMeta, leerPaginacion } from '../utils/paginacion.js';
 import { serializarPermiso, serializarRol } from '../utils/serializers.js';
 import { slugify } from '../utils/text.js';
 
@@ -24,8 +25,37 @@ async function validarPermisos(permisos) {
 }
 
 export async function listar(filtros = {}) {
-  const filas = await rolModel.listarConConteo({ nombre: filtros.nombre });
-  return filas.map(serializarRol);
+  const paginacion = leerPaginacion(filtros);
+  const filtrosBase = { nombre: filtros.nombre };
+
+  let filas;
+  let total = null;
+
+  if (paginacion.paginado) {
+    [filas, total] = await Promise.all([
+      rolModel.listarConConteo({
+        ...filtrosBase,
+        page: paginacion.page,
+        limit: paginacion.limit,
+      }),
+      rolModel.contar(filtrosBase),
+    ]);
+  } else {
+    filas = await rolModel.listarConConteo(filtrosBase);
+  }
+
+  const data = filas.map(serializarRol);
+
+  if (!paginacion.paginado) return data;
+
+  return {
+    data,
+    meta: construirMeta({
+      total,
+      page: paginacion.page,
+      limit: paginacion.limit,
+    }),
+  };
 }
 
 /** Catálogo mínimo de roles para selectores (ej. formulario de usuarios). */

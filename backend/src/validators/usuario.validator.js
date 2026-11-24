@@ -13,15 +13,19 @@ import {
   telefonoField,
   tipoDocumentoField,
 } from './common.validator.js';
+import { limiteField, paginaField } from './paginacion.validator.js';
 
 export { idParamSchema };
 
 export const filtrosUsuarioSchema = z.object({
   nombre: z.string().trim().optional(),
   correo: z.string().trim().optional(),
+  buscar: z.string().trim().optional(),
   rol: z.string().trim().optional(),
   id_rol: z.coerce.number().int().positive().optional(),
   estado: booleanoFlexible.optional(),
+  page: paginaField,
+  limit: limiteField,
 });
 
 // Resolución del rol: se acepta id numérico (`id_rol`) o nombre/slug (`rol`).

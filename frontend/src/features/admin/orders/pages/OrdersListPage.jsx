@@ -13,11 +13,11 @@ import RejectReasonModal from "../components/RejectReasonModal";
 import CancelReasonModal from "../components/CancelReasonModal";
 import OrderNotification from "../components/OrderNotification";
 import { usePermissions } from "../../../../shared/hooks/usePermissions";
+import useDebouncedValue from "../../../../shared/hooks/useDebouncedValue";
 import useOrders from "../hooks/useOrders";
 import useOrderFormOptions from "../hooks/useOrderFormOptions";
 import { getStatusMeta, isFinalStatus } from "../data/orderStatus";
 import { formatDisplayDate } from "../utils/orderDisplay";
-import { sortOrdersByStatus } from "../utils/orderSorting";
 import { formatPrice } from "../../../../shared/utils/formatPrice";
 import "../../../../shared/css/adminCrud.css";
 
@@ -28,10 +28,20 @@ const EQUAL_COLUMN_STYLE = {
   boxSizing: "border-box",
 };
 
+const PAGE_SIZE = 10;
 const COUNTED_STATUSES = ["pendiente", "en_preparacion", "despachado"];
 const INITIAL_STATUS_COUNTS = Object.fromEntries(
   COUNTED_STATUSES.map((status) => [status, 0])
 );
+const ORDER_BY_STATUS = {
+  todos: "creacion",
+  pendiente: "creacion",
+  en_preparacion: "entrega_activa",
+  despachado: "entrega_activa",
+  entregado: "entrega",
+  rechazado: "creacion",
+  cancelado: "cancelacion",
+};
 
 const EMPTY_STATUS_MESSAGES = {
   todos: "No hay pedidos para mostrar.",
@@ -49,8 +59,22 @@ export default function OrdersListPage() {
   const canEditOrder = can("Pedidos", "Editar");
   const canChangeStatus = can("Pedidos", "Cambiar estado");
 
+  const [statusFilter, setStatusFilter] = useState("pendiente");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(1);
+  const debouncedSearch = useDebouncedValue(searchTerm, 300);
+
+  const isSearching = searchTerm.trim() !== "";
+  const effectiveStatus = isSearching ? "todos" : statusFilter;
+  const clienteBusqueda = isSearching
+    ? debouncedSearch.trim() || undefined
+    : undefined;
+  const estadoBusqueda = effectiveStatus === "todos" ? undefined : effectiveStatus;
+  const orden = ORDER_BY_STATUS[effectiveStatus] ?? "creacion";
+
   const {
     orders,
+    meta,
     loading,
     error,
     reload,
@@ -68,11 +92,15 @@ export default function OrdersListPage() {
     approvePayment,
     devolverComprobante,
     reprogramOrder,
-  } = useOrders();
+  } = useOrders({
+    page,
+    limit: PAGE_SIZE,
+    estado: estadoBusqueda,
+    cliente: clienteBusqueda,
+    orden,
+    onPageOutOfRange: setPage,
+  });
 
-  const [statusFilter, setStatusFilter] = useState("pendiente");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [tableKey, setTableKey] = useState(0);
   const [formOpen, setFormOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState(null);
   const [detailOrder, setDetailOrder] = useState(null);
@@ -107,19 +135,9 @@ export default function OrdersListPage() {
     reload: reloadOptions,
   } = useOrderFormOptions();
 
-  const isSearching = searchTerm.trim() !== "";
-  const effectiveStatus = isSearching ? "todos" : statusFilter;
-  const filtered =
-    effectiveStatus === "todos"
-      ? orders
-      : orders.filter((order) => order.estado === effectiveStatus);
-  const sortedOrders = sortOrdersByStatus(filtered, effectiveStatus);
-
   // Los contadores reflejan el total del negocio, no el resultado del filtro.
-  const statusCounts = orders.reduce((counts, order) => {
-    if (COUNTED_STATUSES.includes(order.estado)) {
-      counts[order.estado] += 1;
-    }
+  const statusCounts = COUNTED_STATUSES.reduce((counts, status) => {
+    counts[status] = meta.estados?.[status] ?? 0;
     return counts;
   }, { ...INITIAL_STATUS_COUNTS });
 
@@ -133,7 +151,12 @@ export default function OrdersListPage() {
   const handleStatusFilterChange = (value) => {
     setStatusFilter(value);
     setSearchTerm("");
-    setTableKey((key) => key + 1);
+    setPage(1);
+  };
+
+  const handleSearchChange = (value) => {
+    setSearchTerm(value);
+    setPage(1);
   };
 
   // El estado final bloquea el selector; la edición solo está permitida
@@ -167,6 +190,8 @@ export default function OrdersListPage() {
       setNotification({ message: "Pedido actualizado correctamente." });
     } else {
       await createOrder(datos);
+      setPage(1);
+      reload();
       setNotification({ message: "Pedido creado correctamente." });
     }
     handleCloseForm();
@@ -461,17 +486,21 @@ export default function OrdersListPage() {
   return (
     <div className="crud-page">
       <DataTable
-        key={tableKey}
         title="Pedidos"
         description="Consulta y administra los pedidos reales del negocio."
         createLabel={canCreate ? "Crear pedido" : undefined}
         onCreate={canCreate ? handleCreate : undefined}
         columns={columns}
-        data={sortedOrders}
+        data={orders}
         tableLayout="fixed"
+        serverPagination
+        page={page}
+        totalPages={meta.totalPages}
+        totalRows={meta.total}
+        onPageChange={setPage}
         searchPlaceholder="Buscar por cliente..."
         searchValue={searchTerm}
-        onSearchChange={setSearchTerm}
+        onSearchChange={handleSearchChange}
         emptyMessage={emptyMessage}
         beforeTable={
           <OrderStatusChips

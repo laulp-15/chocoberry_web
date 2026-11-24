@@ -6,12 +6,10 @@
 
 import { useEffect, useState } from 'react';
 
+import useDebouncedValue from '../../../../shared/hooks/useDebouncedValue';
 import * as presentationService from '../services/presentationService';
 
-/** El backend lista por cantidad de fresas ascendente; se mantiene ese orden. */
-function ordenarPorCantidad(lista) {
-  return [...lista].sort((a, b) => a.cantidadFresas - b.cantidadFresas);
-}
+const PAGE_SIZE = 10;
 
 export const usePresentations = ({ autoLoad = true } = {}) => {
   const [presentations, setPresentations] = useState([]);
@@ -21,7 +19,17 @@ export const usePresentations = ({ autoLoad = true } = {}) => {
   const [error, setError] = useState('');
   const [reloadToken, setReloadToken] = useState(0);
 
+  const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState({
+    total: 0,
+    page: 1,
+    limit: PAGE_SIZE,
+    totalPages: 1,
+  });
+
+  const debouncedSearch = useDebouncedValue(searchTerm, 300);
 
   // Modales y estados de selección
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -35,13 +43,20 @@ export const usePresentations = ({ autoLoad = true } = {}) => {
     if (!autoLoad && reloadToken === 0) return undefined;
 
     let activo = true;
+    const buscar = debouncedSearch.trim() || undefined;
+    const estado = statusFilter === 'todos' ? undefined : statusFilter;
 
     presentationService
-      .listar()
-      .then((lista) => {
+      .listar({ page, limit: PAGE_SIZE, buscar, estado })
+      .then((respuesta) => {
         if (!activo) return;
-        setPresentations(ordenarPorCantidad(lista));
+        setPresentations(respuesta.data);
+        setMeta(respuesta.meta);
         setError('');
+
+        if (page > respuesta.meta.totalPages) {
+          setPage(respuesta.meta.totalPages);
+        }
       })
       .catch((err) => {
         if (!activo) return;
@@ -54,7 +69,7 @@ export const usePresentations = ({ autoLoad = true } = {}) => {
     return () => {
       activo = false;
     };
-  }, [autoLoad, reloadToken]);
+  }, [autoLoad, reloadToken, page, debouncedSearch, statusFilter]);
 
   function reload() {
     setLoading(true);
@@ -62,14 +77,19 @@ export const usePresentations = ({ autoLoad = true } = {}) => {
     setReloadToken((valor) => valor + 1);
   }
 
-  // Filtrado por estado (la búsqueda de texto la maneja DataTable)
-  const filteredPresentations = presentations.filter(
-    (presentation) =>
-      statusFilter === 'todos' ||
-      presentation.estado.toLowerCase() === statusFilter.toLowerCase()
-  );
+  const currentPresentations = presentations;
 
-  /** Activa/desactiva una presentación contra el API y refleja la respuesta. */
+  const handleSearchChange = (value) => {
+    setSearchTerm(value);
+    setPage(1);
+  };
+
+  const handleStatusFilterChange = (value) => {
+    setStatusFilter(value);
+    setPage(1);
+  };
+
+  /** Activa/desactiva una presentación contra el API y recarga el listado. */
   async function handleToggleStatus(id) {
     const actual = presentations.find(
       (presentation) => presentation.id === id
@@ -77,16 +97,12 @@ export const usePresentations = ({ autoLoad = true } = {}) => {
     if (!actual) return;
 
     try {
-      const actualizada = await presentationService.cambiarEstado(
+      await presentationService.cambiarEstado(
         id,
         actual.estado !== 'Activo'
       );
-      setPresentations((prev) =>
-        prev.map((presentation) =>
-          presentation.id === id ? actualizada : presentation
-        )
-      );
       setError('');
+      reload();
     } catch (err) {
       setError(
         err?.message || 'No se pudo cambiar el estado de la presentación.'
@@ -106,19 +122,14 @@ export const usePresentations = ({ autoLoad = true } = {}) => {
           presentationToEdit.id,
           datos
         );
-        setPresentations((prev) =>
-          ordenarPorCantidad(
-            prev.map((presentation) =>
-              presentation.id === actualizada.id ? actualizada : presentation
-            )
-          )
-        );
         setPresentationToEdit(null);
+        reload();
         return actualizada;
       }
 
       const creada = await presentationService.crear(datos);
-      setPresentations((prev) => ordenarPorCantidad([creada, ...prev]));
+      setPage(1);
+      reload();
       return creada;
     } finally {
       setSubmitting(false);
@@ -131,11 +142,7 @@ export const usePresentations = ({ autoLoad = true } = {}) => {
 
     try {
       await presentationService.eliminar(selectedPresentation.id);
-      setPresentations((prev) =>
-        prev.filter(
-          (presentation) => presentation.id !== selectedPresentation.id
-        )
-      );
+      reload();
     } finally {
       setIsDeleteOpen(false);
       setSelectedPresentation(null);
@@ -164,8 +171,13 @@ export const usePresentations = ({ autoLoad = true } = {}) => {
   };
 
   return {
+    searchTerm,
+    handleSearchChange,
     statusFilter,
-    setStatusFilter,
+    handleStatusFilterChange,
+    page,
+    setPage,
+    meta,
 
     isModalOpen,
     setIsModalOpen,
@@ -176,7 +188,7 @@ export const usePresentations = ({ autoLoad = true } = {}) => {
 
     selectedPresentation,
     presentationToEdit,
-    filteredPresentations,
+    currentPresentations,
 
     loading,
     submitting,

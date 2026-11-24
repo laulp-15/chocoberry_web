@@ -85,6 +85,51 @@ describe('Módulo de acceso y usuarios', () => {
     expect(res.body.data.every((u) => u.rol.slug === 'cliente')).toBe(true);
   });
 
+  it('GET /api/usuarios?page=1&limit=2 devuelve data y meta', async () => {
+    const res = await request(app)
+      .get('/api/usuarios?page=1&limit=2')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body.data.data)).toBe(true);
+    expect(res.body.data.data.length).toBeLessThanOrEqual(2);
+    expect(res.body.data.meta).toEqual(
+      expect.objectContaining({
+        page: 1,
+        limit: 2,
+        total: expect.any(Number),
+        totalPages: expect.any(Number),
+      })
+    );
+  });
+
+  it('GET /api/usuarios?buscar=... busca por nombre o correo', async () => {
+    const res = await request(app)
+      .get('/api/usuarios?buscar=admin@chocoberry.com')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.some((u) => u.correo === ADMIN.correo)).toBe(true);
+  });
+
+  it('GET /api/usuarios?rol=cliente&page=1&limit=2 pagina respetando el rol', async () => {
+    const res = await request(app)
+      .get('/api/usuarios?rol=cliente&page=1&limit=2')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.data.length).toBeLessThanOrEqual(2);
+    expect(res.body.data.data.every((u) => u.rol.slug === 'cliente')).toBe(true);
+  });
+
+  it('GET /api/usuarios?limit=51 devuelve 422', async () => {
+    const res = await request(app)
+      .get('/api/usuarios?limit=51')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(422);
+  });
+
   it('GET /api/usuarios/:id inexistente devuelve 404', async () => {
     const res = await request(app)
       .get('/api/usuarios/999999')

@@ -16,10 +16,21 @@ function construirQuery(filtros = {}) {
   return query ? `?${query}` : "";
 }
 
-/** GET /ventas -> pedidos en preparación, despachados, entregados o cancelados. */
+/**
+ * GET /ventas -> pedidos confirmados. Con `page`/`limit` el backend responde
+ * `{ data, meta }`; sin ellos conserva el array completo.
+ */
 export async function listar(filtros = {}) {
-  const ventas = await api.get(`/ventas${construirQuery(filtros)}`);
-  return mapVentasAdmin(ventas);
+  const respuesta = await api.get(`/ventas${construirQuery(filtros)}`);
+
+  if (Array.isArray(respuesta)) {
+    return { data: mapVentasAdmin(respuesta), meta: null };
+  }
+
+  return {
+    data: mapVentasAdmin(respuesta?.data ?? []),
+    meta: respuesta?.meta ?? null,
+  };
 }
 
 /** GET /ventas/:id */

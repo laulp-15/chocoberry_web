@@ -2,6 +2,7 @@
 // Esquemas de validación del módulo de productos.
 import { z } from 'zod';
 import { booleanoFlexible } from './common.validator.js';
+import { limiteField, paginaField } from './paginacion.validator.js';
 
 const nombreField = z
   .string({ required_error: 'El nombre del producto es obligatorio.' })
@@ -70,6 +71,8 @@ export const filtrosProductoSchema = z.object({
   id_categoria: idCategoriaField,
   categoria: z.string().trim().optional(),
   estado: booleanoFlexible.optional(),
+  page: paginaField,
+  limit: limiteField,
 });
 
 export const crearProductoSchema = z

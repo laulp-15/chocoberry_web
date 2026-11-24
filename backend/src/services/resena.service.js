@@ -5,6 +5,7 @@
 // - La vista pública solo muestra reseñas activas.
 import { NotFoundError } from '../errors/index.js';
 import * as resenaModel from '../models/resena.model.js';
+import { construirMeta, leerPaginacion } from '../utils/paginacion.js';
 import { serializarResena } from '../utils/serializers.js';
 
 /** Listado público: siempre filtra por estado activo. */
@@ -16,14 +17,44 @@ export async function listarPublicas(filtros = {}) {
   return filas.map(serializarResena);
 }
 
-/** Listado del panel: incluye activas e inactivas. */
+/** Listado del panel: incluye activas e inactivas y pagina de forma opt-in. */
 export async function listar(filtros = {}) {
-  const filas = await resenaModel.listar({
+  const paginacion = leerPaginacion(filtros);
+  const filtrosBase = {
     estado: filtros.estado,
     calificacion: filtros.calificacion,
     cliente: filtros.cliente,
-  });
-  return filas.map(serializarResena);
+    buscar: filtros.buscar,
+  };
+
+  let filas;
+  let total = null;
+
+  if (paginacion.paginado) {
+    [filas, total] = await Promise.all([
+      resenaModel.listar({
+        ...filtrosBase,
+        page: paginacion.page,
+        limit: paginacion.limit,
+      }),
+      resenaModel.contar(filtrosBase),
+    ]);
+  } else {
+    filas = await resenaModel.listar(filtrosBase);
+  }
+
+  const data = filas.map(serializarResena);
+
+  if (!paginacion.paginado) return data;
+
+  return {
+    data,
+    meta: construirMeta({
+      total,
+      page: paginacion.page,
+      limit: paginacion.limit,
+    }),
+  };
 }
 
 export async function obtener(id) {

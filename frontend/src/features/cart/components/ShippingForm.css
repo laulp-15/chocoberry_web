@@ -79,7 +79,8 @@
   border-width: 1px !important;
 }
 .form-input.has-error .MuiOutlinedInput-notchedOutline {
-  border-color: var(--primario) !important;
+  border-color: var(--error-100) !important;
+  border-width: 2px !important;
 }
 .form-input input::placeholder,
 .form-input textarea::placeholder {
@@ -92,9 +93,19 @@
 }
 
 .form-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 12px;
-  color: var(--primario);
+  font-weight: 600;
+  color: var(--error-100);
   margin-top: 6px;
+}
+.form-error::before {
+  content: "\f06a"; /* circle-exclamation */
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
+  font-size: 12px;
 }
 
 .form-hint {
@@ -121,7 +132,7 @@
   flex-shrink: 0;
 }
 .delivery-hours-hint strong {
-  color: var(--primario);
+  color: var(--chocolate-100);
 }
 .pickup-info {
   display: flex;

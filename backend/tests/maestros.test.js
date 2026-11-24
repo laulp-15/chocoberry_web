@@ -101,6 +101,31 @@ describe('Módulo de maestros (municipios y glaseados)', () => {
       expect(Array.isArray(res.body.data)).toBe(true);
       expect(res.body.data.length).toBeGreaterThanOrEqual(8);
       expect(res.body.data[0]).toHaveProperty('precioDomicilio');
+      expect(res.body.meta).toBeUndefined();
+    });
+
+    it('GET /api/municipios pagina el listado con page y limit', async () => {
+      const res = await auth(request(app).get('/api/municipios')).query({
+        page: 1,
+        limit: 2,
+      });
+
+      expect(res.status).toBe(200);
+      const { data, meta } = res.body.data;
+      expect(data).toHaveLength(2);
+      expect(meta).toMatchObject({ page: 1, limit: 2 });
+      expect(meta.total).toBeGreaterThanOrEqual(8);
+      expect(meta.totalPages).toBe(Math.ceil(meta.total / 2));
+    });
+
+    it('GET /api/municipios rechaza un límite mayor a 50', async () => {
+      const res = await auth(request(app).get('/api/municipios')).query({
+        page: 1,
+        limit: 51,
+      });
+
+      expect(res.status).toBe(422);
+      expect(res.body.errors?.[0]?.campo).toBe('limit');
     });
 
     it('POST /api/municipios crea con el alias costoEnvio', async () => {
@@ -260,6 +285,45 @@ describe('Módulo de maestros (municipios y glaseados)', () => {
       expect(res.body.data.codigoHex).toBe('#ABCDEF');
       expect(res.body.data.estado).toBe(true);
       glaseadoId = res.body.data.id;
+    });
+
+    it('GET /api/glaseados sin page ni limit conserva el array completo', async () => {
+      const res = await auth(request(app).get('/api/glaseados')).query({
+        nombre: nombreGlaseado,
+      });
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body.data)).toBe(true);
+      expect(res.body.meta).toBeUndefined();
+    });
+
+    it('GET /api/glaseados pagina con page y limit', async () => {
+      const res = await auth(request(app).get('/api/glaseados')).query({
+        nombre: nombreGlaseado,
+        page: 1,
+        limit: 1,
+      });
+
+      expect(res.status).toBe(200);
+      const { data, meta } = res.body.data;
+      expect(data).toHaveLength(1);
+      expect(data[0].id).toBe(glaseadoId);
+      expect(meta).toMatchObject({
+        total: 1,
+        page: 1,
+        limit: 1,
+        totalPages: 1,
+      });
+    });
+
+    it('GET /api/glaseados rechaza un límite mayor a 50', async () => {
+      const res = await auth(request(app).get('/api/glaseados')).query({
+        page: 1,
+        limit: 51,
+      });
+
+      expect(res.status).toBe(422);
+      expect(res.body.errors?.[0]?.campo).toBe('limit');
     });
 
     it('POST /api/glaseados rechaza un nombre duplicado', async () => {

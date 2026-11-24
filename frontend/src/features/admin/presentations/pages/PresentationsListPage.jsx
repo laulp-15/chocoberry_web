@@ -20,8 +20,13 @@ export default function PresentationsListPage() {
   const canChangeStatus = can('Productos', 'Cambiar estado');
   const [notification, setNotification] = useState(null);
   const {
+    searchTerm,
+    handleSearchChange,
     statusFilter,
-    setStatusFilter,
+    handleStatusFilterChange,
+    page,
+    setPage,
+    meta,
     isModalOpen,
     setIsModalOpen,
     isDetailOpen,
@@ -30,7 +35,7 @@ export default function PresentationsListPage() {
     setIsDeleteOpen,
     selectedPresentation,
     presentationToEdit,
-    filteredPresentations,
+    currentPresentations,
     loading,
     submitting,
     error,
@@ -152,8 +157,15 @@ export default function PresentationsListPage() {
         createLabel={canCreate ? 'Crear presentación' : undefined}
         onCreate={canCreate ? handleOpenCreate : undefined}
         columns={columns}
-        data={filteredPresentations}
+        data={currentPresentations}
         searchPlaceholder="Buscar presentación..."
+        searchValue={searchTerm}
+        onSearchChange={handleSearchChange}
+        serverPagination
+        page={page}
+        totalPages={meta.totalPages}
+        totalRows={meta.total}
+        onPageChange={setPage}
         emptyMessage={
           loading
             ? 'Cargando presentaciones...'
@@ -162,7 +174,7 @@ export default function PresentationsListPage() {
         extraFilter={
           <FormSelect
             value={statusFilter}
-            onChange={setStatusFilter}
+            onChange={handleStatusFilterChange}
             options={[
               { value: 'todos', label: 'Todos los estados' },
               { value: 'activo', label: 'Activo' },

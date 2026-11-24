@@ -33,6 +33,7 @@ import {
   parseFecha,
   sumarDias,
 } from '../utils/dates.js';
+import { construirMeta, leerPaginacion } from '../utils/paginacion.js';
 import { serializarPedido } from '../utils/serializers.js';
 
 const ROL_CLIENTE = 'Cliente';
@@ -84,6 +85,17 @@ function normalizarEstado(valor) {
     .replace(/\s+/g, ' ');
 
   return ALIAS_ESTADOS[clave] ?? null;
+}
+
+/** Convierte el nombre canónico de la BD al slug que usa el frontend. */
+function slugEstado(valor) {
+  return String(valor ?? '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, '_');
 }
 
 function esRol(usuario, rol) {
@@ -219,7 +231,11 @@ function agruparComprobantes(filas) {
  * Lista pedidos. Un cliente SIEMPRE queda limitado a los propios; `soloPropios`
  * fuerza ese alcance incluso para el personal ("Mis pedidos").
  */
-export async function listar(filtros = {}, usuario, { soloPropios = false } = {}) {
+export async function listar(
+  filtros = {},
+  usuario,
+  { soloPropios = false, paginar = true } = {}
+) {
   let estado;
   if (filtros.estado) {
     estado = normalizarEstado(filtros.estado);
@@ -230,8 +246,11 @@ export async function listar(filtros = {}, usuario, { soloPropios = false } = {}
 
   const limitarAlPropio = soloPropios || esRol(usuario, ROL_CLIENTE);
   const idUsuario = limitarAlPropio ? usuario.id : filtros.idUsuario;
+  const paginacion = paginar
+    ? leerPaginacion(filtros)
+    : { paginado: false, page: null, limit: null, offset: 0 };
 
-  const filas = await pedidoModel.listar({
+  const filtrosBase = {
     estado,
     idEstado: filtros.idEstado,
     idMunicipio: filtros.idMunicipio,
@@ -239,24 +258,64 @@ export async function listar(filtros = {}, usuario, { soloPropios = false } = {}
     cliente: filtros.cliente,
     fechaDesde: filtros.fechaDesde,
     fechaHasta: filtros.fechaHasta,
+  };
+
+  let filas;
+  let total = null;
+
+  if (paginacion.paginado) {
+    [filas, total] = await Promise.all([
+      pedidoModel.listar({
+        ...filtrosBase,
+        page: paginacion.page,
+        limit: paginacion.limit,
+        orden: filtros.orden,
+      }),
+      pedidoModel.contar(filtrosBase),
+    ]);
+  } else {
+    filas = await pedidoModel.listar(filtrosBase);
+  }
+
+  let data = [];
+
+  if (filas.length > 0) {
+    const ids = filas.map((fila) => fila.id);
+    const [lineas, comprobantes] = await Promise.all([
+      productoPedidoModel.listarPorPedidos(ids),
+      comprobantePagoModel.listarPorPedidos(ids),
+    ]);
+    const mapaLineas = agruparLineas(lineas);
+    const mapaComprobantes = agruparComprobantes(comprobantes);
+    data = filas.map((fila) =>
+      serializarPedido(
+        fila,
+        mapaLineas.get(fila.id) ?? [],
+        mapaComprobantes.get(fila.id) ?? []
+      )
+    );
+  }
+
+  if (!paginacion.paginado) return data;
+
+  const meta = construirMeta({
+    total,
+    page: paginacion.page,
+    limit: paginacion.limit,
   });
 
-  if (filas.length === 0) return [];
-
-  const ids = filas.map((fila) => fila.id);
-  const [lineas, comprobantes] = await Promise.all([
-    productoPedidoModel.listarPorPedidos(ids),
-    comprobantePagoModel.listarPorPedidos(ids),
-  ]);
-  const mapaLineas = agruparLineas(lineas);
-  const mapaComprobantes = agruparComprobantes(comprobantes);
-  return filas.map((fila) =>
-    serializarPedido(
-      fila,
-      mapaLineas.get(fila.id) ?? [],
-      mapaComprobantes.get(fila.id) ?? []
-    )
+  // Los contadores de los chips son globales: no dependen del estado ni de
+  // la búsqueda, pero sí del alcance propio de un cliente.
+  const conteos = await pedidoModel.contarPorEstado(
+    limitarAlPropio ? { idUsuario: usuario.id } : {}
   );
+
+  meta.estados = Object.entries(conteos).reduce((acumulado, [nombre, cantidad]) => {
+    acumulado[slugEstado(nombre)] = cantidad;
+    return acumulado;
+  }, {});
+
+  return { data, meta };
 }
 
 export async function obtener(id, usuario, { soloPropios = false } = {}) {

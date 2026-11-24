@@ -12,10 +12,32 @@ import {
   toCrearFrostingPayload,
 } from './frostingMappers';
 
-/** GET /glaseados -> lista traducida al shape del panel. */
-export async function listar() {
-  const glaseados = await api.get('/glaseados');
-  return mapFrostingsAdmin(glaseados);
+function construirQuery(filtros = {}) {
+  const params = new URLSearchParams();
+  Object.entries(filtros).forEach(([clave, valor]) => {
+    if (valor !== undefined && valor !== null && valor !== '') {
+      params.set(clave, String(valor));
+    }
+  });
+  const query = params.toString();
+  return query ? `?${query}` : '';
+}
+
+/**
+ * GET /glaseados -> lista traducida al shape del panel. Con `page`/`limit`
+ * el backend responde `{ data, meta }`; sin ellos conserva el array completo.
+ */
+export async function listar(filtros = {}) {
+  const respuesta = await api.get(`/glaseados${construirQuery(filtros)}`);
+
+  if (Array.isArray(respuesta)) {
+    return mapFrostingsAdmin(respuesta);
+  }
+
+  return {
+    data: mapFrostingsAdmin(respuesta?.data ?? []),
+    meta: respuesta?.meta ?? null,
+  };
 }
 
 /** GET /glaseados/:id */

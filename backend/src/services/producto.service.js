@@ -13,6 +13,7 @@ import {
   borrarImagenProducto,
   subirImagenProducto,
 } from '../utils/cloudinaryStorage.js';
+import { construirMeta, leerPaginacion } from '../utils/paginacion.js';
 import { serializarProducto } from '../utils/serializers.js';
 
 const limpiarVacio = (valor) => (valor === '' ? null : valor);
@@ -130,28 +131,59 @@ async function resolverCategoria(datos) {
   return categoria.id;
 }
 
-export async function listar(filtros = {}) {
-  const filas = await productoModel.listar({
-    nombre: filtros.nombre,
-    idCategoria: filtros.idCategoria ?? filtros.id_categoria,
-    categoria: filtros.categoria,
-    estado: filtros.estado,
-  });
+async function serializarProductos(filas = []) {
+  if (filas.length === 0) return [];
 
-  const imagenes = await imagenProductoModel.listarPorProductos(filas.map((fila) => fila.id));
+  const imagenes = await imagenProductoModel.listarPorProductos(
+    filas.map((fila) => fila.id)
+  );
   const porProducto = agruparImagenes(imagenes);
 
   return filas.map((fila) => serializarProducto(fila, porProducto.get(fila.id) ?? []));
 }
 
+export async function listar(filtros = {}) {
+  const paginacion = leerPaginacion(filtros);
+  const filtrosBase = {
+    nombre: filtros.nombre,
+    idCategoria: filtros.idCategoria ?? filtros.id_categoria,
+    categoria: filtros.categoria,
+    estado: filtros.estado,
+  };
+
+  let filas;
+  let total = null;
+
+  if (paginacion.paginado) {
+    [filas, total] = await Promise.all([
+      productoModel.listar({
+        ...filtrosBase,
+        page: paginacion.page,
+        limit: paginacion.limit,
+      }),
+      productoModel.contar(filtrosBase),
+    ]);
+  } else {
+    filas = await productoModel.listar(filtrosBase);
+  }
+
+  const data = await serializarProductos(filas);
+
+  if (!paginacion.paginado) return data;
+
+  return {
+    data,
+    meta: construirMeta({
+      total,
+      page: paginacion.page,
+      limit: paginacion.limit,
+    }),
+  };
+}
+
 export async function listarPorIds(ids = [], filtros = {}) {
   const filas = await productoModel.listarPorIds(ids, { estado: filtros.estado });
-  if (filas.length === 0) return [];
-
-  const imagenes = await imagenProductoModel.listarPorProductos(filas.map((fila) => fila.id));
-  const porProducto = agruparImagenes(imagenes);
-
-  return filas.map((fila) => serializarProducto(fila, porProducto.get(fila.id) ?? []));
+  return serializarProductos(filas);
 }
 
 export async function obtener(id) {

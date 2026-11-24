@@ -33,28 +33,49 @@ export default function DataTable({
   pageSize = 8,
   emptyMessage = "No hay registros para mostrar.",
   tableLayout = "auto",
+  serverPagination = false,
+  page: serverPage = 1,
+  totalPages: serverTotalPages = 1,
+  totalRows,
+  onPageChange,
 }) {
   const [internalQuery, setInternalQuery] = useState("");
-  const [page, setPage] = useState(1);
+  const [internalPage, setInternalPage] = useState(1);
   const query = searchValue !== undefined ? searchValue : internalQuery;
+  const rows = useMemo(() => data ?? [], [data]);
 
   const filtered = useMemo(() => {
-    if (!query.trim()) return data;
+    if (serverPagination || !query.trim()) return rows;
     const q = query.trim().toLowerCase();
-    return data.filter((row) =>
+    return rows.filter((row) =>
       columns.some((col) => String(row[col.key] ?? "").toLowerCase().includes(q))
     );
-  }, [data, query, columns]);
+  }, [serverPagination, rows, query, columns]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const currentPage = Math.min(page, totalPages);
-  const pageRows = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const totalPages = serverPagination
+    ? Math.max(1, serverTotalPages)
+    : Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = serverPagination
+    ? Math.min(Math.max(1, serverPage), totalPages)
+    : Math.min(internalPage, totalPages);
+  const pageRows = serverPagination
+    ? rows
+    : filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   const pageNumbers = getPageNumbers(currentPage, totalPages);
+  const totalRecords = typeof totalRows === "number" ? totalRows : filtered.length;
 
   const handleSearchChange = (value) => {
     if (searchValue === undefined) setInternalQuery(value);
     onSearchChange?.(value);
-    setPage(1);
+    if (!serverPagination) setInternalPage(1);
+  };
+
+  const goToPage = (nextPage) => {
+    if (serverPagination) {
+      onPageChange?.(nextPage);
+    } else {
+      setInternalPage(nextPage);
+    }
   };
 
   return (
@@ -137,7 +158,7 @@ export default function DataTable({
 
         <div className="data-table-pagination">
           <span className="data-table-page-info" style={{ color: 'var(--texto-muted)' }}>
-            Página {currentPage} de {totalPages}
+            Página {currentPage} de {totalPages} · {totalRecords} registros
           </span>
 
           <div className="data-table-page-controls">
@@ -145,7 +166,7 @@ export default function DataTable({
               type="button"
               className="page-nav"
               disabled={currentPage === 1}
-              onClick={() => setPage((p) => p - 1)}
+              onClick={() => goToPage(currentPage - 1)}
             >
               <i className="fa-solid fa-arrow-left-long" />
               Anterior
@@ -161,7 +182,7 @@ export default function DataTable({
                   key={p}
                   type="button"
                   className={`page-number ${p === currentPage ? "active" : ""}`}
-                  onClick={() => setPage(p)}
+                  onClick={() => goToPage(p)}
                 >
                   {p}
                 </button>
@@ -172,7 +193,7 @@ export default function DataTable({
               type="button"
               className="page-nav"
               disabled={currentPage === totalPages}
-              onClick={() => setPage((p) => p + 1)}
+              onClick={() => goToPage(currentPage + 1)}
             >
               Siguiente
               <i className="fa-solid fa-arrow-right-long" />

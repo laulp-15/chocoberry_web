@@ -6,12 +6,10 @@
 
 import { useEffect, useState } from 'react';
 
+import useDebouncedValue from '../../../../shared/hooks/useDebouncedValue';
 import * as municipalityService from '../services/municipalityService';
 
-/** El backend lista alfabéticamente; se mantiene ese orden al crear o editar. */
-function ordenarPorNombre(lista) {
-  return [...lista].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
-}
+const PAGE_SIZE = 10;
 
 export const useMunicipalities = ({ autoLoad = true } = {}) => {
   const [municipalities, setMunicipalities] = useState([]);
@@ -21,7 +19,17 @@ export const useMunicipalities = ({ autoLoad = true } = {}) => {
   const [error, setError] = useState('');
   const [reloadToken, setReloadToken] = useState(0);
 
+  const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState({
+    total: 0,
+    page: 1,
+    limit: PAGE_SIZE,
+    totalPages: 1,
+  });
+
+  const debouncedSearch = useDebouncedValue(searchTerm, 300);
 
   // Modales y estados de selección
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -35,13 +43,20 @@ export const useMunicipalities = ({ autoLoad = true } = {}) => {
     if (!autoLoad && reloadToken === 0) return undefined;
 
     let activo = true;
+    const nombre = debouncedSearch.trim() || undefined;
+    const estado = statusFilter === 'todos' ? undefined : statusFilter;
 
     municipalityService
-      .listar()
-      .then((lista) => {
+      .listar({ page, limit: PAGE_SIZE, nombre, estado })
+      .then((respuesta) => {
         if (!activo) return;
-        setMunicipalities(ordenarPorNombre(lista));
+        setMunicipalities(respuesta.data);
+        setMeta(respuesta.meta);
         setError('');
+
+        if (page > respuesta.meta.totalPages) {
+          setPage(respuesta.meta.totalPages);
+        }
       })
       .catch((err) => {
         if (!activo) return;
@@ -54,7 +69,7 @@ export const useMunicipalities = ({ autoLoad = true } = {}) => {
     return () => {
       activo = false;
     };
-  }, [autoLoad, reloadToken]);
+  }, [autoLoad, reloadToken, page, debouncedSearch, statusFilter]);
 
   function reload() {
     setLoading(true);
@@ -62,29 +77,27 @@ export const useMunicipalities = ({ autoLoad = true } = {}) => {
     setReloadToken((valor) => valor + 1);
   }
 
-  // Filtrado por estado (la búsqueda de texto la maneja DataTable)
-  const filteredMunicipalities = municipalities.filter(
-    (municipality) =>
-      statusFilter === 'todos' ||
-      municipality.estado.toLowerCase() === statusFilter.toLowerCase()
-  );
+  const currentMunicipalities = municipalities;
 
-  /** Activa/desactiva un municipio contra el API y refleja la respuesta. */
+  const handleSearchChange = (value) => {
+    setSearchTerm(value);
+    setPage(1);
+  };
+
+  const handleStatusFilterChange = (value) => {
+    setStatusFilter(value);
+    setPage(1);
+  };
+
+  /** Activa/desactiva un municipio contra el API y recarga el listado. */
   async function handleToggleStatus(id) {
     const actual = municipalities.find((municipality) => municipality.id === id);
     if (!actual) return;
 
     try {
-      const actualizado = await municipalityService.cambiarEstado(
-        id,
-        actual.estado !== 'Activo'
-      );
-      setMunicipalities((prev) =>
-        prev.map((municipality) =>
-          municipality.id === id ? actualizado : municipality
-        )
-      );
+      await municipalityService.cambiarEstado(id, actual.estado !== 'Activo');
       setError('');
+      reload();
     } catch (err) {
       setError(err?.message || 'No se pudo cambiar el estado del municipio.');
     }
@@ -102,19 +115,14 @@ export const useMunicipalities = ({ autoLoad = true } = {}) => {
           municipalityToEdit.id,
           datos
         );
-        setMunicipalities((prev) =>
-          ordenarPorNombre(
-            prev.map((municipality) =>
-              municipality.id === actualizado.id ? actualizado : municipality
-            )
-          )
-        );
         setMunicipalityToEdit(null);
+        reload();
         return actualizado;
       }
 
       const creado = await municipalityService.crear(datos);
-      setMunicipalities((prev) => ordenarPorNombre([creado, ...prev]));
+      setPage(1);
+      reload();
       return creado;
     } finally {
       setSubmitting(false);
@@ -127,11 +135,7 @@ export const useMunicipalities = ({ autoLoad = true } = {}) => {
 
     try {
       await municipalityService.eliminar(selectedMunicipality.id);
-      setMunicipalities((prev) =>
-        prev.filter(
-          (municipality) => municipality.id !== selectedMunicipality.id
-        )
-      );
+      reload();
     } finally {
       setIsDeleteOpen(false);
       setSelectedMunicipality(null);
@@ -160,8 +164,13 @@ export const useMunicipalities = ({ autoLoad = true } = {}) => {
   };
 
   return {
+    searchTerm,
+    handleSearchChange,
     statusFilter,
-    setStatusFilter,
+    handleStatusFilterChange,
+    page,
+    setPage,
+    meta,
 
     isModalOpen,
     setIsModalOpen,
@@ -172,7 +181,7 @@ export const useMunicipalities = ({ autoLoad = true } = {}) => {
 
     selectedMunicipality,
     municipalityToEdit,
-    filteredMunicipalities,
+    currentMunicipalities,
 
     loading,
     submitting,

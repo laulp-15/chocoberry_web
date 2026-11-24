@@ -2,6 +2,7 @@
 // Esquemas de validación del módulo de pedidos. Los precios NUNCA llegan del
 // cliente: se calculan en el service con los datos de la BD.
 import { z } from 'zod';
+import { limiteField, paginaField } from './paginacion.validator.js';
 
 const vacioAUndefined = (valor) => (valor === '' || valor === null ? undefined : valor);
 
@@ -175,6 +176,12 @@ export const registrarEntregaSchema = z.object({
   observacionesEntrega: mensajeField(255, 'Las observaciones de entrega'),
 });
 
+const ordenPedidoField = z
+  .enum(['creacion', 'entrega_activa', 'entrega', 'cancelacion'], {
+    invalid_type_error: 'El orden indicado no es válido.',
+  })
+  .optional();
+
 export const filtrosPedidoSchema = z.object({
   estado: z.string().trim().optional(),
   idEstado: idOpcional('El estado debe ser un id numérico.'),
@@ -183,4 +190,7 @@ export const filtrosPedidoSchema = z.object({
   cliente: z.string().trim().optional(),
   fechaDesde: fechaFiltroField,
   fechaHasta: fechaFiltroField,
+  page: paginaField,
+  limit: limiteField,
+  orden: ordenPedidoField,
 });

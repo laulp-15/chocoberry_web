@@ -3,6 +3,7 @@
 // resolución del municipio activo al crear/editar un pedido.
 import { BadRequestError, ConflictError, NotFoundError } from '../errors/index.js';
 import * as municipioModel from '../models/municipio.model.js';
+import { construirMeta, leerPaginacion } from '../utils/paginacion.js';
 import { serializarMunicipio } from '../utils/serializers.js';
 
 /** El panel envía `costoEnvio`; la API acepta también los nombres del recurso. */
@@ -11,11 +12,40 @@ function resolverPrecio(datos) {
 }
 
 export async function listar(filtros = {}) {
-  const filas = await municipioModel.listar({
+  const paginacion = leerPaginacion(filtros);
+  const filtrosBase = {
     nombre: filtros.nombre,
     estado: filtros.estado,
-  });
-  return filas.map(serializarMunicipio);
+  };
+
+  let filas;
+  let total = null;
+
+  if (paginacion.paginado) {
+    [filas, total] = await Promise.all([
+      municipioModel.listar({
+        ...filtrosBase,
+        page: paginacion.page,
+        limit: paginacion.limit,
+      }),
+      municipioModel.contar(filtrosBase),
+    ]);
+  } else {
+    filas = await municipioModel.listar(filtrosBase);
+  }
+
+  const data = filas.map(serializarMunicipio);
+
+  if (!paginacion.paginado) return data;
+
+  return {
+    data,
+    meta: construirMeta({
+      total,
+      page: paginacion.page,
+      limit: paginacion.limit,
+    }),
+  };
 }
 
 export async function obtener(id) {

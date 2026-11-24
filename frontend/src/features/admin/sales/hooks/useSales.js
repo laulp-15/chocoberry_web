@@ -6,8 +6,24 @@ import { useEffect, useState } from "react";
 
 import * as saleService from "../services/saleService";
 
-export default function useSales({ autoLoad = true } = {}) {
+const META_INICIAL = {
+  total: 0,
+  page: 1,
+  limit: 10,
+  totalPages: 1,
+};
+
+export default function useSales({
+  autoLoad = true,
+  page = 1,
+  limit = 10,
+  estado,
+  cliente,
+  orden,
+  onPageOutOfRange,
+} = {}) {
   const [sales, setSales] = useState([]);
+  const [meta, setMeta] = useState(META_INICIAL);
   const [loading, setLoading] = useState(autoLoad);
   const [error, setError] = useState("");
   const [reloadToken, setReloadToken] = useState(0);
@@ -18,11 +34,16 @@ export default function useSales({ autoLoad = true } = {}) {
     let activo = true;
 
     saleService
-      .listar()
-      .then((lista) => {
+      .listar({ page, limit, estado, cliente, orden })
+      .then(({ data, meta: nuevaMeta }) => {
         if (!activo) return;
-        setSales(lista);
+        const metaFinal = nuevaMeta ?? { ...META_INICIAL, page, limit };
+        setSales(data);
+        setMeta(metaFinal);
         setError("");
+        if (page > metaFinal.totalPages) {
+          onPageOutOfRange?.(metaFinal.totalPages);
+        }
       })
       .catch((err) => {
         if (!activo) return;
@@ -35,7 +56,16 @@ export default function useSales({ autoLoad = true } = {}) {
     return () => {
       activo = false;
     };
-  }, [autoLoad, reloadToken]);
+  }, [
+    autoLoad,
+    reloadToken,
+    page,
+    limit,
+    estado,
+    cliente,
+    orden,
+    onPageOutOfRange,
+  ]);
 
   function reload() {
     setError("");
@@ -43,5 +73,5 @@ export default function useSales({ autoLoad = true } = {}) {
     setReloadToken((valor) => valor + 1);
   }
 
-  return { sales, loading, error, reload };
+  return { sales, meta, loading, error, reload };
 }

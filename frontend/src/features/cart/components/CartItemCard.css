@@ -186,7 +186,7 @@
 .cart-item-price {
   font-size: 17px;
   font-weight: 700;
-  color: var(--primario);
+  color: var(--chocolate-100);
 }
 
 @media (max-width: 640px) {

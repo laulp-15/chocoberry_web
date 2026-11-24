@@ -6,12 +6,10 @@
 
 import { useEffect, useState } from 'react';
 
+import useDebouncedValue from '../../../../shared/hooks/useDebouncedValue';
 import * as frostingService from '../services/frostingService';
 
-/** El backend lista alfabéticamente; se mantiene ese orden al crear o editar. */
-function ordenarPorNombre(lista) {
-  return [...lista].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
-}
+const PAGE_SIZE = 10;
 
 export const useFrostings = ({ autoLoad = true } = {}) => {
   const [frostings, setFrostings] = useState([]);
@@ -21,7 +19,17 @@ export const useFrostings = ({ autoLoad = true } = {}) => {
   const [error, setError] = useState('');
   const [reloadToken, setReloadToken] = useState(0);
 
+  const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState({
+    total: 0,
+    page: 1,
+    limit: PAGE_SIZE,
+    totalPages: 1,
+  });
+
+  const debouncedSearch = useDebouncedValue(searchTerm, 300);
 
   // Modales y estados de selección
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -35,13 +43,20 @@ export const useFrostings = ({ autoLoad = true } = {}) => {
     if (!autoLoad && reloadToken === 0) return undefined;
 
     let activo = true;
+    const nombre = debouncedSearch.trim() || undefined;
+    const estado = statusFilter === 'todos' ? undefined : statusFilter;
 
     frostingService
-      .listar()
-      .then((lista) => {
+      .listar({ page, limit: PAGE_SIZE, nombre, estado })
+      .then((respuesta) => {
         if (!activo) return;
-        setFrostings(ordenarPorNombre(lista));
+        setFrostings(respuesta.data);
+        setMeta(respuesta.meta);
         setError('');
+
+        if (page > respuesta.meta.totalPages) {
+          setPage(respuesta.meta.totalPages);
+        }
       })
       .catch((err) => {
         if (!activo) return;
@@ -54,7 +69,7 @@ export const useFrostings = ({ autoLoad = true } = {}) => {
     return () => {
       activo = false;
     };
-  }, [autoLoad, reloadToken]);
+  }, [autoLoad, reloadToken, page, debouncedSearch, statusFilter]);
 
   function reload() {
     setLoading(true);
@@ -62,29 +77,27 @@ export const useFrostings = ({ autoLoad = true } = {}) => {
     setReloadToken((valor) => valor + 1);
   }
 
-  // Filtrado por estado (la búsqueda de texto la maneja DataTable)
-  const filteredFrostings = frostings.filter(
-    (frosting) =>
-      statusFilter === 'todos' ||
-      frosting.estado.toLowerCase() === statusFilter.toLowerCase()
-  );
+  const currentFrostings = frostings;
 
-  /** Activa/desactiva un glaseado contra el API y refleja la respuesta. */
+  const handleSearchChange = (value) => {
+    setSearchTerm(value);
+    setPage(1);
+  };
+
+  const handleStatusFilterChange = (value) => {
+    setStatusFilter(value);
+    setPage(1);
+  };
+
+  /** Activa/desactiva un glaseado contra el API y recarga el listado. */
   async function handleToggleStatus(id) {
     const actual = frostings.find((frosting) => frosting.id === id);
     if (!actual) return;
 
     try {
-      const actualizado = await frostingService.cambiarEstado(
-        id,
-        actual.estado !== 'Activo'
-      );
-      setFrostings((prev) =>
-        prev.map((frosting) =>
-          frosting.id === id ? actualizado : frosting
-        )
-      );
+      await frostingService.cambiarEstado(id, actual.estado !== 'Activo');
       setError('');
+      reload();
     } catch (err) {
       setError(err?.message || 'No se pudo cambiar el estado del glaseado.');
     }
@@ -102,19 +115,14 @@ export const useFrostings = ({ autoLoad = true } = {}) => {
           frostingToEdit.id,
           datos
         );
-        setFrostings((prev) =>
-          ordenarPorNombre(
-            prev.map((frosting) =>
-              frosting.id === actualizado.id ? actualizado : frosting
-            )
-          )
-        );
         setFrostingToEdit(null);
+        reload();
         return actualizado;
       }
 
       const creado = await frostingService.crear(datos);
-      setFrostings((prev) => ordenarPorNombre([creado, ...prev]));
+      setPage(1);
+      reload();
       return creado;
     } finally {
       setSubmitting(false);
@@ -127,9 +135,7 @@ export const useFrostings = ({ autoLoad = true } = {}) => {
 
     try {
       await frostingService.eliminar(selectedFrosting.id);
-      setFrostings((prev) =>
-        prev.filter((frosting) => frosting.id !== selectedFrosting.id)
-      );
+      reload();
     } finally {
       setIsDeleteOpen(false);
       setSelectedFrosting(null);
@@ -158,8 +164,13 @@ export const useFrostings = ({ autoLoad = true } = {}) => {
   };
 
   return {
+    searchTerm,
+    handleSearchChange,
     statusFilter,
-    setStatusFilter,
+    handleStatusFilterChange,
+    page,
+    setPage,
+    meta,
 
     isModalOpen,
     setIsModalOpen,
@@ -170,7 +181,7 @@ export const useFrostings = ({ autoLoad = true } = {}) => {
 
     selectedFrosting,
     frostingToEdit,
-    filteredFrostings,
+    currentFrostings,
 
     loading,
     submitting,

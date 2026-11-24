@@ -1,5 +1,5 @@
 // src/features/admin/users/pages/UsersListPage.jsx
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DataTable from "../../../../shared/components/DataTable";
 import StatusToggle from "../../../../shared/components/StatusToggle";
@@ -7,6 +7,7 @@ import FormSelect from "../../../../shared/components/FormSelect";
 import ConfirmModal from "../../../../shared/components/ConfirmModal";
 import OrderNotification from "../../orders/components/OrderNotification";
 import { usePermissions } from "../../../../shared/hooks/usePermissions";
+import useDebouncedValue from "../../../../shared/hooks/useDebouncedValue";
 import useUsersAdmin from "../hooks/useUsersAdmin";
 import useRoleOptions from "../hooks/useRoleOptions";
 import UserFormModal from "../components/UserFormModal";
@@ -19,9 +20,9 @@ const STATUS_OPTIONS = [
   { value: "inactivo", label: "Inactivo" },
 ];
 
+const PAGE_SIZE = 10;
+
 export default function UsersListPage() {
-  const { users, loading, error, reload, createUser, updateUser, setActive, removeUser } =
-    useUsersAdmin();
   const { can } = usePermissions();
   const roleOptions = useRoleOptions();
   const navigate = useNavigate();
@@ -32,8 +33,23 @@ export default function UsersListPage() {
   const canToggle = can("Usuarios", "Cambiar estado");
   const canManage = canCreate || canEdit || canDelete || canToggle;
 
+  const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [page, setPage] = useState(1);
+
+  const debouncedSearch = useDebouncedValue(searchTerm, 300);
+
+  const { users, meta, loading, error, reload, createUser, updateUser, setActive, removeUser } =
+    useUsersAdmin({
+      page,
+      limit: PAGE_SIZE,
+      buscar: debouncedSearch.trim() || undefined,
+      rol: roleFilter || undefined,
+      estado:
+        statusFilter === "activo" ? true : statusFilter === "inactivo" ? false : undefined,
+      onPageOutOfRange: setPage,
+    });
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
@@ -42,14 +58,20 @@ export default function UsersListPage() {
   const [confirmTarget, setConfirmTarget] = useState(null);
   const [notification, setNotification] = useState(null);
 
-  const filtered = useMemo(() => {
-    return users.filter((u) => {
-      if (roleFilter && u.role !== roleFilter) return false;
-      if (statusFilter === "activo" && u.active === false) return false;
-      if (statusFilter === "inactivo" && u.active !== false) return false;
-      return true;
-    });
-  }, [users, roleFilter, statusFilter]);
+  function handleSearchChange(value) {
+    setSearchTerm(value);
+    setPage(1);
+  }
+
+  function handleRoleFilterChange(value) {
+    setRoleFilter(value);
+    setPage(1);
+  }
+
+  function handleStatusFilterChange(value) {
+    setStatusFilter(value);
+    setPage(1);
+  }
 
   function openCreate() {
     setEditingUser(null);
@@ -69,11 +91,14 @@ export default function UsersListPage() {
         setNotification({
           message: `Los datos de ${payload.fullName} se guardaron correctamente.`,
         });
+        reload();
       } else {
         await createUser(payload);
         setNotification({
           message: `Enviamos un correo a ${payload.email} para que ${payload.fullName} establezca su contraseña.`,
         });
+        setPage(1);
+        reload();
       }
       setFormOpen(false);
     } finally {
@@ -91,6 +116,7 @@ export default function UsersListPage() {
           ? `${user.fullName} ya puede acceder al sistema.`
           : `${user.fullName} no podrá iniciar sesión hasta que se vuelva a habilitar.`,
       });
+      reload();
     } catch (err) {
       setNotification({
         message: err.message || "No se pudo cambiar el estado del usuario.",
@@ -112,6 +138,7 @@ export default function UsersListPage() {
       setNotification({
         message: `${confirmTarget.fullName} perdió su acceso al sistema.`,
       });
+      reload();
     } catch (err) {
       setNotification({
         message: err.message,
@@ -184,8 +211,15 @@ export default function UsersListPage() {
           createLabel={canCreate ? "Crear usuario" : undefined}
           onCreate={canCreate ? openCreate : undefined}
           columns={columns}
-          data={filtered}
+          data={users}
           searchPlaceholder="Buscar usuario por nombre o correo..."
+          searchValue={searchTerm}
+          onSearchChange={handleSearchChange}
+          serverPagination
+          page={page}
+          totalPages={meta?.totalPages ?? 1}
+          totalRows={meta?.total ?? 0}
+          onPageChange={setPage}
           emptyMessage={
             loading
               ? "Cargando usuarios..."
@@ -195,13 +229,13 @@ export default function UsersListPage() {
             <div className="users-extra-filters">
               <FormSelect
                 value={roleFilter}
-                onChange={setRoleFilter}
+                onChange={handleRoleFilterChange}
                 placeholder="Todos los roles"
                 options={roleOptions}
               />
               <FormSelect
                 value={statusFilter}
-                onChange={setStatusFilter}
+                onChange={handleStatusFilterChange}
                 placeholder="Todos los estados"
                 options={STATUS_OPTIONS}
               />

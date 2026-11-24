@@ -13,8 +13,17 @@ import { useEffect, useState } from "react";
 
 import * as userService from "../services/userService";
 
-export default function useUsersAdmin({ autoLoad = true } = {}) {
+export default function useUsersAdmin({
+  autoLoad = true,
+  page,
+  limit,
+  buscar,
+  rol,
+  estado,
+  onPageOutOfRange,
+} = {}) {
   const [users, setUsers] = useState([]);
+  const [meta, setMeta] = useState(null);
   const [loading, setLoading] = useState(autoLoad);
   const [error, setError] = useState("");
 
@@ -26,13 +35,32 @@ export default function useUsersAdmin({ autoLoad = true } = {}) {
     // (token > 0) siempre se consulta el API.
     if (!autoLoad && reloadToken === 0) return undefined;
 
+    const paginado = Number.isInteger(page) && Number.isInteger(limit);
+    const filtros = {
+      buscar,
+      rol,
+      estado,
+      ...(paginado ? { page, limit } : {}),
+    };
+
     let activo = true;
 
     userService
-      .listar()
-      .then((lista) => {
+      .listar(filtros)
+      .then((respuesta) => {
         if (!activo) return;
-        setUsers(lista);
+
+        if (paginado) {
+          setUsers(respuesta.data);
+          setMeta(respuesta.meta);
+          if (respuesta.meta && page > respuesta.meta.totalPages) {
+            onPageOutOfRange?.(respuesta.meta.totalPages);
+          }
+        } else {
+          setUsers(respuesta);
+          setMeta(null);
+        }
+
         setError("");
       })
       .catch((err) => {
@@ -46,7 +74,7 @@ export default function useUsersAdmin({ autoLoad = true } = {}) {
     return () => {
       activo = false;
     };
-  }, [autoLoad, reloadToken]);
+  }, [autoLoad, reloadToken, page, limit, buscar, rol, estado, onPageOutOfRange]);
 
   /** Vuelve a pedir la lista al API (mantiene el estado de carga visible). */
   function reload() {
@@ -94,6 +122,7 @@ export default function useUsersAdmin({ autoLoad = true } = {}) {
 
   return {
     users,
+    meta,
     loading,
     error,
 
