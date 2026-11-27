@@ -25,6 +25,7 @@ import ProductsListPage from "../features/admin/products/pages/ProductsListPage"
 import ReviewsListPage from "../features/admin/admin-reviews/pages/ReviewsListPage";
 
 import OrdersListPage from "../features/admin/orders/pages/OrdersListPage";
+import CapacityPage from "../features/admin/capacity/pages/CapacityPage";
 
 import SalesListPage from "../features/admin/sales/pages/SalesListPage";
 
@@ -110,6 +111,14 @@ export default function AdminRoutes() {
             element={
               <RequirePermission module="Pedidos">
                 <OrdersListPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="pedidos/capacidad"
+            element={
+              <RequirePermission module="Capacidad" actions={["Ver"]}>
+                <CapacityPage />
               </RequirePermission>
             }
           />

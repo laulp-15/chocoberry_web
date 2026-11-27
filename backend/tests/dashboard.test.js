@@ -6,6 +6,7 @@ import request from 'supertest';
 import ExcelJS from 'exceljs';
 import app from '../src/app.js';
 import { query } from '../src/config/db.js';
+import { fijarTope, restablecerFechas } from './helpers/capacidad.js';
 
 const ADMIN = { correo: 'admin@chocoberry.com', contrasena: 'Admin123!' };
 const CLAVE_PRUEBA = 'Prueba123!';
@@ -36,6 +37,8 @@ function fechaISO(dias) {
   const dia = String(fecha.getDate()).padStart(2, '0');
   return `${anio}-${mes}-${dia}`;
 }
+
+const FECHA_ENTREGA = fechaISO(15);
 
 describe('Módulo de dashboard', () => {
   let tokenAdmin;
@@ -84,7 +87,7 @@ describe('Módulo de dashboard', () => {
 
   async function crearPedido({ cantidad = 1 } = {}) {
     const res = await auth(request(app).post('/api/pedidos'))
-      .field('fechaEntrega', fechaISO(2))
+      .field('fechaEntrega', FECHA_ENTREGA)
       .field('direccion', 'Calle 10 # 20-30')
       .field('idMunicipio', String(municipio.id))
       .field('nombreReceptor', 'Receptor Dashboard')
@@ -212,6 +215,8 @@ describe('Módulo de dashboard', () => {
     expect(municipio?.id).toBeGreaterThan(0);
     expect(color?.id).toBeGreaterThan(0);
 
+    await fijarTope(FECHA_ENTREGA);
+
     // Pendiente: no es venta.
     const pendiente = await crearPedido({ cantidad: 1 });
     totales.pendiente = pendiente.total;
@@ -279,6 +284,8 @@ describe('Módulo de dashboard', () => {
       const marcadores = resenasCreadas.map(() => '?').join(', ');
       await query(`DELETE FROM resena WHERE id IN (${marcadores})`, resenasCreadas);
     }
+
+    await restablecerFechas([FECHA_ENTREGA]);
 
     for (const id of [repartidorId, clienteId]) {
       if (id) await auth(request(app).delete(`/api/usuarios/${id}`));

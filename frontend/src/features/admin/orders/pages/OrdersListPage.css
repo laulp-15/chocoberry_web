@@ -1,0 +1,22 @@
+/* src/features/admin/orders/pages/OrdersListPage.css */
+
+.btn-capacidad {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border: 1px solid var(--primario);
+  border-radius: 50%;
+  background: var(--blanco);
+  color: var(--primario);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.btn-capacidad:hover {
+  background: var(--primario);
+  color: var(--blanco);
+}

@@ -1,0 +1,387 @@
+/* src/features/admin/capacity/components/CapacityDayPanel.css */
+
+.capacity-day-panel {
+  position: sticky;
+  top: 80px;
+  padding: 18px;
+  border: 1px solid var(--borde);
+  border-radius: 16px;
+  background: var(--bg-card);
+}
+
+/* ---------- Estado vacío ---------- */
+.capacity-day-panel--empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 260px;
+  color: var(--texto-muted);
+  text-align: center;
+}
+
+.capacity-day-panel--empty h2 {
+  margin: 4px 0 0;
+  color: var(--texto);
+  font-size: 16px;
+}
+
+.capacity-day-panel--empty p {
+  max-width: 240px;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.capacity-panel-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--secundario-2);
+  color: var(--primario);
+  font-size: 18px;
+}
+
+/* ---------- Encabezado ---------- */
+.capacity-panel-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.capacity-panel-heading h2 {
+  margin: 0;
+  color: var(--texto);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.capacity-panel-updating {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--texto-muted);
+  font-size: 11px;
+}
+
+.capacity-panel-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 18px;
+  color: var(--texto-muted);
+  font-size: 12px;
+}
+
+.capacity-panel-error {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 16px 0 0;
+  color: var(--error-100);
+  font-size: 12px;
+}
+
+/* ---------- Estado ---------- */
+.capacity-panel-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.capacity-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.capacity-status--libre {
+  background: var(--success-20);
+  color: var(--success-100);
+}
+
+.capacity-status--parcial {
+  background: var(--warning-20);
+  color: var(--warning-100);
+}
+
+.capacity-status--lleno,
+.capacity-status--sobrecupo {
+  background: var(--error-20);
+  color: var(--error-100);
+}
+
+.capacity-status--bloqueado {
+  background: color-mix(in srgb, var(--texto-suave) 22%, transparent);
+  color: var(--texto-muted);
+}
+
+.capacity-status--exception {
+  background: var(--info-20);
+  color: var(--info-100);
+}
+
+/* ---------- Medidor de ocupación ---------- */
+.capacity-meter {
+  margin-top: 16px;
+}
+
+.capacity-meter-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  color: var(--texto-muted);
+  font-size: 12px;
+}
+
+.capacity-meter-head strong {
+  color: var(--texto);
+  font-size: 14px;
+}
+
+.capacity-meter-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--texto-suave) 22%, transparent);
+  overflow: hidden;
+}
+
+.capacity-meter-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--success-100);
+  transition: width 0.3s ease;
+}
+
+.capacity-meter-fill--parcial { background: var(--warning-100); }
+
+.capacity-meter-fill--lleno,
+.capacity-meter-fill--sobrecupo,
+.capacity-meter-fill--bloqueado { background: var(--error-100); }
+
+/* ---------- Cifras ---------- */
+.capacity-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.capacity-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: var(--secundario-3);
+}
+
+.capacity-stat span {
+  color: var(--texto-muted);
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.capacity-stat strong {
+  color: var(--texto);
+  font-size: 20px;
+  line-height: 1.1;
+}
+
+/* ---------- Avisos ---------- */
+.capacity-panel-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 12px 0 0;
+  color: var(--texto-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.capacity-panel-note > i {
+  margin-top: 3px;
+}
+
+.capacity-panel-note--warning {
+  padding: 10px 11px;
+  border-radius: 9px;
+  background: var(--warning-20);
+  color: color-mix(in srgb, var(--warning-100) 80%, var(--texto));
+}
+
+/* ---------- Acciones ---------- */
+.capacity-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.capacity-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid var(--borde);
+  border-radius: 9px;
+  background: var(--bg-card);
+  color: var(--texto);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.capacity-action:hover:not(:disabled) {
+  border-color: var(--primario);
+  color: var(--primario);
+}
+
+.capacity-action--danger:hover:not(:disabled) {
+  border-color: var(--error-100);
+  background: var(--error-20);
+  color: var(--error-100);
+}
+
+.capacity-action--special {
+  border-color: var(--primario);
+  background: var(--secundario-3);
+  color: var(--primario);
+}
+
+.capacity-action--special:hover:not(:disabled) {
+  background: var(--primario);
+  color: var(--blanco);
+}
+
+.capacity-action--secondary:hover:not(:disabled) {
+  border-color: var(--primario);
+  background: var(--secundario-2);
+  color: var(--primario);
+}
+
+.capacity-action:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.capacity-readonly {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 14px 0 0;
+  color: var(--texto-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* ---------- Pedidos del día ---------- */
+.capacity-orders {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--borde);
+}
+
+.capacity-orders-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.capacity-orders-header h3 {
+  margin: 0;
+  color: var(--texto);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.capacity-orders-header > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--secundario-2);
+  color: var(--primario);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.capacity-orders-empty {
+  margin: 10px 0 0;
+  color: var(--texto-muted);
+  font-size: 12px;
+}
+
+.capacity-orders-list {
+  display: flex;
+  flex-direction: column;
+  margin: 8px 0 0;
+  padding: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.capacity-order-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 0;
+  border-top: 1px solid var(--borde);
+  color: var(--texto-muted);
+  font-size: 12px;
+}
+
+.capacity-order-item:first-child {
+  border-top: none;
+}
+
+.capacity-order-item strong {
+  color: var(--texto);
+  font-size: 12px;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1100px) {
+  .capacity-day-panel {
+    position: static;
+  }
+}
+
+@media (max-width: 480px) {
+  .capacity-stats {
+    gap: 5px;
+  }
+
+  .capacity-stat {
+    padding: 8px;
+  }
+
+  .capacity-stat strong {
+    font-size: 17px;
+  }
+}

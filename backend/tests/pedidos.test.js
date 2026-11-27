@@ -7,6 +7,7 @@
 import request from 'supertest';
 import app from '../src/app.js';
 import { query } from '../src/config/db.js';
+import { fijarTope, restablecerFechas } from './helpers/capacidad.js';
 
 const ADMIN = { correo: 'admin@chocoberry.com', contrasena: 'Admin123!' };
 const CLAVE_PRUEBA = 'Prueba123!';
@@ -33,6 +34,7 @@ describe('Módulo de pedidos', () => {
 
   const pedidosCreados = [];
   const s = Date.now().toString().slice(-7);
+  const DIAS_CON_CAPACIDAD_AMPLIA = [1, 2, 5, 10, 15, 20];
 
   const auth = (peticion, token = tokenAdmin) =>
     peticion.set('Authorization', `Bearer ${token}`);
@@ -72,7 +74,7 @@ describe('Módulo de pedidos', () => {
     conComprobante = true,
   } = {}) {
     const campos = {
-      fechaEntrega: '2026-12-24',
+      fechaEntrega: fechaISO(5),
       direccion: 'Calle 10 # 20-30',
       idMunicipio: municipio.id,
       nombreReceptor: 'Receptor Prueba',
@@ -207,6 +209,10 @@ describe('Módulo de pedidos', () => {
     expect(presentacion?.id).toBeGreaterThan(0);
     expect(municipio?.id).toBeGreaterThan(0);
     expect(color?.id).toBeGreaterThan(0);
+
+    await Promise.all(
+      DIAS_CON_CAPACIDAD_AMPLIA.map((dias) => fijarTope(fechaISO(dias)))
+    );
   });
 
   afterAll(async () => {
@@ -214,6 +220,8 @@ describe('Módulo de pedidos', () => {
     for (const id of [...pedidosCreados].reverse()) {
       await auth(request(app).delete(`/api/pedidos/${id}`));
     }
+
+    await restablecerFechas(DIAS_CON_CAPACIDAD_AMPLIA.map(fechaISO));
 
     for (const id of [repartidorId, otroClienteId, clienteId]) {
       if (id) await auth(request(app).delete(`/api/usuarios/${id}`));
@@ -282,7 +290,7 @@ describe('Módulo de pedidos', () => {
       expect(pedido.estado.nombre).toBe('Pendiente');
       expect(pedido.cliente.id).toBe(clienteId);
       expect(pedido.municipio.id).toBe(municipio.id);
-      expect(pedido.fechaEntrega).toBe('2026-12-24');
+      expect(pedido.fechaEntrega).toBe(fechaISO(5));
       expect(pedido.comprobantes).toHaveLength(1);
       expect(pedido.comprobantes[0].url).toMatch(/^https:\/\/res\.cloudinary\.com\/test\//);
       expect(pedido.comprobantes[0].estado.nombre).toBe('Pendiente');
@@ -390,11 +398,11 @@ describe('Módulo de pedidos', () => {
     });
   });
 
-  describe('Reglas de volumen y fecha', () => {
-    it('el cliente no puede superar 20 unidades en total', async () => {
+  describe('Reglas de volumen, anticipación y ventana', () => {
+    it('la tienda en línea exige cotización por encima de 200 fresas', async () => {
       const res = await solicitudPedido({
-        datos: { fechaEntrega: fechaISO(2) },
-        lineas: [lineaCon(11), lineaCon(10)],
+        datos: { fechaEntrega: fechaISO(20) },
+        lineas: [lineaCon(34)],
       });
 
       expect(res.status).toBe(422);
@@ -402,62 +410,91 @@ describe('Módulo de pedidos', () => {
       expect(res.body.errors?.[0]?.campo).toBe('lineas');
     });
 
-    it('acepta exactamente 20 unidades con entrega desde pasado mañana', async () => {
+    it('acepta hasta 200 fresas en línea con la anticipación de su tramo', async () => {
       const pedido = await crearPedido({
-        datos: { fechaEntrega: fechaISO(2) },
-        lineas: [lineaCon(10), lineaCon(10)],
+        datos: { fechaEntrega: fechaISO(15) },
+        lineas: [lineaCon(33)],
       });
 
-      const total = pedido.lineas.reduce(
-        (suma, linea) => suma + linea.cantidadProductos,
-        0
-      );
-      expect(total).toBe(20);
+      expect(pedido.lineas[0].cantidadProductos).toBe(33);
     });
 
-    it('rechaza la entrega para mañana cuando el pedido supera 10 unidades', async () => {
+    it('rechaza mañana para pedidos de hasta 40 fresas', async () => {
       const res = await solicitudPedido({
         datos: { fechaEntrega: fechaISO(1) },
-        lineas: [lineaCon(11)],
+        lineas: [lineaCon(2)],
       });
 
       expect(res.status).toBe(422);
       expect(res.body.errors?.[0]?.campo).toBe('fechaEntrega');
     });
 
-    it('acepta la entrega desde pasado mañana cuando el pedido supera 10 unidades', async () => {
+    it('acepta pasado mañana para pedidos de hasta 40 fresas', async () => {
       const pedido = await crearPedido({
         datos: { fechaEntrega: fechaISO(2) },
-        lineas: [lineaCon(11)],
+        lineas: [lineaCon(2)],
       });
 
       expect(pedido.fechaEntrega).toBe(fechaISO(2));
     });
 
-    it('permite la entrega para mañana con 10 unidades o menos', async () => {
-      const pedido = await crearPedido({
-        datos: { fechaEntrega: fechaISO(1) },
-        lineas: [lineaCon(10)],
+    it('exige 10 días para pedidos de 41 a 150 fresas', async () => {
+      const rechazado = await solicitudPedido({
+        datos: { fechaEntrega: fechaISO(9) },
+        lineas: [lineaCon(7)],
       });
 
-      expect(pedido.fechaEntrega).toBe(fechaISO(1));
+      expect(rechazado.status).toBe(422);
+      expect(rechazado.body.errors?.[0]?.campo).toBe('fechaEntrega');
+
+      const pedido = await crearPedido({
+        datos: { fechaEntrega: fechaISO(10) },
+        lineas: [lineaCon(7)],
+      });
+      expect(pedido.fechaEntrega).toBe(fechaISO(10));
     });
 
-    it('el administrador puede crear pedidos de más de 20 unidades', async () => {
+    it('exige 15 días para pedidos de más de 150 fresas', async () => {
+      const rechazado = await solicitudPedido({
+        datos: { fechaEntrega: fechaISO(14) },
+        lineas: [lineaCon(26)],
+      });
+
+      expect(rechazado.status).toBe(422);
+      expect(rechazado.body.errors?.[0]?.campo).toBe('fechaEntrega');
+
+      const pedido = await crearPedido({
+        datos: { fechaEntrega: fechaISO(15) },
+        lineas: [lineaCon(26)],
+      });
+      expect(pedido.fechaEntrega).toBe(fechaISO(15));
+    });
+
+    it('el administrador puede superar las 200 fresas', async () => {
       const pedido = await crearPedido({
         token: tokenAdmin,
-        datos: { idUsuario: clienteId, fechaEntrega: fechaISO(2) },
-        lineas: [lineaCon(25)],
+        datos: { idUsuario: clienteId, fechaEntrega: fechaISO(15) },
+        lineas: [lineaCon(34)],
       });
 
-      expect(pedido.lineas[0].cantidadProductos).toBe(25);
+      expect(pedido.lineas[0].cantidadProductos).toBe(34);
     });
 
-    it('el administrador también respeta la fecha de los pedidos grandes', async () => {
+    it('el administrador también respeta la anticipación', async () => {
       const res = await solicitudPedido({
         token: tokenAdmin,
-        datos: { idUsuario: clienteId, fechaEntrega: fechaISO(1) },
-        lineas: [lineaCon(11)],
+        datos: { idUsuario: clienteId, fechaEntrega: fechaISO(14) },
+        lineas: [lineaCon(26)],
+      });
+
+      expect(res.status).toBe(422);
+      expect(res.body.errors?.[0]?.campo).toBe('fechaEntrega');
+    });
+
+    it('no permite entregar más allá de la ventana máxima de 20 días', async () => {
+      const res = await solicitudPedido({
+        datos: { fechaEntrega: fechaISO(21) },
+        lineas: [lineaCon(1)],
       });
 
       expect(res.status).toBe(422);
@@ -505,18 +542,18 @@ describe('Módulo de pedidos', () => {
     });
 
     it('ordena por fecha de creación y no por fecha de entrega', async () => {
-      // El primero se crea antes pero tiene una entrega mucho más lejana.
+      // El primero se crea antes pero tiene una entrega más lejana.
       const entregaLejana = await crearPedido({
-        datos: { fechaEntrega: '2099-12-31' },
+        datos: { fechaEntrega: fechaISO(10) },
       });
       const entregaCercana = await crearPedido({
-        datos: { fechaEntrega: '2000-01-01' },
+        datos: { fechaEntrega: fechaISO(2) },
       });
 
       const res = await auth(request(app).get('/api/pedidos'));
       const ids = res.body.data.map((p) => p.id);
 
-      expect(entregaCercana.fechaEntrega).toBe('2000-01-01');
+      expect(entregaCercana.fechaEntrega).toBe(fechaISO(2));
       expect(ids.indexOf(entregaCercana.id)).toBeGreaterThanOrEqual(0);
       expect(ids.indexOf(entregaCercana.id)).toBeLessThan(
         ids.indexOf(entregaLejana.id)
@@ -1028,7 +1065,7 @@ describe('Módulo de pedidos', () => {
       expect(res.status).toBe(400);
     });
 
-    it('al editar, un pedido grande no puede quedar con entrega para mañana', async () => {
+    it('al editar, un pedido de 41 a 150 fresas no puede quedar para mañana', async () => {
       const pedido = await crearPedido();
       const linea = pedido.lineas[0];
 
@@ -1049,11 +1086,12 @@ describe('Módulo de pedidos', () => {
       expect(res.body.errors?.[0]?.campo).toBe('fechaEntrega');
     });
 
-    it('el administrador puede editar un pedido para superar 20 unidades', async () => {
+    it('el administrador puede editar un pedido para superar el umbral de la tienda', async () => {
       const pedido = await crearPedido();
       const linea = pedido.lineas[0];
 
       const res = await auth(request(app).put(`/api/pedidos/${pedido.id}`)).send({
+        fechaEntrega: fechaISO(10),
         lineas: [
           {
             id: linea.id,

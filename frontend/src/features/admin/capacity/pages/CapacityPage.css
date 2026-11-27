@@ -1,0 +1,264 @@
+/* src/features/admin/capacity/pages/CapacityPage.css
+   Solo estilos de la PÁGINA: encabezado, barra de herramientas, feedback y layout.
+   Calendario, panel, leyenda y modales tienen su propio CSS. */
+
+.capacity-page {
+  padding-bottom: 2rem;
+}
+
+/* ---------- Encabezado ---------- */
+.capacity-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.capacity-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.capacity-back {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 4px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--texto-muted);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.capacity-back:hover {
+  color: var(--primario);
+}
+
+.capacity-title {
+  margin: 0;
+  color: var(--texto);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 32px;
+}
+
+.capacity-description {
+  margin: 0;
+  color: var(--texto-muted);
+  font-size: 14px;
+}
+
+/* ---------- Barra de herramientas ---------- */
+.capacity-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.capacity-month-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  background: var(--bg-card);
+}
+
+.capacity-month-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--texto-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.capacity-month-btn:hover:not(:disabled) {
+  background: var(--secundario-2);
+  color: var(--primario);
+}
+
+.capacity-month-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.capacity-month-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 160px;
+  color: var(--texto);
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.capacity-month-spinner {
+  color: var(--primario);
+  font-size: 11px;
+}
+
+.capacity-today {
+  height: 34px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 999px;
+  background: var(--secundario-2);
+  color: var(--primario);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.capacity-today:hover {
+  background: var(--primario);
+  color: var(--blanco);
+}
+
+.capacity-standard-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 46px;
+  padding: 7px 10px 7px 16px;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--bg-card);
+}
+
+.capacity-standard-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.capacity-standard-info span {
+  color: var(--texto-muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.capacity-standard-info strong {
+  color: var(--texto);
+  font-size: 14px;
+}
+
+.capacity-standard-edit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--borde);
+  border-radius: 50%;
+  background: var(--secundario-3);
+  color: var(--texto-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.capacity-standard-edit:hover:not(:disabled) {
+  border-color: var(--primario);
+  background: var(--primario);
+  color: var(--blanco);
+}
+
+.capacity-standard-edit:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+/* ---------- Feedback ---------- */
+.capacity-feedback {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 11px 14px;
+  border: 1px solid rgba(36, 148, 52, 0.28);
+  border-radius: 12px;
+  background: rgba(36, 148, 52, 0.1);
+  color: var(--success-100);
+  font-size: 13px;
+}
+
+.capacity-feedback > span {
+  flex: 1;
+}
+
+.capacity-feedback > button {
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* ---------- Layout principal ---------- */
+.capacity-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 350px;
+  gap: 20px;
+  align-items: start;
+  margin-top: 18px;
+}
+
+.capacity-calendar-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1100px) {
+  .capacity-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .capacity-toolbar {
+    align-items: stretch;
+  }
+
+  .capacity-month-nav {
+    justify-content: space-between;
+  }
+
+  .capacity-month-label {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .capacity-standard-box {
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 480px) {
+  .capacity-title {
+    font-size: 21px;
+  }
+}

@@ -10,11 +10,15 @@ import { validatePhone } from "../../login/utils/validators";
 import {
   MAX_MENSAJE_TARJETA,
   contarCaracteresSinEspacios,
-  esPedidoGrande,
   excedeLimiteCarrito,
+  fechaMaximaEntrega,
   fechaMinimaEntrega,
-  formatearFechaISO,
+  mensajeCotizacion,
+  mensajeFechaMaxima,
+  mensajeFechaMinima,
   mensajeLimiteCarrito,
+  mensajeRangoEntrega,
+  requiereCotizacion,
 } from "../../../shared/utils/orderRules";
 import ShippingForm from "../components/ShippingForm";
 import PaymentSection from "../components/PaymentSection";
@@ -87,6 +91,13 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
+  const cotizacionRequerida = requiereCotizacion(items);
+  const minDeliveryDate = fechaMinimaEntrega(items);
+  const maxDeliveryDate = fechaMaximaEntrega();
+  const deliveryHint = cotizacionRequerida
+    ? mensajeCotizacion(items)
+    : mensajeRangoEntrega(items, minDeliveryDate, maxDeliveryDate);
+
   const {
     values: form,
     errors,
@@ -99,11 +110,13 @@ export default function CheckoutPage() {
       fullName: (v) => (v.fullName.trim() ? "" : "El nombre completo es obligatorio."),
       deliveryDate: (v) => {
         if (!v.deliveryDate) return "Selecciona la fecha de entrega.";
-        const minima = fechaMinimaEntrega(items);
-        if (v.deliveryDate >= minima) return "";
-        return esPedidoGrande(items)
-          ? `Con más de 10 unidades en total, la entrega más próxima es el ${formatearFechaISO(minima)}.`
-          : `La entrega más próxima es el ${formatearFechaISO(minima)}.`;
+        if (v.deliveryDate < minDeliveryDate) {
+          return mensajeFechaMinima(items, minDeliveryDate);
+        }
+        if (v.deliveryDate > maxDeliveryDate) {
+          return mensajeFechaMaxima(maxDeliveryDate);
+        }
+        return "";
       },
       municipio: (v) => (v.municipio ? "" : "Selecciona el municipio de entrega."),
       address: (v) => (v.address.trim() ? "" : "Debe escribir una dirección para su entrega."),
@@ -119,8 +132,6 @@ export default function CheckoutPage() {
     (municipio) => String(municipio.id) === String(form.municipio)
   );
   const shippingCost = selectedMunicipio?.precioDomicilio ?? 0;
-  const pedidoGrande = esPedidoGrande(items);
-  const minDeliveryDate = fechaMinimaEntrega(items);
 
   const handleFieldChange = (field, value) => setField(field, value);
 
@@ -128,6 +139,10 @@ export default function CheckoutPage() {
     if (submitting) return;
 
     setSubmitError("");
+    if (cotizacionRequerida) {
+      setSubmitError(mensajeCotizacion(items));
+      return;
+    }
     if (!validateAll()) return;
 
     const errorLineas = validarLineas(items);
@@ -178,7 +193,9 @@ export default function CheckoutPage() {
       navigate("/users/orders", { state: { pedidoCreado: pedido.id } });
     } catch (err) {
       setSubmitError(
-        err?.message || "No se pudo crear el pedido. Inténtalo de nuevo."
+        err?.serverMessage ||
+          err?.message ||
+          "No se pudo crear el pedido. Inténtalo de nuevo."
       );
     } finally {
       setSubmitting(false);
@@ -243,7 +260,8 @@ export default function CheckoutPage() {
               municipios={municipios}
               municipiosLoading={loadingMunicipios}
               minDeliveryDate={minDeliveryDate}
-              largeOrder={pedidoGrande}
+              maxDeliveryDate={maxDeliveryDate}
+              deliveryHint={deliveryHint}
               fullNameError={errors.fullName}
               deliveryDateError={errors.deliveryDate}
               municipioError={errors.municipio}

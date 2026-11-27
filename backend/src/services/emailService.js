@@ -445,6 +445,34 @@ export async function enviarPedidoEnPreparacion({ pedido }) {
   });
 }
 
+export async function enviarPedidoDespachado({ pedido }) {
+  if (!pedido) return { omitido: true };
+  const datos = datosPedido(pedido);
+  const titulo = 'Tu pedido va en camino';
+  const mensaje = `<p style="margin:0;font-size:15px;line-height:1.7;color:#4a3733;">Tu pedido <strong style="color:#7b2d26;">#${escaparHtml(datos.id)}</strong> por <strong style="color:#7b2d26;">${escaparHtml(datos.total)}</strong> ya fue despachado y el repartidor lo llevará a tu dirección.</p>
+    <div style="margin:18px 0 0;padding:14px 16px;background:#fbf1ee;border-left:4px solid #7b2d26;border-radius:8px;font-size:14px;line-height:1.6;color:#4a3733;">Fecha de entrega: <strong style="color:#7b2d26;">${escaparHtml(datos.fechaEntrega)}</strong>.</div>`;
+
+  return enviar({
+    to: correoCliente(pedido),
+    subject: `Pedido despachado - #${datos.id}`,
+    html: plantilla({
+      titulo,
+      saludo: `Hola, ${nombreCliente(pedido)}.`,
+      mensaje,
+      boton: 'Ver mi pedido',
+      enlace: urlFrontend('/users/orders'),
+      nota: 'Por favor, ten a alguien disponible para recibir tu pedido. Si tienes dudas, contacta a ChocoBerry.',
+    }),
+    text: textoPlano([
+      titulo,
+      `Hola, ${nombreCliente(pedido)}.`,
+      `Tu pedido #${datos.id} ya fue despachado y va en camino.`,
+      `Fecha de entrega: ${datos.fechaEntrega}.`,
+      urlFrontend('/users/orders'),
+    ]),
+  });
+}
+
 export async function enviarPedidoRechazado({ pedido, motivo }) {
   if (!pedido) return { omitido: true };
   const datos = datosPedido(pedido);

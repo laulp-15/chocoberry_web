@@ -1,5 +1,6 @@
 // src/features/admin/orders/pages/OrdersListPage.jsx
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import DataTable from "../../../../shared/components/DataTable";
 import OrderStatusChips from "../components/OrderStatusChips";
 import OrderStatusSelector from "../components/OrderStatusSelector";
@@ -20,6 +21,7 @@ import { getStatusMeta, isFinalStatus } from "../data/orderStatus";
 import { formatDisplayDate } from "../utils/orderDisplay";
 import { formatPrice } from "../../../../shared/utils/formatPrice";
 import "../../../../shared/css/adminCrud.css";
+import "./OrdersListPage.css";
 
 // Las seis columnas de datos comparten el mismo ancho; Acciones se reserva
 // aparte para que el encabezado y los iconos queden juntos a la derecha.
@@ -54,10 +56,12 @@ const EMPTY_STATUS_MESSAGES = {
 };
 
 export default function OrdersListPage() {
+  const navigate = useNavigate();
   const { can } = usePermissions();
   const canCreate = can("Pedidos", "Crear");
   const canEditOrder = can("Pedidos", "Editar");
   const canChangeStatus = can("Pedidos", "Cambiar estado");
+  const canVerCapacidad = can("Capacidad", "Ver");
 
   const [statusFilter, setStatusFilter] = useState("pendiente");
   const [searchTerm, setSearchTerm] = useState("");
@@ -498,6 +502,19 @@ export default function OrdersListPage() {
         totalPages={meta.totalPages}
         totalRows={meta.total}
         onPageChange={setPage}
+        leadingActions={
+          canVerCapacidad ? (
+            <button
+              type="button"
+              className="btn-capacidad"
+              title="Capacidad diaria"
+              aria-label="Abrir capacidad diaria"
+              onClick={() => navigate("/admin/pedidos/capacidad")}
+            >
+              <i className="fa-solid fa-calendar-days" />
+            </button>
+          ) : undefined
+        }
         searchPlaceholder="Buscar por cliente..."
         searchValue={searchTerm}
         onSearchChange={handleSearchChange}

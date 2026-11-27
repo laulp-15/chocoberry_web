@@ -6,6 +6,15 @@ import { query, withTransaction } from '../config/db.js';
 import * as comprobantePagoModel from './comprobantePago.model.js';
 import * as productoPedidoModel from './productoPedido.model.js';
 
+/** Ejecuta con la conexión de una transacción cuando se recibe. */
+async function ejecutar(sql, params = [], conexion = null) {
+  if (conexion) {
+    const [filas] = await conexion.execute(sql, params);
+    return filas;
+  }
+  return query(sql, params);
+}
+
 // Columnas de cabecera que se pueden actualizar (lista blanca).
 const CAMPOS_ACTUALIZABLES = [
   'fecha_entrega',
@@ -162,8 +171,8 @@ export async function contarPorEstado(filtros = {}) {
   }, {});
 }
 
-export async function buscarPorId(id) {
-  const rows = await query(`${SELECT_BASE} WHERE p.id = ? LIMIT 1`, [id]);
+export async function buscarPorId(id, conexion = null) {
+  const rows = await ejecutar(`${SELECT_BASE} WHERE p.id = ? LIMIT 1`, [id], conexion);
   return rows[0] ?? null;
 }
 
@@ -171,42 +180,49 @@ export async function buscarPorId(id) {
  * Inserta la cabecera, sus líneas y, si existe, el comprobante inicial en una
  * sola transacción. Devuelve el id del pedido creado.
  */
-export async function crearConLineas({ pedido, lineas, comprobante }) {
-  return withTransaction(async (conexion) => {
-    const [resultado] = await conexion.execute(
-      `INSERT INTO pedido
-         (fecha_entrega, direccion, precio_domicilio,
-          nombre_receptor, telefono_receptor, instrucciones_entrega,
-          id_usuario, id_estado, id_municipio)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        pedido.fecha_entrega,
-        pedido.direccion,
-        pedido.precio_domicilio,
-        pedido.nombre_receptor,
-        pedido.telefono_receptor,
-        pedido.instrucciones_entrega ?? null,
-        pedido.id_usuario,
-        pedido.id_estado,
-        pedido.id_municipio,
-      ]
-    );
+async function insertarConLineas(conexion, { pedido, lineas, comprobante }) {
+  const [resultado] = await conexion.execute(
+    `INSERT INTO pedido
+       (fecha_entrega, direccion, precio_domicilio,
+        nombre_receptor, telefono_receptor, instrucciones_entrega,
+        id_usuario, id_estado, id_municipio)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      pedido.fecha_entrega,
+      pedido.direccion,
+      pedido.precio_domicilio,
+      pedido.nombre_receptor,
+      pedido.telefono_receptor,
+      pedido.instrucciones_entrega ?? null,
+      pedido.id_usuario,
+      pedido.id_estado,
+      pedido.id_municipio,
+    ]
+  );
 
-    const idPedido = resultado.insertId;
-    await productoPedidoModel.insertarLineas(conexion, idPedido, lineas);
+  const idPedido = resultado.insertId;
+  await productoPedidoModel.insertarLineas(conexion, idPedido, lineas);
 
-    if (comprobante) {
-      await comprobantePagoModel.crear(conexion, {
-        url: comprobante.url,
-        publicId: comprobante.public_id ?? null,
-        idPedido,
-        idEstado: comprobante.id_estado,
-        monto: comprobante.monto ?? null,
-      });
-    }
+  if (comprobante) {
+    await comprobantePagoModel.crear(conexion, {
+      url: comprobante.url,
+      publicId: comprobante.public_id ?? null,
+      idPedido,
+      idEstado: comprobante.id_estado,
+      monto: comprobante.monto ?? null,
+    });
+  }
 
-    return idPedido;
-  });
+  return idPedido;
+}
+
+export async function crearConLineas({ pedido, lineas, comprobante }, conexion = null) {
+  if (conexion) {
+    return insertarConLineas(conexion, { pedido, lineas, comprobante });
+  }
+  return withTransaction((conn) =>
+    insertarConLineas(conn, { pedido, lineas, comprobante })
+  );
 }
 
 /** Construye el SET dinámico de la cabecera con la lista blanca de columnas. */
@@ -225,37 +241,44 @@ function construirAsignaciones(campos) {
 }
 
 /** Actualiza solo las columnas de cabecera presentes en `campos`. */
-export async function actualizar(id, campos) {
+export async function actualizar(id, campos, conexion = null) {
   const { asignaciones, valores } = construirAsignaciones(campos);
 
-  if (asignaciones.length === 0) return buscarPorId(id);
+  if (asignaciones.length === 0) return buscarPorId(id, conexion);
 
   valores.push(id);
-  await query(`UPDATE pedido SET ${asignaciones.join(', ')} WHERE id = ?`, valores);
-  return buscarPorId(id);
+  await ejecutar(
+    `UPDATE pedido SET ${asignaciones.join(', ')} WHERE id = ?`,
+    valores,
+    conexion
+  );
+  return buscarPorId(id, conexion);
 }
 
 /**
  * Actualiza la cabecera y reemplaza todas las líneas en una sola transacción.
  * Las líneas recibidas ya vienen validadas y con sus precios resueltos.
  */
-export async function actualizarConLineas(id, campos, lineas) {
-  return withTransaction(async (conexion) => {
-    const { asignaciones, valores } = construirAsignaciones(campos);
+async function reemplazarLineas(conexion, id, campos, lineas) {
+  const { asignaciones, valores } = construirAsignaciones(campos);
 
-    if (asignaciones.length > 0) {
-      valores.push(id);
-      await conexion.execute(
-        `UPDATE pedido SET ${asignaciones.join(', ')} WHERE id = ?`,
-        valores
-      );
-    }
+  if (asignaciones.length > 0) {
+    valores.push(id);
+    await conexion.execute(
+      `UPDATE pedido SET ${asignaciones.join(', ')} WHERE id = ?`,
+      valores
+    );
+  }
 
-    await productoPedidoModel.eliminarPorPedido(conexion, id);
-    await productoPedidoModel.insertarLineas(conexion, id, lineas);
+  await productoPedidoModel.eliminarPorPedido(conexion, id);
+  await productoPedidoModel.insertarLineas(conexion, id, lineas);
 
-    return id;
-  });
+  return id;
+}
+
+export async function actualizarConLineas(id, campos, lineas, conexion = null) {
+  if (conexion) return reemplazarLineas(conexion, id, campos, lineas);
+  return withTransaction((conn) => reemplazarLineas(conn, id, campos, lineas));
 }
 
 /** Actualiza la evidencia/observaciones de entrega. */
@@ -295,12 +318,13 @@ export async function cambiarEstado(
 }
 
 /** Actualiza la fecha de entrega y devuelve el pedido a Despachado. */
-export async function reprogramarEntrega(id, fechaEntrega, idEstado) {
-  await query(
+export async function reprogramarEntrega(id, fechaEntrega, idEstado, conexion = null) {
+  await ejecutar(
     'UPDATE pedido SET fecha_entrega = ?, id_estado = ?, observaciones_entrega = NULL WHERE id = ?',
-    [fechaEntrega, idEstado, id]
+    [fechaEntrega, idEstado, id],
+    conexion
   );
-  return buscarPorId(id);
+  return buscarPorId(id, conexion);
 }
 
 /** Pasa el pedido a Rechazado y guarda el motivo. */

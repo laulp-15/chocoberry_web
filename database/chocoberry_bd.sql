@@ -6,6 +6,14 @@ CREATE DATABASE IF NOT EXISTS chocoberry
 
 USE chocoberry;
 
+-- CONFIGURACIÓN DEL SISTEMA (clave/valor)
+
+CREATE TABLE configuracion (
+    clave VARCHAR(100) NOT NULL,
+    valor VARCHAR(255) NOT NULL,
+    PRIMARY KEY (clave)
+) ENGINE=InnoDB;
+
 -- ROLES, PERMISOS Y USUARIOS
 
 CREATE TABLE rol (
@@ -192,6 +200,18 @@ CREATE TABLE productoPedido (
         FOREIGN KEY (id_presentacion) REFERENCES presentacion(id),
     CONSTRAINT fk_prodPedido_color
         FOREIGN KEY (id_color_glaseado) REFERENCES colorGlaseado(id)
+) ENGINE=InnoDB;
+
+-- CAPACIDAD DIARIA DE PRODUCCIÓN (fresas por fecha de entrega)
+-- Un día sin fila usa el tope estándar de `configuracion`.
+-- max_fresas = 0 significa día bloqueado.
+
+CREATE TABLE capacidadDia (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    fecha DATE NOT NULL,
+    max_fresas INT NOT NULL,
+    CONSTRAINT uq_capacidadDia_fecha UNIQUE (fecha),
+    CONSTRAINT ck_capacidadDia_max_fresas CHECK (max_fresas >= 0)
 ) ENGINE=InnoDB;
 
 -- COMPROBANTES DE PAGO (puede haber varios por pedido)

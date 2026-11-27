@@ -19,6 +19,7 @@ import resenaRoutes from './resena.routes.js';
 import dashboardRoutes from './dashboard.routes.js';
 import municipioRoutes from './municipio.routes.js';
 import colorGlaseadoRoutes from './colorGlaseado.routes.js';
+import capacidadRoutes from './capacidad.routes.js';
 
 const router = Router();
 
@@ -53,6 +54,8 @@ router.use('/dashboard', dashboardRoutes);
 // desde /catalogo/municipios y /catalogo/glaseados.
 router.use('/municipios', municipioRoutes);
 router.use('/glaseados', colorGlaseadoRoutes);
+// Capacidad diaria de producción (panel administrativo).
+router.use('/capacidad', capacidadRoutes);
 
 // ---------------------------------------------------------------------------
 // Módulos pendientes:

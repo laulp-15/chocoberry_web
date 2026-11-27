@@ -1,0 +1,278 @@
+/* src/features/admin/capacity/components/CapacityCalendar.css */
+
+.capacity-calendar-card {
+    padding: 16px;
+    border: 1px solid var(--borde);
+    border-radius: 16px;
+    background: var(--bg-card);
+}
+
+.capacity-calendar-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 360px;
+    color: var(--texto-muted);
+    font-size: 13px;
+}
+
+/* ---------- Cabecera de días ---------- */
+.capacity-weekdays,
+.capacity-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.capacity-weekdays {
+    margin-bottom: 8px;
+}
+
+.capacity-weekdays span {
+    padding: 4px 0;
+    color: var(--texto-muted);
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+}
+
+.capacity-grid.is-loading {
+    opacity: 0.68;
+}
+
+/* ---------- Celda de día ---------- */
+.capacity-day {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-height: 96px;
+    padding: 8px 9px 9px;
+    border: 1px solid var(--borde);
+    border-radius: 12px;
+    background: var(--bg-card);
+    color: var(--texto);
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+    overflow: hidden;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease,
+        background 0.15s ease;
+}
+
+.capacity-day:hover {
+    border-color: var(--primario-claro);
+}
+
+.capacity-day:focus-visible {
+    outline: 2px solid var(--primario);
+    outline-offset: 2px;
+}
+
+.capacity-day.is-selected {
+    border-color: var(--primario);
+    box-shadow: 0 0 0 2px var(--primario-claro);
+}
+
+.capacity-day--vacio {
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* Solo se tiñen los días que requieren atención; con cupo queda neutro. */
+.capacity-day--parcial {
+    background: color-mix(in srgb, var(--warning-20) 38%, var(--bg-card));
+}
+
+.capacity-day--lleno,
+.capacity-day--sobrecupo {
+    background: color-mix(in srgb, var(--error-20) 38%, var(--bg-card));
+}
+
+.capacity-day--bloqueado {
+    background: color-mix(in srgb, var(--texto-suave) 16%, var(--bg-card));
+}
+
+.capacity-day--libre {
+  background: color-mix(in srgb, var(--success-20) 34%, var(--bg-card));
+}
+
+/* Los días pasados con cupo se ven más suaves, sin tapar otros estados */
+.capacity-day--libre.is-past:not(.is-selected) {
+  background: color-mix(in srgb, var(--success-20) 16%, var(--bg-card));
+}
+
+.capacity-day.is-past .capacity-day-number {
+    color: var(--texto-muted);
+}
+
+/* ---------- Parte superior: número + indicador ---------- */
+.capacity-day-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    min-height: 24px;
+}
+
+.capacity-day-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    color: var(--texto);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.capacity-day.is-today .capacity-day-number {
+    background: var(--primario);
+    color: var(--blanco);
+}
+
+.capacity-day-flag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    font-size: 9px;
+}
+
+.capacity-day-flag--blocked {
+    background: var(--error-20);
+    color: var(--error-100);
+}
+
+.capacity-day-flag--exception {
+    background: var(--info-20);
+    color: var(--info-100);
+}
+
+/* ---------- Contenido ---------- */
+.capacity-day-count {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    line-height: 1.1;
+}
+
+.capacity-day-count strong {
+    color: var(--texto);
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.capacity-day-count span {
+    color: var(--texto-muted);
+    font-size: 11px;
+}
+
+.capacity-day.is-empty .capacity-day-count strong {
+    color: var(--texto-muted);
+    font-weight: 600;
+}
+
+.capacity-day-remaining {
+    min-height: 12px;
+    color: var(--texto-muted);
+    font-size: 10px;
+    line-height: 1.2;
+}
+
+.capacity-day--sobrecupo .capacity-day-remaining,
+.capacity-day--lleno .capacity-day-remaining {
+    color: var(--error-100);
+    font-weight: 600;
+}
+
+/* ---------- Barra de ocupación ---------- */
+.capacity-day-bar {
+    display: block;
+    width: 100%;
+    height: 4px;
+    margin-top: auto;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--texto-suave) 30%, transparent);
+    overflow: hidden;
+}
+
+.capacity-day-bar>span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--success-100);
+}
+
+.capacity-day--parcial .capacity-day-bar>span {
+    background: var(--warning-100);
+}
+
+.capacity-day--lleno .capacity-day-bar>span,
+.capacity-day--sobrecupo .capacity-day-bar>span,
+.capacity-day--bloqueado .capacity-day-bar>span {
+    background: var(--error-100);
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 720px) {
+    .capacity-calendar-card {
+        padding: 10px;
+    }
+
+    .capacity-weekdays,
+    .capacity-grid {
+        gap: 5px;
+    }
+
+    .capacity-day {
+        min-height: 78px;
+        padding: 6px;
+        gap: 3px;
+        border-radius: 9px;
+    }
+
+    .capacity-day-count strong {
+        font-size: 14px;
+    }
+
+    .capacity-day-count span {
+        font-size: 9px;
+    }
+
+    .capacity-day-remaining {
+        font-size: 9px;
+    }
+}
+
+@media (max-width: 480px) {
+    .capacity-day {
+        min-height: 62px;
+        padding: 5px;
+    }
+
+    .capacity-day-number {
+        width: 20px;
+        height: 20px;
+        font-size: 10px;
+    }
+
+    .capacity-day-flag {
+        width: 16px;
+        height: 16px;
+        font-size: 8px;
+    }
+
+    .capacity-day-count span,
+    .capacity-day-remaining {
+        display: none;
+    }
+
+    .capacity-day-bar {
+        height: 3px;
+    }
+}

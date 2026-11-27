@@ -18,13 +18,23 @@ export const API_URL = (
  * backend y, si los hay, los errores de validación por campo.
  */
 export class ApiError extends Error {
-  constructor(message, { status = 0, code = null, errors = null, data = null } = {}) {
+  constructor(
+    message,
+    {
+      status = 0,
+      code = null,
+      errors = null,
+      data = null,
+      serverMessage = null,
+    } = {}
+  ) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.code = code;
     this.errors = errors;
     this.data = data;
+    this.serverMessage = serverMessage;
   }
 }
 
@@ -88,6 +98,7 @@ async function request(path, { method = "GET", body, auth = true, headers } = {}
       code: parsed?.code ?? null,
       errors: parsed?.errors ?? null,
       data: parsed?.data ?? null,
+      serverMessage: parsed?.message ?? null,
     });
   }
 
@@ -145,6 +156,7 @@ async function download(path, { fallbackName = "reporte" } = {}) {
       code: parsed?.code ?? null,
       errors: parsed?.errors ?? null,
       data: parsed?.data ?? null,
+      serverMessage: parsed?.message ?? null,
     });
   }
 
