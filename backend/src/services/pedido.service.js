@@ -2,6 +2,11 @@
 // Reglas de negocio del módulo de pedidos: cálculo de precios en el servidor,
 // transiciones de estado y alcance por rol (cada cliente solo ve lo suyo).
 import {
+  UMBRAL_COTIZACION_FRESAS,
+  VENTANA_MAXIMA_DIAS,
+  diasAnticipacionParaFresas,
+} from '../config/capacidad.js';
+import {
   AppError,
   BadRequestError,
   ConflictError,
@@ -18,6 +23,7 @@ import * as presentacionModel from '../models/presentacion.model.js';
 import * as productoModel from '../models/producto.model.js';
 import * as productoPedidoModel from '../models/productoPedido.model.js';
 import * as usuarioModel from '../models/usuario.model.js';
+import * as capacidadService from './capacidad.service.js';
 import * as emailService from './emailService.js';
 import * as municipioService from './municipio.service.js';
 import {
@@ -47,10 +53,8 @@ const ESTADO_CANCELADO = 'Cancelado';
 
 const VENTANA_REPROGRAMACION_MS = 2 * 24 * 60 * 60 * 1000;
 
-// Reglas de volumen de la tienda. El panel queda exento del tope total para
-// poder registrar los pedidos grandes que llegan por teléfono.
-const MAX_UNIDADES_POR_PEDIDO = 20;
-const UMBRAL_PEDIDO_GRANDE = 10;
+// Los pedidos grandes que llegan por teléfono se registran desde el panel y
+// quedan exentos del umbral de cotización de la tienda en línea.
 const TELEFONO_PEDIDOS_GRANDES = '317 217 5887';
 
 // Transiciones permitidas. Los estados que no aparecen (Entregado, Rechazado,
@@ -130,43 +134,73 @@ function fechaCorta(fecha) {
   return `${dia}/${mes}/${anio}`;
 }
 
-/**
- * Reglas de volumen del pedido:
- * - Un cliente no puede superar 20 unidades en total (el panel sí puede,
- *   para registrar pedidos telefónicos).
- * - Con más de 10 unidades en total, la entrega no puede ser para mañana:
- *   se exige desde pasado mañana.
- */
-function validarLimitesPedido(lineas, fechaEntrega, usuario) {
-  const total = lineas.reduce(
-    (suma, linea) => suma + Number(linea.cantidad_productos ?? 0),
-    0
-  );
+/** Suma las fresas de líneas preparadas o de filas de `productoPedido`. */
+function fresasDeLineas(lineas) {
+  return lineas.reduce((suma, linea) => {
+    if (linea.fresas !== undefined && linea.fresas !== null) {
+      return suma + Number(linea.fresas);
+    }
+    return (
+      suma +
+      Number(linea.cantidad_productos ?? 0) * Number(linea.cantidad_fresas ?? 0)
+    );
+  }, 0);
+}
 
-  if (esRol(usuario, ROL_CLIENTE) && total > MAX_UNIDADES_POR_PEDIDO) {
+/**
+ * Reglas de volumen y fechas:
+ * - La tienda en línea no puede superar el umbral de cotización.
+ * - La anticipación mínima depende de las fresas del pedido.
+ * - La entrega no puede superar la ventana máxima de programación.
+ */
+function validarReglasPedido(fresas, fechaEntrega, usuario) {
+  const total = Number(fresas) || 0;
+
+  if (esRol(usuario, ROL_CLIENTE) && total > UMBRAL_COTIZACION_FRESAS) {
     throw new UnprocessableEntityError(
-      `El pedido no puede superar las ${MAX_UNIDADES_POR_PEDIDO} unidades en total. Si quieres un pedido más grande puedes contactarte al teléfono: ${TELEFONO_PEDIDOS_GRANDES}.`,
+      `El pedido tiene ${total} fresas y supera el máximo en línea de ${UMBRAL_COTIZACION_FRESAS}. Requiere cotización con la administradora. Puedes contactarte al teléfono: ${TELEFONO_PEDIDOS_GRANDES}.`,
       [
         {
           campo: 'lineas',
-          mensaje: `Máximo ${MAX_UNIDADES_POR_PEDIDO} unidades por pedido.`,
+          mensaje: `Máximo ${UMBRAL_COTIZACION_FRESAS} fresas por pedido en línea.`,
         },
       ]
     );
   }
 
-  if (total <= UMBRAL_PEDIDO_GRANDE) return;
-
   const fecha = parseFecha(fechaISO(fechaEntrega));
-  const minima = sumarDias(fechaActualLocal(), 2);
+  if (!fecha) {
+    throw new UnprocessableEntityError('La fecha de entrega no es válida.', [
+      {
+        campo: 'fechaEntrega',
+        mensaje: 'Selecciona una fecha de entrega válida.',
+      },
+    ]);
+  }
 
-  if (!fecha || fecha < minima) {
+  const hoy = fechaActualLocal();
+  const minima = sumarDias(hoy, diasAnticipacionParaFresas(total));
+
+  if (fecha < minima) {
     throw new UnprocessableEntityError(
-      `Para pedidos de más de ${UMBRAL_PEDIDO_GRANDE} unidades, la entrega más próxima es el ${fechaCorta(minima)}.`,
+      `Para un pedido de ${total} fresas, la entrega más próxima es el ${fechaCorta(minima)}.`,
       [
         {
           campo: 'fechaEntrega',
           mensaje: `La entrega más próxima es el ${fechaCorta(minima)}.`,
+        },
+      ]
+    );
+  }
+
+  const maxima = sumarDias(hoy, VENTANA_MAXIMA_DIAS);
+  if (fecha > maxima) {
+    throw new UnprocessableEntityError(
+      `La entrega no puede programarse después del ${fechaCorta(maxima)}.`,
+      [
+        {
+          campo: 'fechaEntrega',
+          mensaje: `La fecha máxima de entrega es el ${fechaCorta(maxima)}.`,
         },
       ]
     );
@@ -440,6 +474,7 @@ async function prepararLineas(lineas, existentes = []) {
         letras_fresas: letrasFresas,
         mensaje_tarjeta: mensajeTarjeta,
         id_color_glaseado: existente.id_color_glaseado,
+        fresas: fresas * cantidad,
       });
       continue;
     }
@@ -473,6 +508,7 @@ async function prepararLineas(lineas, existentes = []) {
       letras_fresas: letrasFresas,
       mensaje_tarjeta: mensajeTarjeta,
       id_color_glaseado: color.id,
+      fresas: fresas * cantidad,
     });
   }
 
@@ -493,7 +529,8 @@ export async function crear(datos, usuario, comprobante) {
   const estado = await resolverEstado(ESTADO_PENDIENTE);
 
   const lineas = await prepararLineas(datos.lineas);
-  validarLimitesPedido(lineas, datos.fechaEntrega, usuario);
+  const fresas = fresasDeLineas(lineas);
+  validarReglasPedido(fresas, datos.fechaEntrega, usuario);
 
   let comprobanteInicial = null;
   let comprobanteSubido = null;
@@ -531,22 +568,29 @@ export async function crear(datos, usuario, comprobante) {
 
   let creado = false;
   try {
-    const id = await pedidoModel.crearConLineas({
-      pedido: {
-        fecha_entrega: normalizarFechaEntrega(datos.fechaEntrega),
-        direccion: datos.direccion,
-        // Snapshot: si el municipio cambia de precio, el pedido conserva el suyo.
-        precio_domicilio: redondear2(municipio.precio_domicilio),
-        nombre_receptor: datos.nombreReceptor,
-        telefono_receptor: datos.telefonoReceptor,
-        instrucciones_entrega: limpiarTexto(datos.instruccionesEntrega),
-        id_usuario: idUsuario,
-        id_estado: estado.id,
-        id_municipio: municipio.id,
-      },
-      lineas,
-      comprobante: comprobanteInicial,
-    });
+    const id = await capacidadService.reservarCupoYEjecutar(
+      { fecha: datos.fechaEntrega, fresas },
+      (conexion) =>
+        pedidoModel.crearConLineas(
+          {
+            pedido: {
+              fecha_entrega: normalizarFechaEntrega(datos.fechaEntrega),
+              direccion: datos.direccion,
+              // Snapshot: si el municipio cambia de precio, el pedido conserva el suyo.
+              precio_domicilio: redondear2(municipio.precio_domicilio),
+              nombre_receptor: datos.nombreReceptor,
+              telefono_receptor: datos.telefonoReceptor,
+              instrucciones_entrega: limpiarTexto(datos.instruccionesEntrega),
+              id_usuario: idUsuario,
+              id_estado: estado.id,
+              id_municipio: municipio.id,
+            },
+            lineas,
+            comprobante: comprobanteInicial,
+          },
+          conexion
+        )
+    );
 
     creado = true;
     const pedido = await obtenerPedidoCompleto(id);
@@ -597,20 +641,29 @@ export async function actualizar(id, datos, usuario) {
     campos.precio_domicilio = redondear2(municipio.precio_domicilio);
   }
 
-  if (datos.lineas !== undefined) {
+  const cambiaFecha = datos.fechaEntrega !== undefined;
+  const cambiaLineas = datos.lineas !== undefined;
+
+  if (cambiaFecha || cambiaLineas) {
     const lineasActuales = await productoPedidoModel.listarPorPedido(id);
-    const lineas = await prepararLineas(datos.lineas, lineasActuales);
-    validarLimitesPedido(
-      lineas,
-      datos.fechaEntrega !== undefined ? datos.fechaEntrega : actual.fecha_entrega,
-      usuario
+    const lineas = cambiaLineas
+      ? await prepararLineas(datos.lineas, lineasActuales)
+      : lineasActuales;
+    const fresas = fresasDeLineas(lineas);
+    const fechaResultante = cambiaFecha ? datos.fechaEntrega : actual.fecha_entrega;
+
+    validarReglasPedido(fresas, fechaResultante, usuario);
+
+    await capacidadService.reservarCupoYEjecutar(
+      { fecha: fechaISO(fechaResultante), fresas, excluirPedidoId: id },
+      (conexion) => {
+        if (cambiaLineas) {
+          return pedidoModel.actualizarConLineas(id, campos, lineas, conexion);
+        }
+        return pedidoModel.actualizar(id, campos, conexion);
+      }
     );
-    await pedidoModel.actualizarConLineas(id, campos, lineas);
   } else {
-    if (datos.fechaEntrega !== undefined) {
-      const lineasActuales = await productoPedidoModel.listarPorPedido(id);
-      validarLimitesPedido(lineasActuales, datos.fechaEntrega, usuario);
-    }
     await pedidoModel.actualizar(id, campos);
   }
 
@@ -698,6 +751,8 @@ export async function cambiarEstado(id, nombreEstado, observacionesEntrega) {
 
   if (destino === 'En preparación') {
     void emailService.enviarPedidoEnPreparacion({ pedido: actualizado });
+  } else if (destino === ESTADO_DESPACHADO) {
+    void emailService.enviarPedidoDespachado({ pedido: actualizado });
   } else if (destino === ESTADO_CANCELADO) {
     void emailService.enviarPedidoCancelado({
       pedido: actualizado,
@@ -762,10 +817,18 @@ export async function reprogramar(id, fechaEntrega) {
   }
 
   const despachado = await resolverEstado(ESTADO_DESPACHADO);
-  await pedidoModel.reprogramarEntrega(
-    id,
-    normalizarFechaEntrega(fechaEntrega),
-    despachado.id
+  const lineas = await productoPedidoModel.listarPorPedido(id);
+  const fresas = fresasDeLineas(lineas);
+
+  await capacidadService.reservarCupoYEjecutar(
+    { fecha: fechaEntrega, fresas, excluirPedidoId: id },
+    (conexion) =>
+      pedidoModel.reprogramarEntrega(
+        id,
+        normalizarFechaEntrega(fechaEntrega),
+        despachado.id,
+        conexion
+      )
   );
   return obtenerPedidoCompleto(id);
 }

@@ -1,0 +1,24 @@
+/* src/features/admin/capacity/components/CapacityModals.css
+   Compartido por CapacityStandardModal, CapacityDayLimitModal y CapacityConfirmModal. */
+
+.capacity-modal-note {
+  margin: 12px 0 0;
+  color: var(--texto-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.capacity-confirm-title {
+  margin: 0;
+  color: var(--texto);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.capacity-btn-danger {
+  background-color: var(--error-100) !important;
+}
+
+.capacity-btn-danger:hover {
+  background-color: color-mix(in srgb, var(--error-100) 84%, #000000) !important;
+}

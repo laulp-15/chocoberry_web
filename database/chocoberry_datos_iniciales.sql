@@ -47,7 +47,8 @@ INSERT INTO modulo (id, nombre) VALUES
     (6, 'Carrito'),
     (7, 'Reseñas'),
     (8, 'Pedidos'),
-    (9, 'Ventas');
+    (9, 'Ventas'),
+    (10, 'Capacidad');
 
 -- -----------------------------------------------------------------------------
 -- ACCIONES
@@ -115,7 +116,17 @@ INSERT INTO permiso (id, nombre, id_modulo, id_accion) VALUES
     -- Ventas: ver, generar reporte, exportar reporte
     (39, 'Ver Ventas',                 9, 1),
     (40, 'Generar reporte Ventas',     9, 6),
-    (41, 'Exportar reporte Ventas',    9, 7);
+    (41, 'Exportar reporte Ventas',    9, 7),
+    -- Capacidad: consultar y editar
+    (42, 'Ver Capacidad',             10, 1),
+    (43, 'Editar Capacidad',          10, 3);
+
+-- -----------------------------------------------------------------------------
+-- CONFIGURACIÓN DEL SISTEMA
+-- Tope estándar de fresas por día de entrega (editable desde el panel).
+-- -----------------------------------------------------------------------------
+INSERT INTO configuracion (clave, valor) VALUES
+    ('capacidad_dia_max_fresas', '200');
 
 -- -----------------------------------------------------------------------------
 -- ROL_PERMISO

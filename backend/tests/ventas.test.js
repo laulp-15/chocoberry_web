@@ -4,10 +4,25 @@
 // Pendiente/Rechazado, detalle y filtros.
 import request from 'supertest';
 import app from '../src/app.js';
+import { fijarTope, restablecerFechas } from './helpers/capacidad.js';
 
 const ADMIN = { correo: 'admin@chocoberry.com', contrasena: 'Admin123!' };
 const CLAVE_PRUEBA = 'Prueba123!';
 const COMPROBANTE = Buffer.from('89504e470d0a1a0a', 'hex');
+
+/** Fecha ISO local de hoy + N días. */
+function fechaISO(dias) {
+  const fecha = new Date();
+  fecha.setHours(0, 0, 0, 0);
+  fecha.setDate(fecha.getDate() + dias);
+
+  const anio = fecha.getFullYear();
+  const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+  const dia = String(fecha.getDate()).padStart(2, '0');
+  return `${anio}-${mes}-${dia}`;
+}
+
+const FECHA_ENTREGA = fechaISO(7);
 
 const parserBinario = (res, callback) => {
   const chunks = [];
@@ -66,7 +81,7 @@ describe('Módulo de ventas', () => {
 
   async function crearPedido() {
     const res = await auth(request(app).post('/api/pedidos'))
-      .field('fechaEntrega', '2026-12-24')
+      .field('fechaEntrega', FECHA_ENTREGA)
       .field('direccion', 'Calle 10 # 20-30')
       .field('idMunicipio', String(municipio.id))
       .field('nombreReceptor', 'Receptor Ventas')
@@ -164,6 +179,8 @@ describe('Módulo de ventas', () => {
     expect(municipio?.id).toBeGreaterThan(0);
     expect(color?.id).toBeGreaterThan(0);
 
+    await fijarTope(FECHA_ENTREGA);
+
     const pendiente = await crearPedido();
     pendienteId = pendiente.id;
 
@@ -200,6 +217,8 @@ describe('Módulo de ventas', () => {
     for (const id of [...pedidosCreados].reverse()) {
       await auth(request(app).delete(`/api/pedidos/${id}`));
     }
+
+    await restablecerFechas([FECHA_ENTREGA]);
 
     for (const id of [repartidorId, clienteId]) {
       if (id) await auth(request(app).delete(`/api/usuarios/${id}`));

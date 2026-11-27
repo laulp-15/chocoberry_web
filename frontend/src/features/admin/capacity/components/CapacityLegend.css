@@ -1,0 +1,30 @@
+/* src/features/admin/capacity/components/CapacityLegend.css */
+
+.capacity-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 0 4px;
+  color: var(--texto-muted);
+  font-size: 12px;
+}
+
+.capacity-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.capacity-legend-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.capacity-legend-dot--libre { background: var(--success-100); }
+.capacity-legend-dot--parcial { background: var(--warning-100); }
+.capacity-legend-dot--lleno { background: var(--error-100); }
+.capacity-legend-dot--bloqueado { background: var(--texto-suave); }
+.capacity-legend-dot--excepcion { background: var(--info-100); }

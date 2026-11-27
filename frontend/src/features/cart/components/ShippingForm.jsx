@@ -1,15 +1,9 @@
 // src/features/cart/components/ShippingForm.jsx
 import { OutlinedInput, Select, MenuItem } from "@mui/material";
-import DatePicker, { addDaysISO } from "../../../shared/components/DatePicker";
+import DatePicker from "../../../shared/components/DatePicker";
 import { PICKUP_SCHEDULE } from "../data/pickupInfo";
 import { formatPrice } from "../../../shared/utils/formatPrice";
-import { formatearFechaISO } from "../../../shared/utils/orderRules";
 import "./ShippingForm.css";
-
-// La entrega no puede ser para hoy: el mínimo lo calcula el checkout (mañana
-// normalmente y pasado mañana si el pedido supera 10 unidades). El máximo es
-// de 15 días a futuro.
-const MAX_DELIVERY_DATE = addDaysISO(15);
 
 /**
  * @param {object} props
@@ -22,8 +16,9 @@ const MAX_DELIVERY_DATE = addDaysISO(15);
  * @param {string} [props.addressError]
  * @param {string} [props.recipientNameError]
  * @param {string} [props.recipientPhoneError]
- * @param {string} [props.minDeliveryDate] - ISO; mínimo según el total del carrito
- * @param {boolean} [props.largeOrder] - true si el pedido supera 10 unidades
+ * @param {string} [props.minDeliveryDate] - ISO; mínimo según las fresas del pedido
+ * @param {string} [props.maxDeliveryDate] - ISO; máximo permitido por el backend
+ * @param {string} [props.deliveryHint] - ayuda bajo el calendario
  */
 export default function ShippingForm({
   values,
@@ -31,8 +26,9 @@ export default function ShippingForm({
   onBlurField,
   municipios = [],
   municipiosLoading = false,
-  minDeliveryDate = addDaysISO(1),
-  largeOrder = false,
+  minDeliveryDate,
+  maxDeliveryDate,
+  deliveryHint,
   fullNameError,
   deliveryDateError,
   municipioError,
@@ -76,13 +72,9 @@ export default function ShippingForm({
         value={deliveryDate}
         onChange={(v) => onChange("deliveryDate", v)}
         minDate={minDeliveryDate}
-        maxDate={MAX_DELIVERY_DATE}
+        maxDate={maxDeliveryDate}
         error={deliveryDateError}
-        hint={
-          largeOrder
-            ? `Con más de 10 unidades en total, la entrega más próxima es el ${formatearFechaISO(minDeliveryDate)}.`
-            : "Disponible desde mañana y hasta 15 días a futuro."
-        }
+        hint={deliveryHint}
       />
 
       <div className="form-row">

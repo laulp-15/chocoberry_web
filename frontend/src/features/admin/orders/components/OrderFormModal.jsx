@@ -4,7 +4,7 @@ import Modal from "../../../../shared/components/Modal";
 import FormTextField from "../../../../shared/components/FormTextField";
 import FormSelect from "../../../../shared/components/FormSelect";
 import FormAutocomplete from "../../../../shared/components/FormAutocomplete";
-import DatePicker, { addDaysISO } from "../../../../shared/components/DatePicker";
+import DatePicker from "../../../../shared/components/DatePicker";
 import FileDropzone from "../../../../shared/components/FileDropZone";
 import useFormValidation from "../../../../shared/hooks/useFormValidation";
 import OrderProductLineForm from "./OrderProductLineForm";
@@ -13,10 +13,11 @@ import { getStatusMeta } from "../data/orderStatus";
 import { getProofUrl } from "../utils/orderDisplay";
 import { formatPrice } from "../../../../shared/utils/formatPrice";
 import {
-  LARGE_ORDER_UNITS,
+  fechaMaximaEntrega,
   fechaMinimaEntrega,
-  formatearFechaISO,
-  totalUnidades,
+  mensajeFechaMaxima,
+  mensajeFechaMinima,
+  mensajeRangoEntrega,
 } from "../../../../shared/utils/orderRules";
 import { IMAGE_ACCEPT } from "../../../../shared/utils/fileValidation";
 import { validatePhone } from "../../../login/utils/validators";
@@ -108,12 +109,13 @@ export default function OrderFormModal({
         isEditing || o.clienteId ? "" : "Selecciona un cliente registrado.",
       fecha: (o) => {
         if (!o.fecha) return "La fecha de entrega es obligatoria.";
-        if (totalUnidades(o.lineas ?? []) > LARGE_ORDER_UNITS) {
-          const minima = fechaMinimaEntrega(o.lineas ?? []);
-          if (o.fecha < minima) {
-            return `Con más de 10 unidades en total, la entrega más próxima es el ${formatearFechaISO(minima)}.`;
-          }
-        }
+
+        const lineas = o.lineas ?? [];
+        const minima = fechaMinimaEntrega(lineas);
+        const maxima = fechaMaximaEntrega();
+
+        if (o.fecha < minima) return mensajeFechaMinima(lineas, minima);
+        if (o.fecha > maxima) return mensajeFechaMaxima(maxima);
         return "";
       },
       direccion: (o) => {
@@ -219,13 +221,11 @@ export default function OrderFormModal({
   }
 
   const lineas = order.lineas ?? [];
-  const totalPedido = totalUnidades(lineas);
-  const pedidoGrande = totalPedido > LARGE_ORDER_UNITS;
-  const minFechaEntrega = pedidoGrande
-    ? fechaMinimaEntrega(lineas)
-    : isEditing
-      ? undefined
-      : addDaysISO(1);
+  const minFechaEntrega = fechaMinimaEntrega(lineas);
+  const maxFechaEntrega = fechaMaximaEntrega();
+  const fechaEntregaHint = lineas.length
+    ? mensajeRangoEntrega(lineas, minFechaEntrega, maxFechaEntrega)
+    : mensajeFechaMaxima(maxFechaEntrega);
   const subtotal = lineas.reduce(
     (suma, linea) =>
       suma + Number(linea.precioUnitario) * Number(linea.unidades),
@@ -489,14 +489,8 @@ export default function OrderFormModal({
               onChange={(v) => setField("fecha", v)}
               error={errors.fecha}
               minDate={minFechaEntrega}
-              maxDate={isEditing ? undefined : addDaysISO(15)}
-              hint={
-                pedidoGrande
-                  ? `Con más de 10 unidades en total, la entrega más próxima es el ${formatearFechaISO(minFechaEntrega)}.`
-                  : isEditing
-                    ? undefined
-                    : "Disponible desde mañana y hasta 15 días a futuro."
-              }
+              maxDate={maxFechaEntrega}
+              hint={fechaEntregaHint}
             />
             <FormTextField
               label="Estado del pedido"
